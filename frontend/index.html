@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>MEROS AI — Oilaning Umrbod Raqamli Hamrohi</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --blue:#1A56A0;--blue2:#3B82C4;--blue-l:#D6E8FA;--blue-xl:#EFF6FF;
+  --green:#2D7A4F;--green-l:#E8F5EE;
+  --rose:#C2185B;--rose-l:#FCE4EC;
+  --amber:#B8750F;--amber-l:#FEF3DC;
+  --red:#C0392B;--red-l:#FDECEA;
+  --purple:#6D28D9;--purple-l:#EDE9FE;
+  --text:#1A1A2E;--text2:#4A5568;--text3:#9AA3AF;
+  --bg:#FFFFFF;--bg2:#F7F9FC;--bg3:#EEF2F7;
+  --border:#E2E8F0;--border2:#CBD5E0;
+  --r:14px;--r2:10px;--r3:6px;
+  --shadow:0 1px 3px rgba(0,0,0,.08);
+  --shadow2:0 4px 16px rgba(0,0,0,.10);
+}
+html,body{height:100%;background:var(--bg2)}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',Arial,sans-serif;color:var(--text);font-size:15px;line-height:1.5}
+button{cursor:pointer;border:none;background:none;font-family:inherit;font-size:inherit}
+input,textarea,select{font-family:inherit;font-size:inherit}
+
+.app{max-width:430px;margin:0 auto;min-height:100vh;background:var(--bg);display:flex;flex-direction:column;position:relative;box-shadow:0 0 40px rgba(0,0,0,.12)}
+.screen{flex:1;display:flex;flex-direction:column;overflow:hidden;padding-bottom:66px}
+.scrollable{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+
+.status-bar{background:var(--blue);color:#fff;display:flex;justify-content:space-between;align-items:center;padding:10px 16px 8px;font-size:12px;font-weight:500;flex-shrink:0}
+.status-bar .brand{font-size:15px;font-weight:800;letter-spacing:.3px}
+
+.bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:430px;max-width:100%;background:var(--bg);border-top:1px solid var(--border);display:flex;z-index:200;padding-bottom:env(safe-area-inset-bottom,0)}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 4px 7px;color:var(--text3);font-size:10px;font-weight:600;transition:color .18s;background:none;border:none;cursor:pointer}
+.nav-btn.active{color:var(--blue)}
+.nav-btn i{font-size:22px;line-height:1}
+
+.card{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px}
+.card-row{display:flex;align-items:center;gap:12px}
+.icon-box{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0}
+.card-info{flex:1;min-width:0}
+.card-title{font-size:14px;font-weight:700;color:var(--text)}
+.card-sub{font-size:12px;color:var(--text2);margin-top:1px}
+.badge{display:inline-flex;align-items:center;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;flex-shrink:0}
+.badge-green{background:var(--green-l);color:var(--green)}
+.badge-amber{background:var(--amber-l);color:var(--amber)}
+.badge-red{background:var(--red-l);color:var(--red)}
+.badge-blue{background:var(--blue-l);color:var(--blue)}
+.badge-purple{background:var(--purple-l);color:var(--purple)}
+
+.section-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;padding:14px 16px 6px}
+
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:13px 20px;border-radius:var(--r2);font-size:14px;font-weight:700;cursor:pointer;transition:opacity .18s,transform .1s;border:none}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-rose{background:var(--rose);color:#fff}
+.btn-full{width:100%}
+.btn:disabled{opacity:.5}
+
+.input-group{margin-bottom:14px}
+.input-group label{display:block;font-size:13px;font-weight:700;color:var(--text2);margin-bottom:5px}
+.input-field{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--r2);font-size:15px;color:var(--text);background:var(--bg);transition:border-color .18s;outline:none}
+.input-field:focus{border-color:var(--blue)}
+.input-field::placeholder{color:var(--text3)}
+
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .2s}
+.modal{background:var(--bg);border-radius:20px 20px 0 0;width:100%;max-width:430px;max-height:90vh;overflow-y:auto;padding:20px 16px 32px;animation:slideUp .25s ease-out}
+.modal-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 18px}
+.modal h2{font-size:18px;font-weight:800;margin-bottom:16px}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1A1A2E;color:#fff;padding:11px 20px;border-radius:100px;font-size:13px;font-weight:600;z-index:999;white-space:nowrap;animation:toastIn .25s ease-out;box-shadow:var(--shadow2)}
+.toast.error{background:var(--red)}
+.toast.success{background:var(--green)}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* AUTH */
+.auth-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;background:linear-gradient(160deg,#0D3B7A 0%,#1A56A0 55%,#2D7A9A 100%)}
+.auth-logo{font-size:44px;font-weight:900;color:#fff;letter-spacing:-1px;margin-bottom:4px;text-align:center}
+.auth-tagline{font-size:14px;color:rgba(255,255,255,.72);margin-bottom:36px;text-align:center}
+.auth-card{background:#fff;border-radius:20px;padding:24px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.auth-card h2{font-size:20px;font-weight:800;margin-bottom:3px}
+.auth-card .sub{font-size:13px;color:var(--text2);margin-bottom:20px}
+.auth-tabs{display:flex;gap:8px;margin-bottom:20px}
+.auth-tab{flex:1;padding:9px;border-radius:var(--r2);font-size:13px;font-weight:700;border:1.5px solid var(--border);color:var(--text2);background:var(--bg2);cursor:pointer;transition:all .18s}
+.auth-tab.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.demo-box{background:var(--blue-xl);border:1px solid var(--blue-l);border-radius:var(--r2);padding:10px 12px;font-size:12px;color:var(--blue);margin-top:12px;line-height:1.6}
+
+/* HOME */
+.home-hero{background:linear-gradient(135deg,#0F3D8A,#1A56A0 60%,#2172C4);padding:20px 16px 24px;flex-shrink:0}
+.home-greeting{font-size:13px;color:rgba(255,255,255,.75);margin-bottom:3px}
+.home-fam-name{font-size:22px;font-weight:800;color:#fff;margin-bottom:18px}
+.fam-strip{display:flex;gap:10px;align-items:center;overflow-x:auto;padding-bottom:2px}
+.fam-strip::-webkit-scrollbar{display:none}
+.av-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0}
+.av{width:48px;height:48px;border-radius:50%;border:2.5px solid rgba(255,255,255,.45);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff}
+.av-lbl{font-size:9px;color:rgba(255,255,255,.8);font-weight:500;max-width:52px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.av-add{width:48px;height:48px;border-radius:50%;border:2px dashed rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;cursor:pointer}
+
+.alert-strip{display:flex;gap:10px;align-items:flex-start;background:var(--amber-l);border-left:3px solid var(--amber);border-radius:0 var(--r2) var(--r2) 0;padding:12px 14px;margin:12px 16px 0}
+.alert-strip i{color:var(--amber);font-size:19px;flex-shrink:0;margin-top:1px}
+.alert-strip strong{font-size:13px;font-weight:700;color:#7A5200;display:block}
+.alert-strip span{font-size:12px;color:#9A6B00}
+
+.oila-wrap{padding:10px 16px 0}
+.oila-banner{background:var(--amber-l);border:1px solid #F0C060;border-radius:var(--r2);padding:12px 14px;display:flex;gap:10px;align-items:center}
+.oila-banner i{color:var(--amber);font-size:20px;flex-shrink:0}
+.oila-tit{font-size:13px;font-weight:700;color:#7A5200}
+.oila-sub{font-size:11px;color:#9A6B00;margin-top:1px}
+
+.warmth-widget{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin:0 16px 10px}
+.warmth-head{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px}
+.warmth-head i{color:var(--rose);font-size:17px}
+.em-row{display:flex;gap:8px;justify-content:center;margin-bottom:7px}
+.em-btn{width:40px;height:40px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;transition:all .18s;background:var(--bg2)}
+.em-btn.picked{border-color:var(--blue);background:var(--blue-l);transform:scale(1.12)}
+.warmth-hint{font-size:12px;color:var(--text2);text-align:center}
+
+/* HEALTH */
+.health-hero{background:linear-gradient(135deg,#1A4D30,#2D7A4F);padding:20px 16px 24px;flex-shrink:0}
+.page-h1{font-size:22px;font-weight:800;color:#fff;margin-bottom:3px}
+.page-sub{font-size:13px;color:rgba(255,255,255,.75)}
+.tab-row{display:flex;gap:7px;padding:12px 16px 0;overflow-x:auto}
+.tab-row::-webkit-scrollbar{display:none}
+.tab-item{padding:7px 14px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--bg);color:var(--text2);white-space:nowrap;flex-shrink:0;transition:all .18s}
+.tab-item.active{background:var(--green);color:#fff;border-color:var(--green)}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 16px 0}
+.stat-box{background:var(--bg);border:1px solid var(--border);border-radius:var(--r2);padding:12px}
+.stat-lbl{font-size:11px;color:var(--text3);margin-bottom:3px;font-weight:600}
+.stat-val{font-size:21px;font-weight:800;color:var(--text);line-height:1}
+.stat-unit{font-size:12px;color:var(--text2);margin-left:2px;font-weight:400}
+.stat-trend{font-size:11px;margin-top:3px;color:var(--green)}
+.vac-list{padding:0 16px}
+.vac-item{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--border)}
+.vac-item:last-child{border-bottom:none}
+.vdot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.d-done{background:var(--green)} .d-soon{background:var(--amber)} .d-over{background:var(--red)} .d-sched{background:#CBD5E0}
+.vac-info{flex:1}
+.vac-name{font-size:13px;font-weight:700;color:var(--text)}
+.vac-date{font-size:11px;color:var(--text3);margin-top:1px}
+.vac-date.warn{color:var(--amber);font-weight:700}
+.vac-date.danger{color:var(--red);font-weight:700}
+
+/* MEMORIES */
+.mem-hero{background:linear-gradient(135deg,#3B0D8F,#6D28D9);padding:20px 16px 24px;flex-shrink:0}
+.chip-row{display:flex;gap:7px;padding:12px 16px 0;overflow-x:auto}
+.chip-row::-webkit-scrollbar{display:none}
+.chip{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;background:var(--bg);border:1px solid var(--border);color:var(--text2);flex-shrink:0;transition:all .18s}
+.chip.active{background:var(--purple);color:#fff;border-color:var(--purple)}
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:10px 16px 0}
+.photo-cell{aspect-ratio:1;border-radius:var(--r3);display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;transition:opacity .18s}
+.photo-cell:active{opacity:.8}
+.cap-list{padding:0 16px}
+.cap-item{display:flex;align-items:center;gap:11px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r2);padding:12px 14px;margin-bottom:8px;cursor:pointer}
+.cap-icon{width:40px;height:40px;border-radius:10px;background:var(--purple-l);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.cap-info{flex:1}
+.cap-title{font-size:13px;font-weight:700;color:var(--text)}
+.cap-date{font-size:11px;color:var(--purple);margin-top:1px;font-weight:600}
+.cap-open{font-size:11px;color:var(--green);font-weight:800}
+
+/* RELATIONSHIP */
+.rel-hero{background:linear-gradient(135deg,#7A0933,#C2185B);padding:20px 16px 24px;flex-shrink:0}
+.score-row{display:flex;gap:8px;padding:12px 16px 0}
+.score-box{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:var(--r2);padding:12px;text-align:center}
+.score-num{font-size:28px;font-weight:900;line-height:1}
+.score-lbl{font-size:11px;color:var(--text3);margin-top:3px;font-weight:600}
+.bars-area{padding:0 16px}
+.bars-chart{display:flex;align-items:flex-end;gap:7px;height:80px;margin-bottom:5px}
+.bar-col{display:flex;flex-direction:column;align-items:center;flex:1;gap:3px}
+.bar-fill{width:100%;border-radius:4px 4px 0 0;min-height:4px}
+.bar-day{font-size:9px;color:var(--text3)}
+.bar-v{font-size:10px;font-weight:700;color:var(--text2)}
+.scale-form{padding:0 16px}
+.scale-q{font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px}
+.scale-btns{display:flex;gap:5px;margin-bottom:14px}
+.scale-btn{flex:1;padding:9px 0;border:1.5px solid var(--border);border-radius:var(--r3);font-size:14px;font-weight:700;color:var(--text2);background:var(--bg2);text-align:center;cursor:pointer;transition:all .18s}
+.scale-btn.picked{background:var(--rose);color:#fff;border-color:var(--rose)}
+
+/* PROFILE */
+.prof-hero{background:linear-gradient(135deg,#0A2E6A,#1A56A0);padding:24px 16px 32px;text-align:center;flex-shrink:0}
+.prof-av{width:76px;height:76px;border-radius:50%;background:rgba(255,255,255,.22);border:3px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#fff;margin:0 auto 12px}
+.prof-name{font-size:19px;font-weight:800;color:#fff;margin-bottom:3px}
+.prof-sub2{font-size:12px;color:rgba(255,255,255,.7)}
+.menu-card{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);margin:0 16px 10px;overflow:hidden}
+.menu-row{display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s}
+.menu-row:last-child{border-bottom:none}
+.menu-row:active{background:var(--bg2)}
+.menu-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.menu-text{flex:1;font-size:14px;font-weight:600;color:var(--text)}
+.int-row{display:flex;align-items:center;gap:11px;padding:12px 14px;border-bottom:1px solid var(--border)}
+.int-row:last-child{border-bottom:none}
+.int-ic{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.int-name{font-size:13px;font-weight:700;color:var(--text)}
+.int-st{font-size:11px;color:var(--text3);margin-top:1px}
+.toggle{width:42px;height:24px;border-radius:12px;background:var(--border2);position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.toggle.on{background:var(--blue)}
+.toggle::after{content:'';position:absolute;width:20px;height:20px;border-radius:50%;background:#fff;top:2px;left:2px;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.toggle.on::after{left:20px}
+
+.spinner{width:20px;height:20px;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:14px;background:linear-gradient(160deg,#0D3B7A,#1A56A0)}
+.loading-wrap .logo{font-size:48px;font-weight:900;color:#fff}
+.loading-wrap p{color:rgba(255,255,255,.7);font-size:14px}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px;text-align:center;gap:10px}
+.empty i{font-size:44px;color:var(--text3)}
+.empty p{font-size:13px;color:var(--text2)}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script>
+const {useState,useEffect,useCallback,createContext,useContext}=React;
+const Ctx=createContext(null);
+function useApp(){return useContext(Ctx)}
+
+const API='http://localhost:5050/api';
+function api(path,opts={}){
+  const tok=localStorage.getItem('meros_token');
+  return fetch(API+path,{
+    headers:{'Content-Type':'application/json',...(tok?{Authorization:'Bearer '+tok}:{})},
+    ...opts,body:opts.body?JSON.stringify(opts.body):undefined
+  }).then(r=>r.json()).catch(()=>({ok:false,error:'Server bilan aloqa yo\'q'}));
+}
+
+function getInitials(s=''){return s.trim().split(' ').map(p=>p[0]||'').join('').slice(0,2).toUpperCase()||'MA'}
+
+/* TOAST */
+function Toast({msg,type,onDone}){
+  useEffect(()=>{const t=setTimeout(onDone,2800);return()=>clearTimeout(t)},[]);
+  return React.createElement('div',{className:`toast ${type||''}`},msg);
+}
+
+/* MODAL */
+function Modal({title,onClose,children}){
+  return React.createElement('div',{className:'modal-overlay',onClick:e=>{if(e.target.className==='modal-overlay')onClose()}},
+    React.createElement('div',{className:'modal'},
+      React.createElement('div',{className:'modal-handle'}),
+      React.createElement('h2',null,title),
+      children));
+}
+
+/* AUTH */
+function AuthScreen(){
+  const {setToken,showToast}=useApp();
+  const [tab,setTab]=useState('login');
+  const [phone,setPhone]=useState('');
+  const [name,setName]=useState('');
+  const [pw,setPw]=useState('');
+  const [loading,setLoading]=useState(false);
+
+  async function submit(e){
+    e.preventDefault();
+    if(!phone||!pw)return showToast('Telefon va parol kiriting','error');
+    setLoading(true);
+    const body=tab==='login'?{phone,password:pw}:{phone,full_name:name,password:pw};
+    const r=await api(tab==='login'?'/auth/login':'/auth/register',{method:'POST',body});
+    setLoading(false);
+    if(!r.ok)return showToast(r.error||'Xatolik yuz berdi','error');
+    localStorage.setItem('meros_token',r.data.token);
+    setToken(r.data.token);
+    if(tab==='register')showToast('Xush kelibsiz! Oila profilingiz yaratildi','success');
+  }
+
+  return React.createElement('div',{className:'auth-screen'},
+    React.createElement('div',{className:'auth-logo'},'MEROS AI'),
+    React.createElement('div',{className:'auth-tagline'},'Oilaning Umrbod Raqamli Hamrohi'),
+    React.createElement('div',{className:'auth-card'},
+      React.createElement('h2',null,tab==='login'?'Kirish':"Ro'yxatdan o'tish"),
+      React.createElement('div',{className:'sub'},tab==='login'?'Oila hisobingizga kiring':'Yangi oila profili yarating'),
+      React.createElement('div',{className:'auth-tabs'},
+        React.createElement('button',{className:`auth-tab${tab==='login'?' active':''}`,onClick:()=>setTab('login')},'Kirish'),
+        React.createElement('button',{className:`auth-tab${tab==='register'?' active':''}`,onClick:()=>setTab('register')},"Ro'yxat")
+      ),
+      React.createElement('form',{onSubmit:submit},
+        tab==='register'&&React.createElement('div',{className:'input-group'},
+          React.createElement('label',null,'Ism va familiya'),
+          React.createElement('input',{className:'input-field',placeholder:'Malikov Husan',value:name,onChange:e=>setName(e.target.value)})
+        ),
+        React.createElement('div',{className:'input-group'},
+          React.createElement('label',null,'Telefon'),
+          React.createElement('input',{className:'input-field',type:'tel',placeholder:'+998901234567',value:phone,onChange:e=>setPhone(e.target.value)})
+        ),
+        React.createElement('div',{className:'input-group'},
+          React.createElement('label',null,'Parol'),
+          React.createElement('input',{className:'input-field',type:'password',placeholder:'••••••••',value:pw,onChange:e=>setPw(e.target.value)})
+        ),
+        React.createElement('button',{className:'btn btn-primary btn-full',type:'submit',disabled:loading},
+          loading?React.createElement('span',{className:'spinner'}):tab==='login'?'Kirish':"Ro'yxatdan o'tish"),
+        React.createElement('div',{className:'demo-box'},
+          React.createElement('strong',null,'Demo hisob:'),' +998901234567 / demo123',React.createElement('br'),
+          React.createElement('span',{style:{textDecoration:'underline',cursor:'pointer'},onClick:()=>{setPhone('+998901234567');setPw('demo123')}},'Avtomatik to\'ldirish →')
+        )
+      )
+    )
+  );
+}
+
+/* HOME */
+function HomeScreen({onRefresh}){
+  const {showToast,showModal}=useApp();
+  const [dash,setDash]=useState(null);
+  const [oila,setOila]=useState(true);
+  const [emPick,setEmPick]=useState(null);
+  const [saved,setSaved]=useState(false);
+  const avColors=['#1A78C2','#C2185B','#2D7A4F','#7B2D8B','#D97706','#0891B2'];
+  const emojis=['😔','😕','😐','😊','😄'];
+  const msgs={1:'Qiyin kun... Yaxshi bo\'lasiz 💙',2:'Biroz og\'irroq. Sherigingiz bilan gaplashing',3:'Normal kun. Ertaga yaxshiroq 🙂',4:'Yaxshi kun! Shunday davom eting 😊',5:'Ajoyib! Baxtingiz oilaga yuqsin 🌟'};
+
+  useEffect(()=>{api('/dashboard').then(r=>{if(r.ok)setDash(r.data)});},[onRefresh]);
+
+  async function pickEm(val){
+    setEmPick(val);
+    const r=await api('/warmth',{method:'POST',body:{happiness:val,supported:val}});
+    if(r.ok){setSaved(true);showToast(`Ball saqlandi: ${r.data.avg}/5`,'success');if(r.data.warning)setTimeout(()=>showToast(r.data.warning),1200);}
+  }
+
+  if(!dash)return React.createElement('div',{className:'screen'},React.createElement('div',{className:'loading-wrap'},React.createElement('div',{className:'logo'},'MEROS AI'),React.createElement('p',null,'Yuklanmoqda...'),React.createElement('div',{className:'spinner'})));
+
+  const todayVac=dash.today_vaccines||[];
+  const members=dash.members||[];
+
+  return React.createElement('div',{className:'screen'},
+    React.createElement('div',{className:'home-hero'},
+      React.createElement('div',{className:'home-greeting'},'Xayrli kun,'),
+      React.createElement('div',{className:'home-fam-name'},(dash.family?.name||'Oilangiz')+' 👨‍👩‍👧‍👦'),
+      React.createElement('div',{className:'fam-strip'},
+        members.map((m,i)=>React.createElement('div',{key:m.id,className:'av-wrap'},
+          React.createElement('div',{className:'av',style:{background:avColors[i%avColors.length]}},getInitials(m.name)),
+          React.createElement('div',{className:'av-lbl'},m.name.split(' ')[0])
+        )),
+        React.createElement('div',{className:'av-wrap',onClick:()=>showModal('member')},
+          React.createElement('div',{className:'av-add'},React.createElement('i',{className:'ti ti-plus',style:{color:'rgba(255,255,255,.65)',fontSize:20}})),
+          React.createElement('div',{className:'av-lbl',style:{color:'rgba(255,255,255,.5)'}},"Qo'sh")
+        )
+      )
+    ),
+    React.createElement('div',{className:'scrollable'},
+      oila&&React.createElement('div',{className:'oila-wrap'},
+        React.createElement('div',{className:'oila-banner'},
+          React.createElement('i',{className:'ti ti-device-mobile-off'}),
+          React.createElement('div',{style:{flex:1}},
+            React.createElement('div',{className:'oila-tit'},'Oila vaqti — 3 soat telefonda'),
+            React.createElement('div',{className:'oila-sub'},"Farzandingiz siz bilan o'ynashni kutmoqda")
+          ),
+          React.createElement('button',{style:{color:'var(--text3)',fontSize:18,padding:4},onClick:()=>setOila(false)},React.createElement('i',{className:'ti ti-x'}))
+        )
+      ),
+      todayVac.length>0&&React.createElement('div',{style:{padding:'10px 16px 0'}},
+        React.createElement('div',{className:'alert-strip'},
+          React.createElement('i',{className:'ti ti-syringe'}),
+          React.createElement('div',null,
+            React.createElement('strong',null,`${todayVac[0].member_name}ning emlashi bugun!`),
+            React.createElement('span',null,todayVac[0].name+(todayVac[0].notes?' — '+todayVac[0].notes:''))
+          )
+        )
+      ),
+      React.createElement('div',{className:'section-label'},"Bugungi ko'rsatkichlar"),
+      React.createElement('div',{style:{padding:'0 16px'}},
+        React.createElement('div',{className:'card',style:{cursor:'default'}},
+          React.createElement('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}},
+            [{lbl:"A'zolar",val:members.length,ic:'ti-users',c:'var(--blue)',bg:'var(--blue-l)'},
+             {lbl:'Xotiralar',val:dash.memory_count||0,ic:'ti-photo',c:'var(--purple)',bg:'var(--purple-l)'},
+             {lbl:'Munosabat',val:(dash.warmth_avg_7days||0)+'/5',ic:'ti-heart',c:'var(--rose)',bg:'var(--rose-l)'}
+            ].map(x=>React.createElement('div',{key:x.lbl,style:{textAlign:'center',padding:10,background:x.bg,borderRadius:10}},
+              React.createElement('i',{className:`ti ${x.ic}`,style:{fontSize:20,color:x.c,display:'block',marginBottom:4}}),
+              React.createElement('div',{style:{fontSize:17,fontWeight:900,color:x.c}},x.val),
+              React.createElement('div',{style:{fontSize:10,color:'var(--text2)',marginTop:2}},x.lbl)
+            ))
+          )
+        )
+      ),
+      React.createElement('div',{className:'section-label'},'Tezkor harakatlar'),
+      React.createElement('div',{style:{padding:'0 16px'}},
+        [{title:"Sog'liq arxivi",sub:'Emlash, tahlil, o\'lchov',ic:'ti-heart-rate',c:'#2D7A4F',bg:'#E8F5EE',
+          bdg:dash.overdue_vaccines>0?{t:dash.overdue_vaccines+' kechikkan',cls:'badge-amber'}:{t:'Yaxshi',cls:'badge-green'}},
+         {title:'Xotiralar',sub:`${dash.memory_count} ta saqlanган`,ic:'ti-photo',c:'var(--purple)',bg:'var(--purple-l)',bdg:{t:dash.memory_count+' ta',cls:'badge-purple'}},
+         {title:"Munosabat o'lchovi",sub:'7 kunlik statistika',ic:'ti-heart',c:'var(--rose)',bg:'var(--rose-l)',bdg:{t:dash.warmth_avg_7days+'/5',cls:'badge-blue'}},
+        ].map(x=>React.createElement('div',{key:x.title,className:'card'},
+          React.createElement('div',{className:'card-row'},
+            React.createElement('div',{className:'icon-box',style:{background:x.bg}},React.createElement('i',{className:`ti ${x.ic}`,style:{color:x.c,fontSize:22}})),
+            React.createElement('div',{className:'card-info'},React.createElement('div',{className:'card-title'},x.title),React.createElement('div',{className:'card-sub'},x.sub)),
+            React.createElement('span',{className:`badge ${x.bdg.cls}`},x.bdg.t)
+          )
+        ))
+      ),
+      !saved&&!dash.warmth_logged_today&&React.createElement('div',{style:{padding:'0 16px'}},
+        React.createElement('div',{className:'warmth-widget'},
+          React.createElement('div',{className:'warmth-head'},React.createElement('i',{className:'ti ti-thermometer'}),"Bugungi issiqlik o'lchovi"),
+          React.createElement('div',{className:'em-row'},emojis.map((em,i)=>React.createElement('div',{key:i,className:`em-btn${emPick===i+1?' picked':''}`,onClick:()=>pickEm(i+1)},em))),
+          React.createElement('div',{className:'warmth-hint'},emPick?msgs[emPick]:'Ballni tanlang (1-5)')
+        )
+      ),
+      saved&&React.createElement('div',{style:{padding:'0 16px'}},
+        React.createElement('div',{className:'warmth-widget',style:{textAlign:'center',padding:20}},
+          React.createElement('div',{style:{fontSize:32,marginBottom:8}},emojis[(emPick||3)-1]),
+          React.createElement('div',{style:{fontWeight:800,color:'var(--green)'}},'Bugungi ball saqlandi ✓'),
+          React.createElement('div',{style:{fontSize:12,color:'var(--text2)',marginTop:4}},msgs[emPick||3])
+        )
+      ),
+      React.createElement('div',{style:{height:16}})
+    )
+  );
+}
+
+/* HEALTH */
+function HealthScreen(){
+  const {showToast}=useApp();
+  const [members,setMembers]=useState([]);
+  const [sel,setSel]=useState(null);
+  const [vaccines,setVaccines]=useState([]);
+  const [records,setRecords]=useState([]);
+
+  useEffect(()=>{api('/family').then(r=>{if(r.ok){const ms=r.data.members||[];setMembers(ms);setSel(ms.find(m=>m.role==='child')||ms[0]||null);}});},[]);
+  useEffect(()=>{
+    if(!sel)return;
+    api(`/health/vaccines?member_id=${sel.id}`).then(r=>{if(r.ok)setVaccines(r.data)});
+    api(`/health/records?member_id=${sel.id}`).then(r=>{if(r.ok)setRecords(r.data)});
+  },[sel]);
+
+  async function markDone(vid){
+    const r=await api(`/health/vaccines/${vid}/complete`,{method:'PATCH'});
+    if(r.ok){setVaccines(v=>v.map(x=>x.id===vid?{...x,status:'done',done_date:new Date().toISOString().slice(0,10)}:x));showToast('Emlash bajarildi ✓','success');}
+  }
+
+  const dotCls={done:'d-done',scheduled:'d-soon',overdue:'d-over'};
+
+  return React.createElement('div',{className:'screen'},
+    React.createElement('div',{className:'health-hero'},
+      React.createElement('div',{className:'page-h1'},"Sog'liq arxivi"),
+      React.createElement('div',{className:'page-sub'},'Oila tibbiy tarixi va emlash jadvali')
+    ),
+    React.createElement('div',{className:'scrollable'},
+      React.createElement('div',{className:'tab-row'},
+        members.map(m=>React.createElement('div',{key:m.id,className:`tab-item${sel?.id===m.id?' active':''}`,onClick:()=>setSel(m)},
+          m.name.split(' ')[0]+(m.birth_date?' ('+((new Date().getFullYear()-parseInt(m.birth_date))||'')+'y)':'')))
+      ),
+      React.createElement('div',{className:'stats-grid'},
+        (()=>{
+          const bh=records.find(r=>r.title==="Bo'y");
+          const wt=records.find(r=>r.title==='Vazn');
+          const done=vaccines.filter(v=>v.status==='done').length;
+          const next=vaccines.find(v=>v.status==='scheduled');
+          return[
+            bh&&React.createElement('div',{key:'h',className:'stat-box'},React.createElement('div',{className:'stat-lbl'},"Bo'y"),React.createElement('div',{className:'stat-val'},bh.value,React.createElement('span',{className:'stat-unit'},bh.unit)),React.createElement('div',{className:'stat-trend'},'↑ Normada')),
+            wt&&React.createElement('div',{key:'w',className:'stat-box'},React.createElement('div',{className:'stat-lbl'},'Vazn'),React.createElement('div',{className:'stat-val'},wt.value,React.createElement('span',{className:'stat-unit'},wt.unit)),React.createElement('div',{className:'stat-trend'},'↑ Normada')),
+            React.createElement('div',{key:'d',className:'stat-box'},React.createElement('div',{className:'stat-lbl'},'Bajarilgan'),React.createElement('div',{className:'stat-val'},done),React.createElement('div',{className:'stat-trend'},done+' ta emlash ✓')),
+            React.createElement('div',{key:'n',className:'stat-box'},React.createElement('div',{className:'stat-lbl'},'Keyingi'),React.createElement('div',{className:'stat-val',style:{fontSize:13,color:next?'var(--amber)':'var(--green)',fontWeight:700}},next?.scheduled_date||'Barchasi ✓'),React.createElement('div',{className:'stat-trend',style:{color:vaccines.some(v=>v.status==='overdue')?'var(--red)':'var(--green)'}},vaccines.filter(v=>v.status==='overdue').length>0?vaccines.filter(v=>v.status==='overdue').length+' ta kechikkan':''))
+          ].filter(Boolean);
+        })()
+      ),
+      React.createElement('div',{className:'section-label'},'Emlash jadvali'),
+      React.createElement('div',{className:'vac-list'},
+        vaccines.length===0&&React.createElement('div',{className:'empty'},React.createElement('i',{className:'ti ti-vaccine'}),React.createElement('p',null,"Ma'lumot topilmadi")),
+        vaccines.map(v=>React.createElement('div',{key:v.id,className:'vac-item'},
+          React.createElement('div',{className:`vdot ${dotCls[v.status]||'d-sched'}`}),
+          React.createElement('div',{className:'vac-info'},
+            React.createElement('div',{className:'vac-name'},v.name+(v.notes?' — '+v.notes:'')),
+            React.createElement('div',{className:`vac-date${v.status==='overdue'?' danger':v.status==='scheduled'?' warn':''}`},
+              v.status==='done'?`${v.done_date} · Bajarildi ✓`:v.status==='overdue'?`Kechiktirildi — ${v.scheduled_date}`:`Rejalashtirilgan: ${v.scheduled_date}`)
+          ),
+          v.status==='scheduled'&&React.createElement('button',{onClick:()=>markDone(v.id),style:{fontSize:11,color:'var(--green)',fontWeight:700,padding:'5px 10px',border:'1px solid var(--green)',borderRadius:20,background:'var(--green-l)'}},'Bajarildi ✓'),
+          v.status==='done'&&React.createElement('i',{className:'ti ti-check',style:{color:'var(--green)',fontSize:18}}),
+          v.status==='overdue'&&React.createElement('i',{className:'ti ti-alert-circle',style:{color:'var(--red)',fontSize:18}})
+        ))
+      ),
+      React.createElement('div',{style:{height:16}})
+    )
+  );
+}
+
+/* MEMORIES */
+function MemoriesScreen({refresh}){
+  const {showToast,showModal}=useApp();
+  const [mems,setMems]=useState([]);
+  const [caps,setCaps]=useState([]);
+  const [year,setYear]=useState('');
+  const years=['','2025','2024','2023','2022','2021','2019'];
+
+  useEffect(()=>{api('/memories'+(year?`?year=${year}`:'')).then(r=>{if(r.ok)setMems(r.data)});},[year,refresh]);
+  useEffect(()=>{api('/capsules').then(r=>{if(r.ok)setCaps(r.data)});},[refresh]);
+
+  async function openCap(c){
+    if(!c.can_open)return showToast(`${c.open_date} da ochiladi 🔒`);
+    const r=await api(`/capsules/${c.id}/open`,{method:'PATCH'});
+    if(r.ok){setCaps(cs=>cs.map(x=>x.id===c.id?r.data:x));showToast('Kapsula ochildi! 🎉','success');}
+  }
+
+  return React.createElement('div',{className:'screen'},
+    React.createElement('div',{className:'mem-hero'},
+      React.createElement('div',{className:'page-h1'},'Xotiralar arxivi'),
+      React.createElement('div',{className:'page-sub'},`${mems.length} ta xotira · 20 yillik tarix`)
+    ),
+    React.createElement('div',{className:'scrollable'},
+      React.createElement('div',{className:'chip-row'},
+        years.map(y=>React.createElement('div',{key:y,className:`chip${year===y?' active':''}`,onClick:()=>setYear(y)},y||'Hammasi'))
+      ),
+      React.createElement('div',{className:'photo-grid'},
+        mems.map(m=>React.createElement('div',{key:m.id,className:'photo-cell',style:{background:m.color},title:m.title||''},m.emoji||'📷')),
+        React.createElement('div',{className:'photo-cell',style:{background:'var(--bg3)'},onClick:()=>showModal('memory')},
+          React.createElement('i',{className:'ti ti-plus',style:{fontSize:26,color:'var(--text3)'}})
+        )
+      ),
+      React.createElement('div',{className:'section-label'},'Vaqt kapsulalari'),
+      React.createElement('div',{className:'cap-list'},
+        caps.map(c=>React.createElement('div',{key:c.id,className:'cap-item',onClick:()=>openCap(c)},
+          React.createElement('div',{className:'cap-icon'},c.can_open?'📬':'⏳'),
+          React.createElement('div',{className:'cap-info'},
+            React.createElement('div',{className:'cap-title'},c.title),
+            React.createElement('div',{className:c.can_open?'cap-open':'cap-date'},c.can_open?'Ochish vaqti keldi! →':`${c.open_date} · ${c.recipient}`)
+          ),
+          React.createElement('i',{className:`ti ${c.can_open?'ti-lock-open':'ti-lock'}`,style:{color:c.can_open?'var(--green)':'var(--text3)',fontSize:17}})
+        ))
+      ),
+      React.createElement('div',{style:{padding:'0 16px 20px'}},
+        React.createElement('button',{className:'btn btn-full',style:{background:'var(--purple)',color:'#fff'},onClick:()=>showModal('capsule')},
+          React.createElement('i',{className:'ti ti-clock',style:{fontSize:18}}),'Yangi vaqt kapsulasi')
+      )
+    )
+  );
+}
+
+/* RELATIONSHIP */
+function RelationshipScreen(){
+  const {showToast}=useApp();
+  const [data,setData]=useState(null);
+  const [h,setH]=useState(null);const [s,setS]=useState(null);
+  const [saving,setSaving]=useState(false);const [saved,setSaved]=useState(false);
+  useEffect(()=>{api('/warmth').then(r=>{if(r.ok)setData(r.data)});},[]);
+
+  async function submit(){
+    if(!h||!s)return showToast('Ikki savolga ham javob bering','error');
+    setSaving(true);
+    const r=await api('/warmth',{method:'POST',body:{happiness:h,supported:s}});
+    setSaving(false);
+    if(r.ok){setSaved(true);showToast(`Ball saqlandi: ${r.data.avg}/5`,'success');if(r.data.warning)setTimeout(()=>showToast(r.data.warning),1200);api('/warmth').then(r2=>{if(r2.ok)setData(r2.data)});}
+  }
+
+  const last7=(data?.logs||[]).slice(0,7).reverse();
+
+  return React.createElement('div',{className:'screen'},
+    React.createElement('div',{className:'rel-hero'},
+      React.createElement('div',{className:'page-h1'},'Munosabat'),
+      React.createElement('div',{className:'page-sub'},"Oila mustahkamligi kuzatuvi")
+    ),
+    React.createElement('div',{className:'scrollable'},
+      data&&React.createElement('div',{className:'score-row'},
+        React.createElement('div',{className:'score-box'},React.createElement('div',{className:'score-num',style:{color:'var(--rose)'}},data.avg_7_days),React.createElement('div',{className:'score-lbl'},"O'rtacha (7 kun)")),
+        React.createElement('div',{className:'score-box'},React.createElement('div',{className:'score-num',style:{color:'var(--blue)'}},data.streak_days),React.createElement('div',{className:'score-lbl'},'Ketma-ket kun'))
+      ),
+      last7.length>0&&React.createElement('div',{className:'bars-area'},
+        React.createElement('div',{className:'section-label',style:{padding:'14px 0 6px'}},"So'nggi kunlar"),
+        React.createElement('div',{className:'bars-chart'},
+          last7.map((log,i)=>{
+            const pct=Math.round((log.avg_score/5)*100);
+            const d=new Date(log.log_date);
+            const days=['Ya','Du','Se','Ch','Pa','Ju','Sh'];
+            return React.createElement('div',{key:i,className:'bar-col'},
+              React.createElement('div',{className:'bar-v'},log.avg_score.toFixed(1)),
+              React.createElement('div',{className:'bar-fill',style:{height:pct+'%',background:'var(--rose)',opacity:.6+pct/400,borderRadius:'4px 4px 0 0'}}),
+              React.createElement('div',{className:'bar-day'},days[d.getDay()])
+            );
+          })
+        )
+      ),
+      React.createElement('div',{className:'section-label'},'Muhim sanalar'),
+      React.createElement('div',{style:{padding:'0 16px'}},
+        React.createElement('div',{className:'card'},
+          React.createElement('div',{className:'card-row'},
+            React.createElement('div',{className:'icon-box',style:{background:'var(--rose-l)'}},React.createElement('i',{className:'ti ti-gift',style:{color:'var(--rose)',fontSize:22}})),
+            React.createElement('div',{className:'card-info'},React.createElement('div',{className:'card-title'},'Nikoh yubileyi — 12 kun qoldi'),React.createElement('div',{className:'card-sub'},'2019-yil 15-iyul · 6 yil birga')),
+            React.createElement('i',{className:'ti ti-bell',style:{color:'var(--amber)',fontSize:19}})
+          )
+        ),
+        React.createElement('div',{className:'card'},
+          React.createElement('div',{className:'card-row'},
+            React.createElement('div',{className:'icon-box',style:{background:'var(--rose-l)'}},React.createElement('i',{className:'ti ti-message-heart',style:{color:'var(--rose)',fontSize:22}})),
+            React.createElement('div',{className:'card-info'},React.createElement('div',{className:'card-title'},'Bugungi minnatdorchilik'),React.createElement('div',{className:'card-sub'},'Sherigingizga xabar yuboring')),
+            React.createElement('i',{className:'ti ti-send',style:{color:'var(--blue)',fontSize:19}})
+          )
+        )
+      ),
+      !saved&&React.createElement('div',{className:'scale-form'},
+        React.createElement('div',{className:'section-label',style:{padding:'14px 0 6px'}},'Bugungi ball'),
+        React.createElement('div',{className:'scale-q'},'Bugun qanchalik baxtli edingiz?'),
+        React.createElement('div',{className:'scale-btns'},[1,2,3,4,5].map(n=>React.createElement('div',{key:n,className:`scale-btn${h===n?' picked':''}`,onClick:()=>setH(n)},n))),
+        React.createElement('div',{className:'scale-q'},"Sherigingiz qo'llab-quvvatladimi?"),
+        React.createElement('div',{className:'scale-btns'},[1,2,3,4,5].map(n=>React.createElement('div',{key:n,className:`scale-btn${s===n?' picked':''}`,onClick:()=>setS(n)},n))),
+        React.createElement('button',{className:'btn btn-rose btn-full',onClick:submit,disabled:saving},saving?React.createElement('span',{className:'spinner'}):'Saqlash'),
+        React.createElement('div',{style:{height:14}})
+      ),
+      saved&&React.createElement('div',{style:{padding:'0 16px'}},
+        React.createElement('div',{className:'card',style:{textAlign:'center',padding:20}},
+          React.createElement('div',{style:{fontSize:32,marginBottom:8}},'💖'),
+          React.createElement('div',{style:{fontWeight:800,color:'var(--green)'}},"Bugungi ball saqlandi ✓"),
+          React.createElement('div',{style:{fontSize:12,color:'var(--text2)',marginTop:4}},"Ertaga yana so'raymiz")
+        )
+      ),
+      React.createElement('div',{style:{height:16}})
+    )
+  );
+}
+
+/* PROFILE */
+function ProfileScreen(){
+  const {logout}=useApp();
+  const [fam,setFam]=useState(null);
+  const [togs,setTogs]=useState({axbror:true,ssv:true,kundalik:true,mehnat:false});
+  useEffect(()=>{api('/family').then(r=>{if(r.ok)setFam(r.data)});},[]);
+
+  const ints=[
+    {k:'axbror',name:"AXBROR (Fuqarolik)",st:'Ulangan · Pasport',ic:'ti-building-bank',bg:'var(--blue-l)',c:'var(--blue)'},
+    {k:'ssv',name:"Sog'liqni Saqlash",st:'Ulangan · Emlash',ic:'ti-stethoscope',bg:'var(--green-l)',c:'var(--green)'},
+    {k:'kundalik',name:'Kundalik.com',st:'Ulangan · Baholar',ic:'ti-school',bg:'var(--amber-l)',c:'var(--amber)'},
+    {k:'mehnat',name:'Mehnat Vazirligi',st:'Ulanmagan',ic:'ti-briefcase',bg:'var(--purple-l)',c:'var(--purple)'},
+  ];
+
+  return React.createElement('div',{className:'screen'},
+    React.createElement('div',{className:'prof-hero'},
+      React.createElement('div',{className:'prof-av'},getInitials(fam?.family?.name||'MA')),
+      React.createElement('div',{className:'prof-name'},fam?.family?.name||'Oilangiz'),
+      React.createElement('div',{className:'prof-sub2'},(fam?.members?.length||0)+" ta a'zo · Toshkent")
+    ),
+    React.createElement('div',{className:'scrollable'},
+      React.createElement('div',{className:'section-label'},"Shaxsiy ma'lumotlar"),
+      React.createElement('div',{className:'menu-card'},
+        [{ic:'ti-user',bg:'var(--blue-l)',c:'var(--blue)',t:'Shaxsiy profil'},
+         {ic:'ti-users',bg:'var(--green-l)',c:'var(--green)',t:'Oilaviy shajara daraxti'},
+         {ic:'ti-id-badge',bg:'var(--amber-l)',c:'var(--amber)',t:'Hujjatlar arxivi'},
+         {ic:'ti-music',bg:'var(--purple-l)',c:'var(--purple)',t:'Alla va ertaklar'},
+        ].map(x=>React.createElement('div',{key:x.t,className:'menu-row'},
+          React.createElement('div',{className:'menu-icon',style:{background:x.bg}},React.createElement('i',{className:`ti ${x.ic}`,style:{color:x.c,fontSize:18}})),
+          React.createElement('div',{className:'menu-text'},x.t),
+          React.createElement('i',{className:'ti ti-chevron-right',style:{color:'var(--text3)',fontSize:15}})
+        ))
+      ),
+      React.createElement('div',{className:'section-label'},'Davlat integratsiyalari'),
+      React.createElement('div',{className:'menu-card'},
+        ints.map(x=>React.createElement('div',{key:x.k,className:'int-row'},
+          React.createElement('div',{className:'int-ic',style:{background:x.bg}},React.createElement('i',{className:`ti ${x.ic}`,style:{color:x.c,fontSize:17}})),
+          React.createElement('div',{style:{flex:1}},React.createElement('div',{className:'int-name'},x.name),React.createElement('div',{className:'int-st'},x.st)),
+          React.createElement('div',{className:`toggle${togs[x.k]?' on':''}`,onClick:()=>setTogs(t=>({...t,[x.k]:!t[x.k]}))})
+        ))
+      ),
+      React.createElement('div',{className:'section-label'},'Xavfsizlik'),
+      React.createElement('div',{className:'menu-card'},
+        [{ic:'ti-fingerprint',t:'Biometrik kirish',bdg:'Yoqilgan'},{ic:'ti-shield-lock',t:'End-to-end shifrlash',bdg:'Faol'},{ic:'ti-download',t:"Ma'lumotlarni eksport",bdg:null}]
+        .map(x=>React.createElement('div',{key:x.t,className:'menu-row'},
+          React.createElement('div',{className:'menu-icon',style:{background:'var(--blue-l)'}},React.createElement('i',{className:`ti ${x.ic}`,style:{color:'var(--blue)',fontSize:18}})),
+          React.createElement('div',{className:'menu-text'},x.t),
+          x.bdg?React.createElement('span',{style:{fontSize:11,fontWeight:700,padding:'3px 9px',borderRadius:20,background:'var(--green-l)',color:'var(--green)'}},x.bdg)
+               :React.createElement('i',{className:'ti ti-chevron-right',style:{color:'var(--text3)',fontSize:15}})
+        ))
+      ),
+      React.createElement('button',{style:{margin:'8px 16px 20px',width:'calc(100% - 32px)',padding:13,borderRadius:'var(--r2)',background:'var(--red-l)',color:'var(--red)',fontSize:14,fontWeight:700,border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8},onClick:logout},
+        React.createElement('i',{className:'ti ti-logout',style:{fontSize:18}}),'Chiqish'
+      )
+    )
+  );
+}
+
+/* MODALS */
+function AddMemberModal({onClose,onDone}){
+  const {showToast}=useApp();
+  const [nm,setNm]=useState('');const [bd,setBd]=useState('');const [gn,setGn]=useState('male');const [rl,setRl]=useState('child');const [ld,setLd]=useState(false);
+  async function go(){
+    if(!nm||!bd)return showToast("Ism va tug'ilgan sana majburiy",'error');
+    setLd(true);const r=await api('/family/members',{method:'POST',body:{name:nm,birth_date:bd,gender:gn,role:rl}});setLd(false);
+    if(!r.ok)return showToast(r.error,'error');
+    showToast(`${nm} oilaga qo'shildi ✓`,'success');onDone();onClose();
+  }
+  return React.createElement(Modal,{title:"Oila a'zosini qo'shish",onClose},
+    React.createElement('div',{className:'input-group'},React.createElement('label',null,'Ism va familiya'),React.createElement('input',{className:'input-field',placeholder:'Aziz Malikov',value:nm,onChange:e=>setNm(e.target.value)})),
+    React.createElement('div',{className:'input-group'},React.createElement('label',null,"Tug'ilgan sana"),React.createElement('input',{className:'input-field',type:'date',value:bd,onChange:e=>setBd(e.target.value)})),
+    React.createElement('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}},
+      React.createElement('div',{className:'input-group',style:{marginBottom:0}},React.createElement('label',null,'Jins'),React.createElement('select',{className:'input-field',value:gn,onChange:e=>setGn(e.target.value)},React.createElement('option',{value:'male'},'Erkak'),React.createElement('option',{value:'female'},'Ayol'))),
+      React.createElement('div',{className:'input-group',style:{marginBottom:0}},React.createElement('label',null,'Rol'),React.createElement('select',{className:'input-field',value:rl,onChange:e=>setRl(e.target.value)},React.createElement('option',{value:'child'},'Farzand'),React.createElement('option',{value:'parent'},'Ota/Ona'),React.createElement('option',{value:'grandparent'},'Bobo/Buvi')))
+    ),
+    React.createElement('div',{style:{height:14}}),
+    React.createElement('button',{className:'btn btn-primary btn-full',onClick:go,disabled:ld},ld?React.createElement('span',{className:'spinner'}):"Qo'shish")
+  );
+}
+
+function AddMemoryModal({onClose,onDone}){
+  const {showToast}=useApp();
+  const [tt,setTt]=useState('');const [ds,setDs]=useState('');const [dt,setDt]=useState(new Date().toISOString().slice(0,10));const [lc,setLc]=useState('');const [em,setEm]=useState('📷');const [ld,setLd]=useState(false);
+  const emojis=['📷','🎂','🏖️','🌸','👶','🎓','🏡','❤️','🌿','🎠','✈️','🎉'];
+  const colors={'📷':'#DBEAFE','🎂':'#DCF5E7','🏖️':'#FEF3DC','🌸':'#FDE7F0','👶':'#EDE9FE','🎓':'#FDECEA','🏡':'#E1F5EE','❤️':'#FEE2E2','🌿':'#ECFDF5','🎠':'#F5F3FF','✈️':'#E0F2FE','🎉':'#FEF9C3'};
+  async function go(){
+    if(!tt)return showToast('Sarlavha majburiy','error');
+    setLd(true);const r=await api('/memories',{method:'POST',body:{title:tt,description:ds,taken_at:dt,location:lc,emoji:em,color:colors[em]||'#DBEAFE',tags:[]}});setLd(false);
+    if(!r.ok)return showToast(r.error,'error');
+    showToast('Xotira saqlandi ✓','success');onDone();onClose();
+  }
+  return React.createElement(Modal,{title:"Xotira qo'shish",onClose},
+    React.createElement('div',{className:'input-group'},React.createElement('label',null,'Emoji'),React.createElement('div',{style:{display:'flex',gap:7,flexWrap:'wrap'}},emojis.map(e=>React.createElement('div',{key:e,onClick:()=>setEm(e),style:{fontSize:22,cursor:'pointer',padding:5,borderRadius:8,background:em===e?'var(--blue-l)':'var(--bg2)',border:em===e?'2px solid var(--blue)':'2px solid transparent'}},e)))),
+    React.createElement('div',{className:'input-group'},React.createElement('label',null,'Sarlavha'),React.createElement('input',{className:'input-field',placeholder:"Yozgi ta'til...",value:tt,onChange:e=>setTt(e.target.value)})),
+    React.createElement('div',{className:'input-group'},React.createElement('label',null,'Tavsif'),React.createElement('textarea',{className:'input-field',placeholder:'Bu kun juda ajoyib edi...',value:ds,onChange:e=>setDs(e.target.value),rows:3,style:{resize:'none'}})),
+    React.createElement('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}},
+      React.createElement('div',{className:'input-group',style:{marginBottom:0}},React.createElement('label',null,'Sana'),React.createElement('input',{className:'input-field',type:'date',value:dt,onChange:e=>setDt(e.target.value)})),
+      React.createElement('div',{className:'input-group',style:{marginBottom:0}},React.createElement('label',null,'Joylashuv'),React.createElement('input',{className:'input-field',placeholder:'Toshkent',value:lc,onChange:e=>setLc(e.target.value)}))
+    ),
+    React.createElement('div',{style:{height:14}}),
+    React.createElement('button',{className:'btn btn-full',style:{background:'var(--purple)',color:'#fff'},onClick:go,disabled:ld},ld?React.createElement('span',{className:'spinner'}):'Saqlash')
+  );
+}
+
+function AddCapsuleModal({onClose,onDone}){
+  const {showToast}=useApp();
+  const [tt,setTt]=useState('');const [mg,setMg]=useState('');const [rc,setRc]=useState('');const [od,setOd]=useState('');const [ld,setLd]=useState(false);
+  async function go(){
+    if(!tt||!mg||!rc||!od)return showToast("Barcha maydonlar majburiy",'error');
+    setLd(true);const r=await api('/capsules',{method:'POST',body:{title:tt,message:mg,recipient:rc,open_date:od}});setLd(false);
+    if(!r.ok)return showToast(r.error,'error');
+    showToast('Vaqt kapsulasi yaratildi ✓','success');onDone();onClose();
+  }
+  return React.createElement(Modal,{title:'Vaqt kapsulasi',onClose},
+    React.createElement('div',{className:'input-group'},React.createElement('label',null,'Sarlavha'),React.createElement('input',{className:'input-field',placeholder:"Azizga 18 yoshda...",value:tt,onChange:e=>setTt(e.target.value)})),
+    React.createElement('div',{className:'input-group'},React.createElement('label',null,'Xabar'),React.createElement('textarea',{className:'input-field',placeholder:"O'g'lim, bu xatni 18 yoshingda o'qiyapsanmi...",value:mg,onChange:e=>setMg(e.target.value),rows:5,style:{resize:'none'}})),
+    React.createElement('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}},
+      React.createElement('div',{className:'input-group',style:{marginBottom:0}},React.createElement('label',null,'Kimga'),React.createElement('input',{className:'input-field',placeholder:'Aziz',value:rc,onChange:e=>setRc(e.target.value)})),
+      React.createElement('div',{className:'input-group',style:{marginBottom:0}},React.createElement('label',null,'Ochilish sanasi'),React.createElement('input',{className:'input-field',type:'date',value:od,onChange:e=>setOd(e.target.value)}))
+    ),
+    React.createElement('div',{style:{height:14}}),
+    React.createElement('button',{className:'btn btn-full',style:{background:'var(--purple)',color:'#fff'},onClick:go,disabled:ld},ld?React.createElement('span',{className:'spinner'}):'Yaratish 🔒')
+  );
+}
+
+/* ROOT */
+function App(){
+  const [token,setToken]=useState(localStorage.getItem('meros_token'));
+  const [page,setPage]=useState('home');
+  const [toast,setToast]=useState(null);
+  const [modal,setModal]=useState(null);
+  const [refresh,setRefresh]=useState(0);
+
+  function showToast(msg,type=''){setToast({msg,type,key:Date.now()})}
+  function showModal(t){setModal(t)}
+  function closeModal(){setModal(null)}
+  function logout(){localStorage.removeItem('meros_token');setToken(null);setPage('home')}
+  function onDone(){setRefresh(r=>r+1)}
+
+  const ctx={showToast,showModal,logout,setToken};
+
+  if(!token)return React.createElement(Ctx.Provider,{value:ctx},
+    React.createElement(AuthScreen),
+    toast&&React.createElement(Toast,{key:toast.key,...toast,onDone:()=>setToast(null)})
+  );
+
+  const nav=[
+    {k:'home',ic:'ti-home',lbl:'Bosh'},
+    {k:'health',ic:'ti-heart-rate',lbl:"Sog'liq"},
+    {k:'memories',ic:'ti-photo',lbl:'Xotira'},
+    {k:'relationship',ic:'ti-heart',lbl:'Biz'},
+    {k:'profile',ic:'ti-user',lbl:'Profil'},
+  ];
+
+  const pages={
+    home:()=>React.createElement(HomeScreen,{key:'home'+refresh,onRefresh:refresh}),
+    health:()=>React.createElement(HealthScreen,{key:'health'+refresh}),
+    memories:()=>React.createElement(MemoriesScreen,{key:'mem'+refresh,refresh}),
+    relationship:()=>React.createElement(RelationshipScreen,{key:'rel'}),
+    profile:()=>React.createElement(ProfileScreen,{key:'prof'}),
+  };
+
+  const modals={
+    member:()=>React.createElement(AddMemberModal,{onClose:closeModal,onDone}),
+    memory:()=>React.createElement(AddMemoryModal,{onClose:closeModal,onDone}),
+    capsule:()=>React.createElement(AddCapsuleModal,{onClose:closeModal,onDone}),
+  };
+
+  return React.createElement(Ctx.Provider,{value:ctx},
+    React.createElement('div',{className:'app'},
+      React.createElement('div',{className:'status-bar'},
+        React.createElement('span',null,'9:41'),
+        React.createElement('span',{className:'brand'},'MEROS AI'),
+        React.createElement('span',{style:{display:'flex',gap:5,alignItems:'center'}},
+          React.createElement('i',{className:'ti ti-wifi',style:{fontSize:14}}),
+          React.createElement('i',{className:'ti ti-battery-2',style:{fontSize:14}})
+        )
+      ),
+      (pages[page]||pages.home)(),
+      React.createElement('nav',{className:'bottom-nav'},
+        nav.map(x=>React.createElement('button',{key:x.k,className:`nav-btn${page===x.k?' active':''}`,onClick:()=>setPage(x.k)},
+          React.createElement('i',{className:`ti ${x.ic}`}),React.createElement('span',null,x.lbl)
+        ))
+      )
+    ),
+    toast&&React.createElement(Toast,{key:toast.key,...toast,onDone:()=>setToast(null)}),
+    modal&&(modals[modal]?modals[modal]():null)
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+</script>
+</body>
+</html>
