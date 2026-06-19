@@ -8,9 +8,3 @@ services:
     envVars:
       - key: SECRET_KEY
         generateValue: true
-      - key: DATA_DIR
-        value: /data
-    disk:
-      name: meros-data
-      mountPath: /data
-      sizeGB: 1
