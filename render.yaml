@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: meros-ai
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --chdir backend app:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATA_DIR
+        value: /data
+    disk:
+      name: meros-data
+      mountPath: /data
+      sizeGB: 1

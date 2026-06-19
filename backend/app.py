@@ -3,7 +3,7 @@ MEROS AI — Backend API
 Flask + SQLite | JWT Auth | REST API
 """
 
-from flask import Flask, request, jsonify, g
+from flask import Flask, request, jsonify, g, send_from_directory
 from functools import wraps
 import sqlite3
 import hashlib
@@ -15,7 +15,9 @@ import jwt
 import os
 import re
 
-app = Flask(__name__)
+FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'frontend')
+
+app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'meros-ai-secret-2026-dev')
 DATA_DIR = os.environ.get('DATA_DIR', '/data' if os.path.exists('/data') else os.path.dirname(__file__))
 DB_PATH = os.path.join(DATA_DIR, 'meros.db')
@@ -743,6 +745,13 @@ def get_dashboard():
 def health_check():
     return ok({'service': 'MEROS AI Backend', 'version': '1.0.0', 'status': 'running'})
 
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve_frontend(path):
+    if path and os.path.exists(os.path.join(FRONTEND_DIR, path)):
+        return send_from_directory(FRONTEND_DIR, path)
+    return send_from_directory(FRONTEND_DIR, 'index.html')
+
 @app.after_request
 def add_cors(response):
     response.headers['Access-Control-Allow-Origin'] = '*'
@@ -755,7 +764,10 @@ def add_cors(response):
 def options(path):
     return '', 204
 
+# Initialize DB on import too (so gunicorn / WSGI servers also seed it)
+init_db()
+
 if __name__ == '__main__':
-    init_db()
-    print("✓ MEROS AI Backend ishga tushdi → http://localhost:5050")
-    app.run(host='0.0.0.0', port=5050, debug=True)
+    port = int(os.environ.get('PORT', 5050))
+    print(f"✓ MEROS AI Backend ishga tushdi → http://localhost:{port}")
+    app.run(host='0.0.0.0', port=port, debug=True)

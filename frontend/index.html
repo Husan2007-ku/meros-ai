@@ -220,7 +220,7 @@ const {useState,useEffect,useCallback,createContext,useContext}=React;
 const Ctx=createContext(null);
 function useApp(){return useContext(Ctx)}
 
-const API='http://localhost:5050/api';
+const API=window.location.origin+'/api';
 function api(path,opts={}){
   const tok=localStorage.getItem('meros_token');
   return fetch(API+path,{

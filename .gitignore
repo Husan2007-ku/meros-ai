@@ -1,0 +1,19 @@
+# Database
+*.db
+*.db-wal
+*.db-shm
+
+# IDE
+.idea/
+backend/.idea/
+frontend/.idea/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
