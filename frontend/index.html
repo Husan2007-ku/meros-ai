@@ -609,7 +609,7 @@ function RelationshipScreen(){
 
 /* PROFILE */
 function ProfileScreen(){
-  const {logout}=useApp();
+  const {logout,showToast,showModal}=useApp();
   const [fam,setFam]=useState(null);
   const [togs,setTogs]=useState({axbror:true,ssv:true,kundalik:true,mehnat:false});
   useEffect(()=>{api('/family').then(r=>{if(r.ok)setFam(r.data)});},[]);
@@ -620,6 +620,30 @@ function ProfileScreen(){
     {k:'kundalik',name:'Kundalik.com',st:'Ulangan · Baholar',ic:'ti-school',bg:'var(--amber-l)',c:'var(--amber)'},
     {k:'mehnat',name:'Mehnat Vazirligi',st:'Ulanmagan',ic:'ti-briefcase',bg:'var(--purple-l)',c:'var(--purple)'},
   ];
+
+  function toggleInt(k,name){
+    setTogs(t=>({...t,[k]:!t[k]}));
+    showToast(togs[k]?`${name} uzildi`:`${name} davlat ruxsati bilan ulanadi 🔒`,'');
+  }
+
+  async function exportData(){
+    if(!fam)return;
+    const payload={family:fam.family,members:fam.members,exported_at:new Date().toISOString(),app:'MEROS AI'};
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download='meros-ai-malumotlar.json';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("Ma'lumotlar yuklab olindi ✓",'success');
+  }
+
+  const menuActions={
+    'Shaxsiy profil':()=>showModal('profileDetail'),
+    'Oilaviy shajara daraxti':()=>showModal('familyTree'),
+    'Hujjatlar arxivi':()=>showModal('documents'),
+    'Alla va ertaklar':()=>showModal('lullaby'),
+  };
 
   return React.createElement('div',{className:'screen'},
     React.createElement('div',{className:'prof-hero'},
@@ -634,7 +658,7 @@ function ProfileScreen(){
          {ic:'ti-users',bg:'var(--green-l)',c:'var(--green)',t:'Oilaviy shajara daraxti'},
          {ic:'ti-id-badge',bg:'var(--amber-l)',c:'var(--amber)',t:'Hujjatlar arxivi'},
          {ic:'ti-music',bg:'var(--purple-l)',c:'var(--purple)',t:'Alla va ertaklar'},
-        ].map(x=>React.createElement('div',{key:x.t,className:'menu-row'},
+        ].map(x=>React.createElement('div',{key:x.t,className:'menu-row',onClick:menuActions[x.t]},
           React.createElement('div',{className:'menu-icon',style:{background:x.bg}},React.createElement('i',{className:`ti ${x.ic}`,style:{color:x.c,fontSize:18}})),
           React.createElement('div',{className:'menu-text'},x.t),
           React.createElement('i',{className:'ti ti-chevron-right',style:{color:'var(--text3)',fontSize:15}})
@@ -645,22 +669,134 @@ function ProfileScreen(){
         ints.map(x=>React.createElement('div',{key:x.k,className:'int-row'},
           React.createElement('div',{className:'int-ic',style:{background:x.bg}},React.createElement('i',{className:`ti ${x.ic}`,style:{color:x.c,fontSize:17}})),
           React.createElement('div',{style:{flex:1}},React.createElement('div',{className:'int-name'},x.name),React.createElement('div',{className:'int-st'},x.st)),
-          React.createElement('div',{className:`toggle${togs[x.k]?' on':''}`,onClick:()=>setTogs(t=>({...t,[x.k]:!t[x.k]}))})
+          React.createElement('div',{className:`toggle${togs[x.k]?' on':''}`,onClick:()=>toggleInt(x.k,x.name)})
         ))
       ),
       React.createElement('div',{className:'section-label'},'Xavfsizlik'),
       React.createElement('div',{className:'menu-card'},
-        [{ic:'ti-fingerprint',t:'Biometrik kirish',bdg:'Yoqilgan'},{ic:'ti-shield-lock',t:'End-to-end shifrlash',bdg:'Faol'},{ic:'ti-download',t:"Ma'lumotlarni eksport",bdg:null}]
-        .map(x=>React.createElement('div',{key:x.t,className:'menu-row'},
-          React.createElement('div',{className:'menu-icon',style:{background:'var(--blue-l)'}},React.createElement('i',{className:`ti ${x.ic}`,style:{color:'var(--blue)',fontSize:18}})),
-          React.createElement('div',{className:'menu-text'},x.t),
-          x.bdg?React.createElement('span',{style:{fontSize:11,fontWeight:700,padding:'3px 9px',borderRadius:20,background:'var(--green-l)',color:'var(--green)'}},x.bdg)
-               :React.createElement('i',{className:'ti ti-chevron-right',style:{color:'var(--text3)',fontSize:15}})
-        ))
+        React.createElement('div',{className:'menu-row',onClick:()=>showToast('Biometrik kirish yoqilgan — Face ID / Touch ID faol ✓','success')},
+          React.createElement('div',{className:'menu-icon',style:{background:'var(--blue-l)'}},React.createElement('i',{className:'ti ti-fingerprint',style:{color:'var(--blue)',fontSize:18}})),
+          React.createElement('div',{className:'menu-text'},'Biometrik kirish'),
+          React.createElement('span',{style:{fontSize:11,fontWeight:700,padding:'3px 9px',borderRadius:20,background:'var(--green-l)',color:'var(--green)'}},'Yoqilgan')
+        ),
+        React.createElement('div',{className:'menu-row',onClick:()=>showToast("Barcha ma'lumotlar AES-256 bilan shifrlangan 🔒",'success')},
+          React.createElement('div',{className:'menu-icon',style:{background:'var(--blue-l)'}},React.createElement('i',{className:'ti ti-shield-lock',style:{color:'var(--blue)',fontSize:18}})),
+          React.createElement('div',{className:'menu-text'},'End-to-end shifrlash'),
+          React.createElement('span',{style:{fontSize:11,fontWeight:700,padding:'3px 9px',borderRadius:20,background:'var(--green-l)',color:'var(--green)'}},'Faol')
+        ),
+        React.createElement('div',{className:'menu-row',onClick:exportData},
+          React.createElement('div',{className:'menu-icon',style:{background:'var(--blue-l)'}},React.createElement('i',{className:'ti ti-download',style:{color:'var(--blue)',fontSize:18}})),
+          React.createElement('div',{className:'menu-text'},"Ma'lumotlarni eksport"),
+          React.createElement('i',{className:'ti ti-chevron-right',style:{color:'var(--text3)',fontSize:15}})
+        )
       ),
       React.createElement('button',{style:{margin:'8px 16px 20px',width:'calc(100% - 32px)',padding:13,borderRadius:'var(--r2)',background:'var(--red-l)',color:'var(--red)',fontSize:14,fontWeight:700,border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8},onClick:logout},
         React.createElement('i',{className:'ti ti-logout',style:{fontSize:18}}),'Chiqish'
       )
+    )
+  );
+}
+
+/* PROFILE SUB-MODALS */
+function ProfileDetailModal({onClose,fam}){
+  return React.createElement(Modal,{title:'Shaxsiy profil',onClose},
+    React.createElement('div',{style:{textAlign:'center',marginBottom:18}},
+      React.createElement('div',{style:{width:64,height:64,borderRadius:'50%',background:'var(--blue-l)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,fontWeight:800,color:'var(--blue)',margin:'0 auto 10px'}},getInitials(fam?.family?.name||'MA')),
+      React.createElement('div',{style:{fontSize:17,fontWeight:800}},fam?.family?.name||'Oilangiz'),
+      React.createElement('div',{style:{fontSize:12,color:'var(--text2)',marginTop:2}},'Toshkent, O\'zbekiston')
+    ),
+    React.createElement('div',{className:'menu-card',style:{margin:0}},
+      [['Telefon','+998 90 123 45 67'],['Oila a\'zolari',(fam?.members?.length||0)+" kishi"],['A\'zo bo\'lgan sana',fam?.family?.created_at?.slice(0,10)||'2026-06-01'],['Tarif','Bepul (Freemium)']]
+      .map(([k,v])=>React.createElement('div',{key:k,className:'menu-row',style:{cursor:'default'}},
+        React.createElement('div',{className:'menu-text',style:{color:'var(--text2)',fontWeight:500}},k),
+        React.createElement('div',{style:{fontSize:13,fontWeight:700,color:'var(--text)'}},v)
+      ))
+    )
+  );
+}
+
+function FamilyTreeModal({onClose,fam}){
+  const members=fam?.members||[];
+  const parents=members.filter(m=>m.role==='parent');
+  const children=members.filter(m=>m.role==='child');
+  return React.createElement(Modal,{title:'Oilaviy shajara daraxti',onClose},
+    React.createElement('div',{style:{textAlign:'center',padding:'10px 0 20px'}},
+      React.createElement('div',{style:{display:'flex',justifyContent:'center',gap:16,marginBottom:24}},
+        parents.map((p,i)=>React.createElement('div',{key:p.id,style:{textAlign:'center'}},
+          React.createElement('div',{style:{width:52,height:52,borderRadius:'50%',background:i===0?'#1A78C2':'#C2185B',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:800,fontSize:15,margin:'0 auto 6px'}},getInitials(p.name)),
+          React.createElement('div',{style:{fontSize:12,fontWeight:700}},p.name.split(' ')[0])
+        ))
+      ),
+      React.createElement('div',{style:{width:2,height:24,background:'var(--border2)',margin:'0 auto'}}),
+      React.createElement('div',{style:{display:'flex',justifyContent:'center',gap:14,marginTop:8,flexWrap:'wrap'}},
+        children.map((c,i)=>React.createElement('div',{key:c.id,style:{textAlign:'center'}},
+          React.createElement('div',{style:{width:44,height:44,borderRadius:'50%',background:['#2D7A4F','#7B2D8B','#D97706'][i%3],display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:800,fontSize:13,margin:'0 auto 6px'}},getInitials(c.name)),
+          React.createElement('div',{style:{fontSize:11,fontWeight:700}},c.name.split(' ')[0])
+        )),
+        React.createElement('div',{style:{textAlign:'center'}},
+          React.createElement('div',{style:{width:44,height:44,borderRadius:'50%',border:'2px dashed var(--border2)',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--text3)',margin:'0 auto 6px'}},React.createElement('i',{className:'ti ti-plus'})),
+          React.createElement('div',{style:{fontSize:11,color:'var(--text3)'}},"Yangi avlod")
+        )
+      )
+    ),
+    React.createElement('div',{style:{background:'var(--green-l)',borderRadius:'var(--r2)',padding:'12px 14px',fontSize:12,color:'var(--green)',textAlign:'center',fontWeight:600}},
+      "🌳 Farzandlaringiz 18 yoshga to'lganda o'z shajarasini boshlaydi — zanjir abadiy davom etadi"
+    )
+  );
+}
+
+function DocumentsModal({onClose}){
+  const {showToast}=useApp();
+  const docs=[
+    {name:'Nikoh guvohnomasi',date:'2019-07-15',ic:'ti-certificate',c:'var(--rose)'},
+    {name:'Azizning tug\'ilganlik haqida guvohnomasi',date:'2017-05-12',ic:'ti-file-certificate',c:'var(--blue)'},
+    {name:'Lolaning tug\'ilganlik haqida guvohnomasi',date:'2021-02-08',ic:'ti-file-certificate',c:'var(--blue)'},
+  ];
+  return React.createElement(Modal,{title:'Hujjatlar arxivi',onClose},
+    React.createElement('div',{className:'menu-card',style:{margin:'0 0 14px'}},
+      docs.map(d=>React.createElement('div',{key:d.name,className:'menu-row',onClick:()=>showToast(d.name+' ko\'rilmoqda...','')},
+        React.createElement('div',{className:'menu-icon',style:{background:'var(--blue-l)'}},React.createElement('i',{className:`ti ${d.ic}`,style:{color:d.c,fontSize:18}})),
+        React.createElement('div',{style:{flex:1}},
+          React.createElement('div',{className:'menu-text'},d.name),
+          React.createElement('div',{style:{fontSize:11,color:'var(--text3)',marginTop:1}},d.date+' · AXBROR orqali')
+        ),
+        React.createElement('i',{className:'ti ti-chevron-right',style:{color:'var(--text3)',fontSize:15}})
+      ))
+    ),
+    React.createElement('button',{className:'btn btn-primary btn-full',onClick:()=>showToast('AXBROR integratsiyasi orqali yangi hujjat avtomatik qo\'shiladi','success')},
+      React.createElement('i',{className:'ti ti-cloud-download',style:{fontSize:18}}),"AXBROR'dan yangilash"
+    )
+  );
+}
+
+function LullabyModal({onClose}){
+  const {showToast}=useApp();
+  const [playing,setPlaying]=useState(null);
+  const items=[
+    {t:"Lola uchun alla (ona ovozida)",sub:'Zulfiyaning ovozi · 2:14',ic:'🎵'},
+    {t:"Aziz uchun ertak: \"Botir va Yulduz\"",sub:'AI yaratgan · 4:32',ic:'📖'},
+  ];
+  function play(i){
+    setPlaying(i);
+    showToast('🎵 Ijro etilmoqda...','');
+    setTimeout(()=>setPlaying(null),2500);
+  }
+  return React.createElement(Modal,{title:'Alla va ertaklar',onClose},
+    React.createElement('div',{style:{fontSize:12,color:'var(--text2)',marginBottom:14,textAlign:'center'}},
+      "Onaning haqiqiy ovozida AI alla aytadi va shaxsiylashtirilgan ertaklar to'qiydi"
+    ),
+    React.createElement('div',{className:'menu-card',style:{margin:'0 0 14px'}},
+      items.map((x,i)=>React.createElement('div',{key:x.t,className:'menu-row',onClick:()=>play(i)},
+        React.createElement('div',{className:'menu-icon',style:{background:'var(--purple-l)',fontSize:18}},x.ic),
+        React.createElement('div',{style:{flex:1}},
+          React.createElement('div',{className:'menu-text'},x.t),
+          React.createElement('div',{style:{fontSize:11,color:'var(--text3)',marginTop:1}},x.sub)
+        ),
+        React.createElement('i',{className:`ti ${playing===i?'ti-player-pause-filled':'ti-player-play-filled'}`,style:{color:'var(--purple)',fontSize:20}})
+      ))
+    ),
+    React.createElement('button',{className:'btn btn-full',style:{background:'var(--purple)',color:'#fff'},onClick:()=>showToast("Ona ovozi yozib olinmoqda... (1-3 daqiqa namuna kifoya)",'')},
+      React.createElement('i',{className:'ti ti-microphone',style:{fontSize:18}}),'Yangi ovoz yozish'
     )
   );
 }
@@ -739,9 +875,15 @@ function App(){
   const [toast,setToast]=useState(null);
   const [modal,setModal]=useState(null);
   const [refresh,setRefresh]=useState(0);
+  const [famCache,setFamCache]=useState(null);
 
   function showToast(msg,type=''){setToast({msg,type,key:Date.now()})}
-  function showModal(t){setModal(t)}
+  function showModal(t){
+    if(['profileDetail','familyTree','documents'].includes(t)&&!famCache){
+      api('/family').then(r=>{if(r.ok)setFamCache(r.data)});
+    }
+    setModal(t);
+  }
   function closeModal(){setModal(null)}
   function logout(){localStorage.removeItem('meros_token');setToken(null);setPage('home')}
   function onDone(){setRefresh(r=>r+1)}
@@ -773,6 +915,10 @@ function App(){
     member:()=>React.createElement(AddMemberModal,{onClose:closeModal,onDone}),
     memory:()=>React.createElement(AddMemoryModal,{onClose:closeModal,onDone}),
     capsule:()=>React.createElement(AddCapsuleModal,{onClose:closeModal,onDone}),
+    profileDetail:()=>React.createElement(ProfileDetailModal,{onClose:closeModal,fam:famCache}),
+    familyTree:()=>React.createElement(FamilyTreeModal,{onClose:closeModal,fam:famCache}),
+    documents:()=>React.createElement(DocumentsModal,{onClose:closeModal}),
+    lullaby:()=>React.createElement(LullabyModal,{onClose:closeModal}),
   };
 
   return React.createElement(Ctx.Provider,{value:ctx},
