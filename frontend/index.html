@@ -216,7 +216,7 @@ input,textarea,select{font-family:inherit;font-size:inherit}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script>
-const {useState,useEffect,useCallback,createContext,useContext}=React;
+const {useState,useEffect,useCallback,useRef,createContext,useContext}=React;
 const Ctx=createContext(null);
 function useApp(){return useContext(Ctx)}
 
@@ -481,6 +481,7 @@ function MemoriesScreen({refresh}){
   const [mems,setMems]=useState([]);
   const [caps,setCaps]=useState([]);
   const [year,setYear]=useState('');
+  const [viewMem,setViewMem]=useState(null);
   const years=['','2025','2024','2023','2022','2021','2019'];
 
   useEffect(()=>{api('/memories'+(year?`?year=${year}`:'')).then(r=>{if(r.ok)setMems(r.data)});},[year,refresh]);
@@ -502,7 +503,11 @@ function MemoriesScreen({refresh}){
         years.map(y=>React.createElement('div',{key:y,className:`chip${year===y?' active':''}`,onClick:()=>setYear(y)},y||'Hammasi'))
       ),
       React.createElement('div',{className:'photo-grid'},
-        mems.map(m=>React.createElement('div',{key:m.id,className:'photo-cell',style:{background:m.color},title:m.title||''},m.emoji||'📷')),
+        mems.map(m=>React.createElement('div',{key:m.id,className:'photo-cell',style:{background:m.media_url?'#000':m.color},title:m.title||'',onClick:()=>setViewMem(m)},
+          m.media_url
+            ?React.createElement('img',{src:m.media_url,style:{width:'100%',height:'100%',objectFit:'cover'},alt:m.title||''})
+            :(m.emoji||'📷')
+        )),
         React.createElement('div',{className:'photo-cell',style:{background:'var(--bg3)'},onClick:()=>showModal('memory')},
           React.createElement('i',{className:'ti ti-plus',style:{fontSize:26,color:'var(--text3)'}})
         )
@@ -522,7 +527,8 @@ function MemoriesScreen({refresh}){
         React.createElement('button',{className:'btn btn-full',style:{background:'var(--purple)',color:'#fff'},onClick:()=>showModal('capsule')},
           React.createElement('i',{className:'ti ti-clock',style:{fontSize:18}}),'Yangi vaqt kapsulasi')
       )
-    )
+    ),
+    viewMem&&React.createElement(MemoryViewModal,{onClose:()=>setViewMem(null),memory:viewMem})
   );
 }
 
@@ -823,19 +829,79 @@ function AddMemberModal({onClose,onDone}){
   );
 }
 
+function resizeImage(file, maxDim=900, quality=0.75){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        let {width,height}=img;
+        if(width>height&&width>maxDim){height=height*maxDim/width;width=maxDim;}
+        else if(height>maxDim){width=width*maxDim/height;height=maxDim;}
+        const canvas=document.createElement('canvas');
+        canvas.width=width;canvas.height=height;
+        canvas.getContext('2d').drawImage(img,0,0,width,height);
+        resolve(canvas.toDataURL('image/jpeg',quality));
+      };
+      img.onerror=reject;
+      img.src=e.target.result;
+    };
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 function AddMemoryModal({onClose,onDone}){
   const {showToast}=useApp();
   const [tt,setTt]=useState('');const [ds,setDs]=useState('');const [dt,setDt]=useState(new Date().toISOString().slice(0,10));const [lc,setLc]=useState('');const [em,setEm]=useState('📷');const [ld,setLd]=useState(false);
+  const [photo,setPhoto]=useState(null);
+  const [resizing,setResizing]=useState(false);
+  const fileRef=useRef(null);
   const emojis=['📷','🎂','🏖️','🌸','👶','🎓','🏡','❤️','🌿','🎠','✈️','🎉'];
   const colors={'📷':'#DBEAFE','🎂':'#DCF5E7','🏖️':'#FEF3DC','🌸':'#FDE7F0','👶':'#EDE9FE','🎓':'#FDECEA','🏡':'#E1F5EE','❤️':'#FEE2E2','🌿':'#ECFDF5','🎠':'#F5F3FF','✈️':'#E0F2FE','🎉':'#FEF9C3'};
+
+  async function handleFile(e){
+    const file=e.target.files?.[0];
+    if(!file)return;
+    if(!file.type.startsWith('image/'))return showToast('Faqat rasm fayllari qabul qilinadi','error');
+    setResizing(true);
+    try{
+      const dataUrl=await resizeImage(file);
+      setPhoto(dataUrl);
+    }catch(err){
+      showToast('Rasmni yuklashda xatolik','error');
+    }
+    setResizing(false);
+  }
+
   async function go(){
     if(!tt)return showToast('Sarlavha majburiy','error');
-    setLd(true);const r=await api('/memories',{method:'POST',body:{title:tt,description:ds,taken_at:dt,location:lc,emoji:em,color:colors[em]||'#DBEAFE',tags:[]}});setLd(false);
+    setLd(true);
+    const r=await api('/memories',{method:'POST',body:{title:tt,description:ds,taken_at:dt,location:lc,emoji:em,color:colors[em]||'#DBEAFE',media_url:photo,media_type:photo?'photo':'photo',tags:[]}});
+    setLd(false);
     if(!r.ok)return showToast(r.error,'error');
     showToast('Xotira saqlandi ✓','success');onDone();onClose();
   }
+
   return React.createElement(Modal,{title:"Xotira qo'shish",onClose},
-    React.createElement('div',{className:'input-group'},React.createElement('label',null,'Emoji'),React.createElement('div',{style:{display:'flex',gap:7,flexWrap:'wrap'}},emojis.map(e=>React.createElement('div',{key:e,onClick:()=>setEm(e),style:{fontSize:22,cursor:'pointer',padding:5,borderRadius:8,background:em===e?'var(--blue-l)':'var(--bg2)',border:em===e?'2px solid var(--blue)':'2px solid transparent'}},e)))),
+    React.createElement('div',{className:'input-group'},
+      React.createElement('label',null,'Rasm (ixtiyoriy)'),
+      React.createElement('input',{ref:fileRef,type:'file',accept:'image/*',style:{display:'none'},onChange:handleFile}),
+      photo
+        ?React.createElement('div',{style:{position:'relative',borderRadius:'var(--r2)',overflow:'hidden',marginBottom:4}},
+            React.createElement('img',{src:photo,style:{width:'100%',maxHeight:180,objectFit:'cover',display:'block'}}),
+            React.createElement('button',{onClick:()=>setPhoto(null),style:{position:'absolute',top:6,right:6,width:28,height:28,borderRadius:'50%',background:'rgba(0,0,0,.55)',color:'#fff',border:'none',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}},React.createElement('i',{className:'ti ti-x'}))
+          )
+        :React.createElement('div',{onClick:()=>fileRef.current?.click(),style:{border:'1.5px dashed var(--border2)',borderRadius:'var(--r2)',padding:'22px 14px',textAlign:'center',cursor:'pointer',color:'var(--text3)'}},
+            resizing
+              ?React.createElement('span',{className:'spinner',style:{borderTopColor:'var(--blue)',borderColor:'rgba(26,86,160,.2)'}})
+              :React.createElement(React.Fragment,null,
+                  React.createElement('i',{className:'ti ti-camera-plus',style:{fontSize:26,display:'block',marginBottom:6}}),
+                  React.createElement('div',{style:{fontSize:13,fontWeight:600}},'Rasm tanlash uchun bosing')
+                )
+          )
+    ),
+    React.createElement('div',{className:'input-group'},React.createElement('label',null,'Emoji (rasm bo\'lmasa)'),React.createElement('div',{style:{display:'flex',gap:7,flexWrap:'wrap'}},emojis.map(e=>React.createElement('div',{key:e,onClick:()=>setEm(e),style:{fontSize:22,cursor:'pointer',padding:5,borderRadius:8,background:em===e?'var(--blue-l)':'var(--bg2)',border:em===e?'2px solid var(--blue)':'2px solid transparent'}},e)))),
     React.createElement('div',{className:'input-group'},React.createElement('label',null,'Sarlavha'),React.createElement('input',{className:'input-field',placeholder:"Yozgi ta'til...",value:tt,onChange:e=>setTt(e.target.value)})),
     React.createElement('div',{className:'input-group'},React.createElement('label',null,'Tavsif'),React.createElement('textarea',{className:'input-field',placeholder:'Bu kun juda ajoyib edi...',value:ds,onChange:e=>setDs(e.target.value),rows:3,style:{resize:'none'}})),
     React.createElement('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}},
@@ -843,7 +909,19 @@ function AddMemoryModal({onClose,onDone}){
       React.createElement('div',{className:'input-group',style:{marginBottom:0}},React.createElement('label',null,'Joylashuv'),React.createElement('input',{className:'input-field',placeholder:'Toshkent',value:lc,onChange:e=>setLc(e.target.value)}))
     ),
     React.createElement('div',{style:{height:14}}),
-    React.createElement('button',{className:'btn btn-full',style:{background:'var(--purple)',color:'#fff'},onClick:go,disabled:ld},ld?React.createElement('span',{className:'spinner'}):'Saqlash')
+    React.createElement('button',{className:'btn btn-full',style:{background:'var(--purple)',color:'#fff'},onClick:go,disabled:ld||resizing},ld?React.createElement('span',{className:'spinner'}):'Saqlash')
+  );
+}
+
+function MemoryViewModal({onClose,memory}){
+  if(!memory)return null;
+  return React.createElement(Modal,{title:memory.title||'Xotira',onClose},
+    memory.media_url&&React.createElement('img',{src:memory.media_url,style:{width:'100%',borderRadius:'var(--r2)',marginBottom:14,maxHeight:320,objectFit:'cover'}}),
+    memory.description&&React.createElement('p',{style:{fontSize:14,color:'var(--text2)',marginBottom:12,lineHeight:1.6}},memory.description),
+    React.createElement('div',{style:{display:'flex',gap:14,fontSize:12,color:'var(--text3)'}},
+      React.createElement('span',null,React.createElement('i',{className:'ti ti-calendar',style:{marginRight:4}}),memory.taken_at),
+      memory.location&&React.createElement('span',null,React.createElement('i',{className:'ti ti-map-pin',style:{marginRight:4}}),memory.location)
+    )
   );
 }
 
