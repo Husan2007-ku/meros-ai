@@ -223,6 +223,74 @@ const {useState,useEffect,useCallback,useRef,createContext,useContext}=React;
 const Ctx=createContext(null);
 function useApp(){return useContext(Ctx)}
 
+/* TRANSLATIONS */
+const LANGS=['uz','ru','en'];
+const LANG_LABELS={uz:"O'zbekcha",ru:'Русский',en:'English'};
+const I18N={
+  uz:{
+    nav_home:'Bosh',nav_health:"Sog'liq",nav_memories:'Xotira',nav_relationship:'Biz',nav_profile:'Profil',
+    greeting_morning:'Xayrli tong',greeting_day:'Xayrli kun',greeting_evening:'Xayrli kech',greeting_night:'Xayrli tun',
+    today_stats:"Bugungi ko'rsatkichlar",quick_actions:'Tezkor harakatlar',members:"A'zolar",memories:'Xotiralar',relationship:'Munosabat',
+    health_archive:"Sog'liq arxivi",health_sub:'Oila tibbiy tarixi va emlash jadvali',
+    memories_archive:'Xotiralar arxivi',memories_sub_suffix:'ta xotira · 20 yillik tarix',
+    relationship_title:'Munosabat',relationship_sub:'Oila mustahkamligi kuzatuvi',
+    profile_title:'Profil',logout:'Chiqish',
+    family_time:'Oila vaqti',oila_sub:"Farzandingiz siz bilan o'ynashni kutmoqda",
+    warmth_today:"Bugungi issiqlik o'lchovi",pick_score:'Ballni tanlang (1-5)',saved:'saqlandi',
+    login:'Kirish',register:"Ro'yxat",login_title:'Kirish',register_title:"Ro'yxatdan o'tish",
+    login_sub:'Oila hisobingizga kiring',register_sub:'Yangi oila profili yarating',
+    full_name:'Ism va familiya',phone:'Telefon',password:'Parol',demo_account:'Demo hisob',auto_fill:"Avtomatik to'ldirish",
+    vaccine_schedule:'Emlash jadvali',no_data:"Ma'lumot topilmadi",done:'Bajarildi',
+    child_360:'360° Bola Profili',child_360_sub:"Sog'liq + Maktab + Kayfiyat tahlili",
+    time_capsules:'Vaqt kapsulalari',new_capsule:'Yangi vaqt kapsulasi',
+    personal_info:"Shaxsiy ma'lumotlar",govt_integrations:'Davlat integratsiyalari',security:'Xavfsizlik',
+    language:'Til',select_language:'Tilni tanlang',
+  },
+  ru:{
+    nav_home:'Главная',nav_health:'Здоровье',nav_memories:'Память',nav_relationship:'Мы',nav_profile:'Профиль',
+    greeting_morning:'Доброе утро',greeting_day:'Добрый день',greeting_evening:'Добрый вечер',greeting_night:'Доброй ночи',
+    today_stats:'Сегодняшние показатели',quick_actions:'Быстрые действия',members:'Члены семьи',memories:'Воспоминания',relationship:'Отношения',
+    health_archive:'Архив здоровья',health_sub:'Медицинская история и график прививок',
+    memories_archive:'Архив воспоминаний',memories_sub_suffix:'воспоминаний · история на 20 лет',
+    relationship_title:'Отношения',relationship_sub:'Мониторинг крепости семьи',
+    profile_title:'Профиль',logout:'Выйти',
+    family_time:'Семейное время',oila_sub:'Ваш ребёнок ждёт, чтобы поиграть с вами',
+    warmth_today:'Сегодняшний термометр настроения',pick_score:'Выберите балл (1-5)',saved:'сохранено',
+    login:'Вход',register:'Регистрация',login_title:'Вход',register_title:'Регистрация',
+    login_sub:'Войдите в семейный аккаунт',register_sub:'Создайте новый семейный профиль',
+    full_name:'Имя и фамилия',phone:'Телефон',password:'Пароль',demo_account:'Демо аккаунт',auto_fill:'Автозаполнение',
+    vaccine_schedule:'График прививок',no_data:'Данные не найдены',done:'Выполнено',
+    child_360:'360° Профиль ребёнка',child_360_sub:'Здоровье + Школа + Анализ настроения',
+    time_capsules:'Капсулы времени',new_capsule:'Новая капсула времени',
+    personal_info:'Личные данные',govt_integrations:'Гос. интеграции',security:'Безопасность',
+    language:'Язык',select_language:'Выберите язык',
+  },
+  en:{
+    nav_home:'Home',nav_health:'Health',nav_memories:'Memories',nav_relationship:'Us',nav_profile:'Profile',
+    greeting_morning:'Good morning',greeting_day:'Good afternoon',greeting_evening:'Good evening',greeting_night:'Good night',
+    today_stats:"Today's stats",quick_actions:'Quick actions',members:'Members',memories:'Memories',relationship:'Relationship',
+    health_archive:'Health archive',health_sub:'Family medical history and vaccine schedule',
+    memories_archive:'Memory archive',memories_sub_suffix:'memories · 20-year history',
+    relationship_title:'Relationship',relationship_sub:'Family strength tracking',
+    profile_title:'Profile',logout:'Log out',
+    family_time:'Family time',oila_sub:'Your child is waiting to play with you',
+    warmth_today:"Today's warmth check",pick_score:'Pick a score (1-5)',saved:'saved',
+    login:'Login',register:'Sign up',login_title:'Login',register_title:'Sign up',
+    login_sub:'Sign in to your family account',register_sub:'Create a new family profile',
+    full_name:'Full name',phone:'Phone',password:'Password',demo_account:'Demo account',auto_fill:'Auto-fill',
+    vaccine_schedule:'Vaccine schedule',no_data:'No data found',done:'Done',
+    child_360:"360° Child Profile",child_360_sub:'Health + School + Mood analysis',
+    time_capsules:'Time capsules',new_capsule:'New time capsule',
+    personal_info:'Personal info',govt_integrations:'Government integrations',security:'Security',
+    language:'Language',select_language:'Select language',
+  }
+};
+function getLang(){return localStorage.getItem('meros_lang')||'uz'}
+function t(key){
+  const lang=getLang();
+  return (I18N[lang]&&I18N[lang][key])||I18N.uz[key]||key;
+}
+
 const API=window.location.origin+'/api';
 function api(path,opts={}){
   const tok=localStorage.getItem('meros_token');
@@ -235,10 +303,10 @@ function api(path,opts={}){
 function getInitials(s=''){return s.trim().split(' ').map(p=>p[0]||'').join('').slice(0,2).toUpperCase()||'MA'}
 function getGreeting(){
   const h=new Date().getHours();
-  if(h>=5&&h<11)return 'Xayrli tong';
-  if(h>=11&&h<17)return 'Xayrli kun';
-  if(h>=17&&h<22)return 'Xayrli kech';
-  return 'Xayrli tun';
+  if(h>=5&&h<11)return t('greeting_morning');
+  if(h>=11&&h<17)return t('greeting_day');
+  if(h>=17&&h<22)return t('greeting_evening');
+  return t('greeting_night');
 }
 
 /* TOAST */
@@ -258,7 +326,7 @@ function Modal({title,onClose,children}){
 
 /* AUTH */
 function AuthScreen(){
-  const {setToken,showToast}=useApp();
+  const {setToken,showToast,lang,changeLang}=useApp();
   const [tab,setTab]=useState('login');
   const [phone,setPhone]=useState('');
   const [name,setName]=useState('');
@@ -279,32 +347,38 @@ function AuthScreen(){
   }
 
   return React.createElement('div',{className:'auth-screen'},
+    React.createElement('div',{style:{position:'absolute',top:16,right:16,display:'flex',gap:6}},
+      LANGS.map(l=>React.createElement('button',{key:l,onClick:()=>changeLang(l),
+        style:{padding:'5px 10px',borderRadius:20,fontSize:12,fontWeight:700,border:'1.5px solid rgba(255,255,255,.4)',
+        background:lang===l?'#fff':'transparent',color:lang===l?'var(--blue)':'rgba(255,255,255,.85)',cursor:'pointer'}},
+        l.toUpperCase()))
+    ),
     React.createElement('div',{className:'auth-logo'},'MEROS AI'),
     React.createElement('div',{className:'auth-tagline'},'Oilaning Umrbod Raqamli Hamrohi'),
     React.createElement('div',{className:'auth-card'},
-      React.createElement('h2',null,tab==='login'?'Kirish':"Ro'yxatdan o'tish"),
-      React.createElement('div',{className:'sub'},tab==='login'?'Oila hisobingizga kiring':'Yangi oila profili yarating'),
+      React.createElement('h2',null,tab==='login'?t('login_title'):t('register_title')),
+      React.createElement('div',{className:'sub'},tab==='login'?t('login_sub'):t('register_sub')),
       React.createElement('div',{className:'auth-tabs'},
-        React.createElement('button',{className:`auth-tab${tab==='login'?' active':''}`,onClick:()=>setTab('login')},'Kirish'),
-        React.createElement('button',{className:`auth-tab${tab==='register'?' active':''}`,onClick:()=>setTab('register')},"Ro'yxat")
+        React.createElement('button',{className:`auth-tab${tab==='login'?' active':''}`,onClick:()=>setTab('login')},t('login')),
+        React.createElement('button',{className:`auth-tab${tab==='register'?' active':''}`,onClick:()=>setTab('register')},t('register'))
       ),
       React.createElement('form',{onSubmit:submit},
         tab==='register'&&React.createElement('div',{className:'input-group'},
-          React.createElement('label',null,'Ism va familiya'),
+          React.createElement('label',null,t('full_name')),
           React.createElement('input',{className:'input-field',placeholder:'Malikov Husan',value:name,onChange:e=>setName(e.target.value)})
         ),
         React.createElement('div',{className:'input-group'},
-          React.createElement('label',null,'Telefon'),
+          React.createElement('label',null,t('phone')),
           React.createElement('input',{className:'input-field',type:'tel',placeholder:'+998901234567',value:phone,onChange:e=>setPhone(e.target.value)})
         ),
         React.createElement('div',{className:'input-group'},
-          React.createElement('label',null,'Parol'),
+          React.createElement('label',null,t('password')),
           React.createElement('input',{className:'input-field',type:'password',placeholder:'••••••••',value:pw,onChange:e=>setPw(e.target.value)})
         ),
         React.createElement('button',{className:'btn btn-primary btn-full',type:'submit',disabled:loading},
-          loading?React.createElement('span',{className:'spinner'}):tab==='login'?'Kirish':"Ro'yxatdan o'tish"),
+          loading?React.createElement('span',{className:'spinner'}):tab==='login'?t('login'):t('register_title')),
         React.createElement('div',{className:'demo-box'},
-          React.createElement('strong',null,'Demo hisob:'),' +998901234567 / demo123',React.createElement('br'),
+          React.createElement('strong',null,t('demo_account')+':'),' +998901234567 / demo123',React.createElement('br'),
           React.createElement('span',{style:{textDecoration:'underline',cursor:'pointer'},onClick:()=>{setPhone('+998901234567');setPw('demo123')}},'Avtomatik to\'ldirish →')
         )
       )
@@ -356,7 +430,7 @@ function HomeScreen({onRefresh}){
         React.createElement('div',{className:'oila-banner'},
           React.createElement('i',{className:'ti ti-device-mobile-off'}),
           React.createElement('div',{style:{flex:1}},
-            React.createElement('div',{className:'oila-tit'},'Oila vaqti — 3 soat telefonda'),
+            React.createElement('div',{className:'oila-tit'},t('family_time')+' — 3h'),
             React.createElement('div',{className:'oila-sub'},"Farzandingiz siz bilan o'ynashni kutmoqda")
           ),
           React.createElement('button',{style:{color:'var(--text3)',fontSize:18,padding:4},onClick:()=>setOila(false)},React.createElement('i',{className:'ti ti-x'}))
@@ -371,7 +445,7 @@ function HomeScreen({onRefresh}){
           )
         )
       ),
-      React.createElement('div',{className:'section-label'},"Bugungi ko'rsatkichlar"),
+      React.createElement('div',{className:'section-label'},t('today_stats')),
       React.createElement('div',{style:{padding:'0 16px'}},
         React.createElement('div',{className:'card',style:{cursor:'default'}},
           React.createElement('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}},
@@ -386,7 +460,7 @@ function HomeScreen({onRefresh}){
           )
         )
       ),
-      React.createElement('div',{className:'section-label'},'Tezkor harakatlar'),
+      React.createElement('div',{className:'section-label'},t('quick_actions')),
       React.createElement('div',{style:{padding:'0 16px'}},
         [{title:"Sog'liq arxivi",sub:'Emlash, tahlil, o\'lchov',ic:'ti-heart-rate',c:'#2D7A4F',bg:'#E8F5EE',
           bdg:dash.overdue_vaccines>0?{t:dash.overdue_vaccines+' kechikkan',cls:'badge-amber'}:{t:'Yaxshi',cls:'badge-green'}},
@@ -402,9 +476,9 @@ function HomeScreen({onRefresh}){
       ),
       !saved&&!dash.warmth_logged_today&&React.createElement('div',{style:{padding:'0 16px'}},
         React.createElement('div',{className:'warmth-widget'},
-          React.createElement('div',{className:'warmth-head'},React.createElement('i',{className:'ti ti-thermometer'}),"Bugungi issiqlik o'lchovi"),
+          React.createElement('div',{className:'warmth-head'},React.createElement('i',{className:'ti ti-thermometer'}),t('warmth_today')),
           React.createElement('div',{className:'em-row'},emojis.map((em,i)=>React.createElement('div',{key:i,className:`em-btn${emPick===i+1?' picked':''}`,onClick:()=>pickEm(i+1)},em))),
-          React.createElement('div',{className:'warmth-hint'},emPick?msgs[emPick]:'Ballni tanlang (1-5)')
+          React.createElement('div',{className:'warmth-hint'},emPick?msgs[emPick]:t('pick_score'))
         )
       ),
       saved&&React.createElement('div',{style:{padding:'0 16px'}},
@@ -444,8 +518,8 @@ function HealthScreen(){
 
   return React.createElement('div',{className:'screen'},
     React.createElement('div',{className:'health-hero'},
-      React.createElement('div',{className:'page-h1'},"Sog'liq arxivi"),
-      React.createElement('div',{className:'page-sub'},'Oila tibbiy tarixi va emlash jadvali')
+      React.createElement('div',{className:'page-h1'},t('health_archive')),
+      React.createElement('div',{className:'page-sub'},t('health_sub'))
     ),
     React.createElement('div',{className:'scrollable'},
       React.createElement('div',{className:'tab-row'},
@@ -576,8 +650,8 @@ function MemoriesScreen({refresh}){
 
   return React.createElement('div',{className:'screen'},
     React.createElement('div',{className:'mem-hero'},
-      React.createElement('div',{className:'page-h1'},'Xotiralar arxivi'),
-      React.createElement('div',{className:'page-sub'},`${mems.length} ta xotira · 20 yillik tarix`)
+      React.createElement('div',{className:'page-h1'},t('memories_archive')),
+      React.createElement('div',{className:'page-sub'},`${mems.length} ${t('memories_sub_suffix')}`)
     ),
     React.createElement('div',{className:'scrollable'},
       React.createElement('div',{className:'chip-row'},
@@ -633,8 +707,8 @@ function RelationshipScreen(){
 
   return React.createElement('div',{className:'screen'},
     React.createElement('div',{className:'rel-hero'},
-      React.createElement('div',{className:'page-h1'},'Munosabat'),
-      React.createElement('div',{className:'page-sub'},"Oila mustahkamligi kuzatuvi")
+      React.createElement('div',{className:'page-h1'},t('relationship_title')),
+      React.createElement('div',{className:'page-sub'},t('relationship_sub'))
     ),
     React.createElement('div',{className:'scrollable'},
       data&&React.createElement('div',{className:'score-row'},
@@ -696,7 +770,7 @@ function RelationshipScreen(){
 
 /* PROFILE */
 function ProfileScreen(){
-  const {logout,showToast,showModal}=useApp();
+  const {logout,showToast,showModal,lang,changeLang}=useApp();
   const [fam,setFam]=useState(null);
   const [togs,setTogs]=useState({axbror:true,ssv:true,kundalik:true,mehnat:false});
   useEffect(()=>{api('/family').then(r=>{if(r.ok)setFam(r.data)});},[]);
@@ -777,8 +851,18 @@ function ProfileScreen(){
           React.createElement('i',{className:'ti ti-chevron-right',style:{color:'var(--text3)',fontSize:15}})
         )
       ),
+      React.createElement('div',{className:'section-label'},t('language')),
+      React.createElement('div',{className:'menu-card'},
+        LANGS.map(l=>React.createElement('div',{key:l,className:'menu-row',onClick:()=>changeLang(l)},
+          React.createElement('div',{className:'menu-icon',style:{background:'var(--blue-l)'}},React.createElement('i',{className:'ti ti-language',style:{color:'var(--blue)',fontSize:18}})),
+          React.createElement('div',{className:'menu-text'},LANG_LABELS[l]),
+          lang===l
+            ?React.createElement('i',{className:'ti ti-check',style:{color:'var(--green)',fontSize:18}})
+            :React.createElement('i',{className:'ti ti-chevron-right',style:{color:'var(--text3)',fontSize:15}})
+        ))
+      ),
       React.createElement('button',{style:{margin:'8px 16px 20px',width:'calc(100% - 32px)',padding:13,borderRadius:'var(--r2)',background:'var(--red-l)',color:'var(--red)',fontSize:14,fontWeight:700,border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8},onClick:logout},
-        React.createElement('i',{className:'ti ti-logout',style:{fontSize:18}}),'Chiqish'
+        React.createElement('i',{className:'ti ti-logout',style:{fontSize:18}}),t('logout')
       )
     )
   );
@@ -1035,19 +1119,21 @@ function App(){
   const [modal,setModal]=useState(null);
   const [refresh,setRefresh]=useState(0);
   const [famCache,setFamCache]=useState(null);
+  const [lang,setLang]=useState(getLang());
 
   function showToast(msg,type=''){setToast({msg,type,key:Date.now()})}
-  function showModal(t){
-    if(['profileDetail','familyTree','documents'].includes(t)&&!famCache){
+  function showModal(modalType){
+    if(['profileDetail','familyTree','documents'].includes(modalType)&&!famCache){
       api('/family').then(r=>{if(r.ok)setFamCache(r.data)});
     }
-    setModal(t);
+    setModal(modalType);
   }
   function closeModal(){setModal(null)}
   function logout(){localStorage.removeItem('meros_token');setToken(null);setPage('home')}
   function onDone(){setRefresh(r=>r+1)}
+  function changeLang(l){localStorage.setItem('meros_lang',l);setLang(l);setRefresh(r=>r+1)}
 
-  const ctx={showToast,showModal,logout,setToken};
+  const ctx={showToast,showModal,logout,setToken,lang,changeLang};
 
   if(!token)return React.createElement(Ctx.Provider,{value:ctx},
     React.createElement(AuthScreen),
@@ -1055,11 +1141,11 @@ function App(){
   );
 
   const nav=[
-    {k:'home',ic:'ti-home',lbl:'Bosh'},
-    {k:'health',ic:'ti-heart-rate',lbl:"Sog'liq"},
-    {k:'memories',ic:'ti-photo',lbl:'Xotira'},
-    {k:'relationship',ic:'ti-heart',lbl:'Biz'},
-    {k:'profile',ic:'ti-user',lbl:'Profil'},
+    {k:'home',ic:'ti-home',lbl:t('nav_home')},
+    {k:'health',ic:'ti-heart-rate',lbl:t('nav_health')},
+    {k:'memories',ic:'ti-photo',lbl:t('nav_memories')},
+    {k:'relationship',ic:'ti-heart',lbl:t('nav_relationship')},
+    {k:'profile',ic:'ti-user',lbl:t('nav_profile')},
   ];
 
   const pages={
