@@ -8,15 +8,16 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --blue:#1A56A0;--blue2:#3B82C4;--blue-l:#D6E8FA;--blue-xl:#EFF6FF;
+  --blue:#0F5C8A;--blue2:#1C7BA8;--blue-l:#D8ECF4;--blue-xl:#EFF8FC;
+  --gold:#C9962C;--gold-l:#FBF0D9;
   --green:#2D7A4F;--green-l:#E8F5EE;
   --rose:#C2185B;--rose-l:#FCE4EC;
   --amber:#B8750F;--amber-l:#FEF3DC;
   --red:#C0392B;--red-l:#FDECEA;
   --purple:#6D28D9;--purple-l:#EDE9FE;
   --text:#1A1A2E;--text2:#4A5568;--text3:#9AA3AF;
-  --bg:#FFFFFF;--bg2:#F7F9FC;--bg3:#EEF2F7;
-  --border:#E2E8F0;--border2:#CBD5E0;
+  --bg:#FFFFFF;--bg2:#F8F6F0;--bg3:#EEF2F7;
+  --border:#E5DFC8;--border2:#CBD5E0;
   --r:14px;--r2:10px;--r3:6px;
   --shadow:0 1px 3px rgba(0,0,0,.08);
   --shadow2:0 4px 16px rgba(0,0,0,.10);
@@ -30,8 +31,8 @@ input,textarea,select{font-family:inherit;font-size:inherit}
 .screen{flex:1;display:flex;flex-direction:column;overflow:hidden;padding-bottom:66px}
 .scrollable{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
 
-.status-bar{background:var(--blue);color:#fff;display:flex;justify-content:space-between;align-items:center;padding:10px 16px 8px;font-size:12px;font-weight:500;flex-shrink:0}
-.status-bar .brand{font-size:15px;font-weight:800;letter-spacing:.3px}
+.status-bar{background:var(--blue);color:#fff;display:flex;justify-content:center;align-items:center;padding:13px 16px;font-size:12px;font-weight:500;flex-shrink:0}
+.status-bar .brand{font-size:16px;font-weight:800;letter-spacing:.3px}
 
 .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:430px;max-width:100%;background:var(--bg);border-top:1px solid var(--border);display:flex;z-index:200;padding-bottom:env(safe-area-inset-bottom,0)}
 .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 4px 7px;color:var(--text3);font-size:10px;font-weight:600;transition:color .18s;background:none;border:none;cursor:pointer}
@@ -79,7 +80,8 @@ input,textarea,select{font-family:inherit;font-size:inherit}
 @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 
 /* AUTH */
-.auth-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;background:linear-gradient(160deg,#0D3B7A 0%,#1A56A0 55%,#2D7A9A 100%)}
+.auth-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;background:linear-gradient(160deg,#072B45 0%,#0F5C8A 55%,#1C7BA8 100%);position:relative}
+.auth-screen::before{content:'';position:absolute;top:0;left:0;right:0;height:5px;background:repeating-linear-gradient(45deg,var(--gold) 0 8px,transparent 8px 16px)}
 .auth-logo{font-size:44px;font-weight:900;color:#fff;letter-spacing:-1px;margin-bottom:4px;text-align:center}
 .auth-tagline{font-size:14px;color:rgba(255,255,255,.72);margin-bottom:36px;text-align:center}
 .auth-card{background:#fff;border-radius:20px;padding:24px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
@@ -91,7 +93,8 @@ input,textarea,select{font-family:inherit;font-size:inherit}
 .demo-box{background:var(--blue-xl);border:1px solid var(--blue-l);border-radius:var(--r2);padding:10px 12px;font-size:12px;color:var(--blue);margin-top:12px;line-height:1.6}
 
 /* HOME */
-.home-hero{background:linear-gradient(135deg,#0F3D8A,#1A56A0 60%,#2172C4);padding:20px 16px 24px;flex-shrink:0}
+.home-hero{background:linear-gradient(135deg,#0A4567,#0F5C8A 55%,#1C7BA8);padding:20px 16px 28px;flex-shrink:0;border-bottom:3px solid var(--gold);position:relative}
+.home-hero::after{content:'';position:absolute;bottom:-3px;left:0;right:0;height:3px;background:repeating-linear-gradient(45deg,var(--gold) 0 6px,transparent 6px 12px)}
 .home-greeting{font-size:13px;color:rgba(255,255,255,.75);margin-bottom:3px}
 .home-fam-name{font-size:22px;font-weight:800;color:#fff;margin-bottom:18px}
 .fam-strip{display:flex;gap:10px;align-items:center;overflow-x:auto;padding-bottom:2px}
@@ -121,7 +124,7 @@ input,textarea,select{font-family:inherit;font-size:inherit}
 .warmth-hint{font-size:12px;color:var(--text2);text-align:center}
 
 /* HEALTH */
-.health-hero{background:linear-gradient(135deg,#1A4D30,#2D7A4F);padding:20px 16px 24px;flex-shrink:0}
+.health-hero{background:linear-gradient(135deg,#1A4D30,#2D7A4F);padding:20px 16px 24px;flex-shrink:0;border-bottom:3px solid var(--gold)}
 .page-h1{font-size:22px;font-weight:800;color:#fff;margin-bottom:3px}
 .page-sub{font-size:13px;color:rgba(255,255,255,.75)}
 .tab-row{display:flex;gap:7px;padding:12px 16px 0;overflow-x:auto}
@@ -146,7 +149,7 @@ input,textarea,select{font-family:inherit;font-size:inherit}
 .vac-date.danger{color:var(--red);font-weight:700}
 
 /* MEMORIES */
-.mem-hero{background:linear-gradient(135deg,#3B0D8F,#6D28D9);padding:20px 16px 24px;flex-shrink:0}
+.mem-hero{background:linear-gradient(135deg,#3B0D8F,#6D28D9);padding:20px 16px 24px;flex-shrink:0;border-bottom:3px solid var(--gold)}
 .chip-row{display:flex;gap:7px;padding:12px 16px 0;overflow-x:auto}
 .chip-row::-webkit-scrollbar{display:none}
 .chip{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;background:var(--bg);border:1px solid var(--border);color:var(--text2);flex-shrink:0;transition:all .18s}
@@ -163,7 +166,7 @@ input,textarea,select{font-family:inherit;font-size:inherit}
 .cap-open{font-size:11px;color:var(--green);font-weight:800}
 
 /* RELATIONSHIP */
-.rel-hero{background:linear-gradient(135deg,#7A0933,#C2185B);padding:20px 16px 24px;flex-shrink:0}
+.rel-hero{background:linear-gradient(135deg,#7A0933,#C2185B);padding:20px 16px 24px;flex-shrink:0;border-bottom:3px solid var(--gold)}
 .score-row{display:flex;gap:8px;padding:12px 16px 0}
 .score-box{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:var(--r2);padding:12px;text-align:center}
 .score-num{font-size:28px;font-weight:900;line-height:1}
@@ -181,7 +184,7 @@ input,textarea,select{font-family:inherit;font-size:inherit}
 .scale-btn.picked{background:var(--rose);color:#fff;border-color:var(--rose)}
 
 /* PROFILE */
-.prof-hero{background:linear-gradient(135deg,#0A2E6A,#1A56A0);padding:24px 16px 32px;text-align:center;flex-shrink:0}
+.prof-hero{background:linear-gradient(135deg,#0A3A5A,#0F5C8A);padding:24px 16px 32px;text-align:center;flex-shrink:0;border-bottom:3px solid var(--gold)}
 .prof-av{width:76px;height:76px;border-radius:50%;background:rgba(255,255,255,.22);border:3px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#fff;margin:0 auto 12px}
 .prof-name{font-size:19px;font-weight:800;color:#fff;margin-bottom:3px}
 .prof-sub2{font-size:12px;color:rgba(255,255,255,.7)}
@@ -230,6 +233,13 @@ function api(path,opts={}){
 }
 
 function getInitials(s=''){return s.trim().split(' ').map(p=>p[0]||'').join('').slice(0,2).toUpperCase()||'MA'}
+function getGreeting(){
+  const h=new Date().getHours();
+  if(h>=5&&h<11)return 'Xayrli tong';
+  if(h>=11&&h<17)return 'Xayrli kun';
+  if(h>=17&&h<22)return 'Xayrli kech';
+  return 'Xayrli tun';
+}
 
 /* TOAST */
 function Toast({msg,type,onDone}){
@@ -328,7 +338,7 @@ function HomeScreen({onRefresh}){
 
   return React.createElement('div',{className:'screen'},
     React.createElement('div',{className:'home-hero'},
-      React.createElement('div',{className:'home-greeting'},'Xayrli kun,'),
+      React.createElement('div',{className:'home-greeting'},getGreeting()+','),
       React.createElement('div',{className:'home-fam-name'},(dash.family?.name||'Oilangiz')+' 👨‍👩‍👧‍👦'),
       React.createElement('div',{className:'fam-strip'},
         members.map((m,i)=>React.createElement('div',{key:m.id,className:'av-wrap'},
@@ -416,6 +426,7 @@ function HealthScreen(){
   const [sel,setSel]=useState(null);
   const [vaccines,setVaccines]=useState([]);
   const [records,setRecords]=useState([]);
+  const [showProfile,setShowProfile]=useState(false);
 
   useEffect(()=>{api('/family').then(r=>{if(r.ok){const ms=r.data.members||[];setMembers(ms);setSel(ms.find(m=>m.role==='child')||ms[0]||null);}});},[]);
   useEffect(()=>{
@@ -441,6 +452,20 @@ function HealthScreen(){
         members.map(m=>React.createElement('div',{key:m.id,className:`tab-item${sel?.id===m.id?' active':''}`,onClick:()=>setSel(m)},
           m.name.split(' ')[0]+(m.birth_date?' ('+((new Date().getFullYear()-parseInt(m.birth_date))||'')+'y)':'')))
       ),
+
+      sel&&sel.role==='child'&&React.createElement('div',{style:{padding:'12px 16px 0'}},
+        React.createElement('div',{className:'card',style:{cursor:'pointer',background:'linear-gradient(135deg,#1A4D30,#2D7A4F)',border:'none'},onClick:()=>setShowProfile(true)},
+          React.createElement('div',{className:'card-row'},
+            React.createElement('div',{className:'icon-box',style:{background:'rgba(255,255,255,.2)'}},React.createElement('i',{className:'ti ti-chart-radar',style:{color:'#fff',fontSize:22}})),
+            React.createElement('div',{className:'card-info'},
+              React.createElement('div',{className:'card-title',style:{color:'#fff'}},'360° Bola Profili'),
+              React.createElement('div',{className:'card-sub',style:{color:'rgba(255,255,255,.8)'}},'Sog\'liq + Maktab + Kayfiyat tahlili')
+            ),
+            React.createElement('i',{className:'ti ti-chevron-right',style:{color:'#fff',fontSize:18}})
+          )
+        )
+      ),
+
       React.createElement('div',{className:'stats-grid'},
         (()=>{
           const bh=records.find(r=>r.title==="Bo'y");
@@ -471,6 +496,62 @@ function HealthScreen(){
         ))
       ),
       React.createElement('div',{style:{height:16}})
+    ),
+    showProfile&&React.createElement(Child360Modal,{onClose:()=>setShowProfile(false),child:sel,vaccines,records})
+  );
+}
+
+function Child360Modal({onClose,child,vaccines,records}){
+  const {showToast}=useApp();
+  const doneVac=vaccines.filter(v=>v.status==='done').length;
+  const totalVac=vaccines.length;
+  const bh=records.find(r=>r.title==="Bo'y");
+  const wt=records.find(r=>r.title==='Vazn');
+  const age=child?.birth_date?(new Date().getFullYear()-parseInt(child.birth_date)):null;
+
+  function requestIntegration(name){
+    showToast(`${name} integratsiyasi davlat ruxsati bilan ishga tushadi 🔒`,'');
+  }
+
+  return React.createElement(Modal,{title:`${child?.name||''} — 360° Profil`,onClose},
+    React.createElement('div',{style:{textAlign:'center',marginBottom:18}},
+      React.createElement('div',{style:{width:64,height:64,borderRadius:'50%',background:'var(--green-l)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,fontWeight:800,color:'var(--green)',margin:'0 auto 10px'}},getInitials(child?.name||'')),
+      React.createElement('div',{style:{fontSize:17,fontWeight:800}},child?.name),
+      React.createElement('div',{style:{fontSize:12,color:'var(--text2)',marginTop:2}},age?age+' yosh':'')
+    ),
+
+    React.createElement('div',{className:'section-label',style:{padding:'0 0 8px'}},"✅ Sog'liq — faol"),
+    React.createElement('div',{className:'menu-card',style:{margin:'0 0 16px'}},
+      React.createElement('div',{className:'menu-row',style:{cursor:'default'}},
+        React.createElement('div',{className:'menu-icon',style:{background:'var(--green-l)'}},React.createElement('i',{className:'ti ti-vaccine',style:{color:'var(--green)',fontSize:18}})),
+        React.createElement('div',{className:'menu-text'},'Emlash holati'),
+        React.createElement('div',{style:{fontSize:13,fontWeight:700,color:'var(--green)'}},`${doneVac}/${totalVac} bajarilgan`)
+      ),
+      (bh||wt)&&React.createElement('div',{className:'menu-row',style:{cursor:'default'}},
+        React.createElement('div',{className:'menu-icon',style:{background:'var(--green-l)'}},React.createElement('i',{className:'ti ti-ruler-2',style:{color:'var(--green)',fontSize:18}})),
+        React.createElement('div',{className:'menu-text'},"Fizik rivojlanish"),
+        React.createElement('div',{style:{fontSize:13,fontWeight:700,color:'var(--text)'}},`${bh?.value||'—'}${bh?.unit||''} · ${wt?.value||'—'}${wt?.unit||''}`)
+      )
+    ),
+
+    React.createElement('div',{className:'section-label',style:{padding:'0 0 8px'}},'🔒 Integratsiya kutilmoqda'),
+    React.createElement('div',{className:'menu-card',style:{margin:'0 0 14px'}},
+      [
+        {name:'Kundalik.com',sub:'Maktab baholari va davomad',ic:'ti-school'},
+        {name:'Kayfiyat AI tahlili',sub:'Uydagi kuzatuv + sog\'liq bog\'liqligi',ic:'ti-brain'},
+        {name:'Karyera yo\'nalishi',sub:'Qiziqish va moyillik tahlili',ic:'ti-compass'},
+      ].map(x=>React.createElement('div',{key:x.name,className:'menu-row',onClick:()=>requestIntegration(x.name)},
+        React.createElement('div',{className:'menu-icon',style:{background:'var(--bg3)'}},React.createElement('i',{className:`ti ${x.ic}`,style:{color:'var(--text3)',fontSize:18}})),
+        React.createElement('div',{style:{flex:1}},
+          React.createElement('div',{className:'menu-text',style:{color:'var(--text2)'}},x.name),
+          React.createElement('div',{style:{fontSize:11,color:'var(--text3)',marginTop:1}},x.sub)
+        ),
+        React.createElement('i',{className:'ti ti-lock',style:{color:'var(--text3)',fontSize:15}})
+      ))
+    ),
+
+    React.createElement('div',{style:{background:'var(--blue-xl)',border:'1px solid var(--blue-l)',borderRadius:'var(--r2)',padding:'12px 14px',fontSize:12,color:'var(--blue)',textAlign:'center',fontWeight:600,lineHeight:1.6}},
+      "📊 To'liq 360° tahlil — maktab, sog'liq va kayfiyatni birlashtirib AI orqali erta ogohlantirish — davlat integratsiyasi ishga tushgandan keyin faollashadi"
     )
   );
 }
@@ -1002,11 +1083,8 @@ function App(){
   return React.createElement(Ctx.Provider,{value:ctx},
     React.createElement('div',{className:'app'},
       React.createElement('div',{className:'status-bar'},
-        React.createElement('span',null,'9:41'),
-        React.createElement('span',{className:'brand'},'MEROS AI'),
-        React.createElement('span',{style:{display:'flex',gap:5,alignItems:'center'}},
-          React.createElement('i',{className:'ti ti-wifi',style:{fontSize:14}}),
-          React.createElement('i',{className:'ti ti-battery-2',style:{fontSize:14}})
+        React.createElement('span',{className:'brand'},
+          React.createElement('span',{style:{color:'var(--gold)'}},'❋'),' MEROS AI'
         )
       ),
       (pages[page]||pages.home)(),
