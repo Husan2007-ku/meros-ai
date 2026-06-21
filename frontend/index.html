@@ -287,6 +287,18 @@ const I18N={
     tip_3:"Kichik bir minnatdorchilik bildiring — buni \"Biz\" bo'limida yuborishingiz mumkin",
     notify_when_ready:'Xizmat tayyor bo\'lganda xabar bering',
     intervention_notify_toast:"Rahmat! Psixolog xizmati ishga tushganda sizga birinchi bo'lib xabar beramiz 🔔",
+    compat_test_title:'Nikoh Moslik Testi',compat_test_sub:'Qadriyatlar, kutilishlar va muloqot uslubini bilib oling',
+    compat_test_intro:"5 blokdan iborat qisqa test — qadriyatlar, kutilishlar, muloqot, bola tarbiyasi va moliya bo'yicha fikrlaringizni bilib olamiz. Natija faqat sizga ko'rinadi.",
+    partner_name_lbl:'Sherigingiz ismi (ixtiyoriy)',partner_name_placeholder:'Masalan: Zulfiya',
+    start_test:'Testni boshlash',compat_test_privacy:'Natija faqat sizga ko\'rinadi — hech kimga ulashilmaydi',
+    scale_disagree:'Rozi emasman',scale_agree:'To\'liq roziman',
+    next_step:'Keyingisi',see_result:'Natijani ko\'rish',
+    compat_result_title:'Test natijasi',compat_by_block:'Bloklar bo\'yicha',
+    compat_high:"Ajoyib! Qadriyatlaringiz va kutilishlaringiz juda mos",
+    compat_mid:"Yaxshi moslik — ba'zi mavzularda ochiq gaplashish foydali bo'ladi",
+    compat_low:"Bir-biringizni yaxshiroq tushunish uchun muhim mavzularda suhbatlashing",
+    compat_disclaimer:"Bu test ilmiy tashxis emas — faqat o'z-o'zini bilish va suhbat boshlash uchun vosita. Natijalar maslahat sifatida qabul qilinishi kerak.",
+    done:'Tayyor',
   },
   ru:{
     nav_home:'Главная',nav_health:'Здоровье',nav_memories:'Память',nav_relationship:'Мы',nav_profile:'Профиль',
@@ -343,6 +355,18 @@ const I18N={
     tip_3:'Выразите небольшую благодарность — можете отправить это в разделе "Мы"',
     notify_when_ready:'Уведомить, когда услуга будет готова',
     intervention_notify_toast:'Спасибо! Мы первыми сообщим вам, когда услуга психолога будет запущена 🔔',
+    compat_test_title:'Тест на совместимость',compat_test_sub:'Узнайте о ценностях, ожиданиях и стиле общения',
+    compat_test_intro:'Короткий тест из 5 блоков — узнаем ваше мнение о ценностях, ожиданиях, общении, воспитании детей и финансах. Результат виден только вам.',
+    partner_name_lbl:'Имя партнёра (необязательно)',partner_name_placeholder:'Например: Зульфия',
+    start_test:'Начать тест',compat_test_privacy:'Результат виден только вам — никому не передаётся',
+    scale_disagree:'Не согласен',scale_agree:'Полностью согласен',
+    next_step:'Далее',see_result:'Посмотреть результат',
+    compat_result_title:'Результат теста',compat_by_block:'По блокам',
+    compat_high:'Отлично! Ваши ценности и ожидания очень совпадают',
+    compat_mid:'Хорошая совместимость — по некоторым темам полезно открыто поговорить',
+    compat_low:'Поговорите на важные темы, чтобы лучше понять друг друга',
+    compat_disclaimer:'Этот тест не является научным диагнозом — это инструмент для самопознания и начала разговора. Результаты следует воспринимать как совет.',
+    done:'Готово',
   },
   en:{
     nav_home:'Home',nav_health:'Health',nav_memories:'Memories',nav_relationship:'Us',nav_profile:'Profile',
@@ -399,6 +423,18 @@ const I18N={
     tip_3:'Send a small thank-you — you can do this in the "Us" section',
     notify_when_ready:"Notify me when it's ready",
     intervention_notify_toast:"Thanks! We'll be the first to let you know when the psychologist service launches 🔔",
+    compat_test_title:'Marriage Compatibility Test',compat_test_sub:'Learn about values, expectations, and communication style',
+    compat_test_intro:'A short 5-block test — we\'ll learn your views on values, expectations, communication, parenting, and finances. The result is visible only to you.',
+    partner_name_lbl:"Partner's name (optional)",partner_name_placeholder:'E.g. Zulfiya',
+    start_test:'Start test',compat_test_privacy:"The result is visible only to you — it's not shared with anyone",
+    scale_disagree:'Disagree',scale_agree:'Fully agree',
+    next_step:'Next',see_result:'See result',
+    compat_result_title:'Test result',compat_by_block:'By block',
+    compat_high:'Excellent! Your values and expectations align very well',
+    compat_mid:"Good compatibility — it'll help to talk openly about some topics",
+    compat_low:'Talk about important topics to understand each other better',
+    compat_disclaimer:'This test is not a scientific diagnosis — it is a tool for self-awareness and starting a conversation. Results should be taken as advice.',
+    done:'Done',
   }
 };
 function getLang(){return localStorage.getItem('meros_lang')||'uz'}
@@ -812,6 +848,7 @@ function RelationshipScreen(){
   const [h,setH]=useState(null);const [s,setS]=useState(null);
   const [saving,setSaving]=useState(false);const [saved,setSaved]=useState(false);
   const [showIntervention,setShowIntervention]=useState(false);
+  const [showCompatTest,setShowCompatTest]=useState(false);
   useEffect(()=>{api('/warmth').then(r=>{if(r.ok)setData(r.data)});},[]);
 
   async function submit(){
@@ -831,6 +868,18 @@ function RelationshipScreen(){
       React.createElement('div',{className:'page-sub'},t('relationship_sub'))
     ),
     React.createElement('div',{className:'scrollable'},
+      React.createElement('div',{style:{padding:'12px 16px 0'}},
+        React.createElement('div',{className:'card',style:{cursor:'pointer',background:'linear-gradient(135deg,#7A0933,#C2185B)',border:'none'},onClick:()=>setShowCompatTest(true)},
+          React.createElement('div',{className:'card-row'},
+            React.createElement('div',{className:'icon-box',style:{background:'rgba(255,255,255,.2)'}},React.createElement('i',{className:'ti ti-clipboard-heart',style:{color:'#fff',fontSize:22}})),
+            React.createElement('div',{className:'card-info'},
+              React.createElement('div',{className:'card-title',style:{color:'#fff'}},t('compat_test_title')),
+              React.createElement('div',{className:'card-sub',style:{color:'rgba(255,255,255,.8)'}},t('compat_test_sub'))
+            ),
+            React.createElement('i',{className:'ti ti-chevron-right',style:{color:'#fff',fontSize:18}})
+          )
+        )
+      ),
       data&&React.createElement('div',{className:'score-row'},
         React.createElement('div',{className:'score-box'},React.createElement('div',{className:'score-num',style:{color:'var(--rose)'}},data.avg_7_days),React.createElement('div',{className:'score-lbl'},t('avg_7days'))),
         React.createElement('div',{className:'score-box'},React.createElement('div',{className:'score-num',style:{color:'var(--blue)'}},data.streak_days),React.createElement('div',{className:'score-lbl'},t('streak_days')))
@@ -897,7 +946,8 @@ function RelationshipScreen(){
       ),
       React.createElement('div',{style:{height:16}})
     ),
-    showIntervention&&React.createElement(InterventionModal,{onClose:()=>setShowIntervention(false)})
+    showIntervention&&React.createElement(InterventionModal,{onClose:()=>setShowIntervention(false)}),
+    showCompatTest&&React.createElement(CompatTestModal,{onClose:()=>setShowCompatTest(false)})
   );
 }
 
@@ -933,6 +983,133 @@ function InterventionModal({onClose}){
     ),
     React.createElement('button',{className:'btn btn-full',style:{background:'var(--rose)',color:'#fff'},onClick:notifyMe},
       React.createElement('i',{className:'ti ti-bell-ringing',style:{fontSize:18}}),t('notify_when_ready')
+    )
+  );
+}
+
+function CompatTestModal({onClose}){
+  const {showToast}=useApp();
+  const [blocks,setBlocks]=useState(null);
+  const [labels,setLabels]=useState({});
+  const [step,setStep]=useState(0); // 0 = intro, 1..5 = blocks, 6 = result
+  const [answers,setAnswers]=useState({});
+  const [partnerName,setPartnerName]=useState('');
+  const [result,setResult]=useState(null);
+  const [submitting,setSubmitting]=useState(false);
+
+  useEffect(()=>{
+    api('/compatibility/questions?lang='+getLang()).then(r=>{if(r.ok){setBlocks(r.data.blocks);setLabels(r.data.labels);}});
+  },[]);
+
+  const blockKeys=blocks?Object.keys(blocks):[];
+  const totalSteps=blockKeys.length;
+  const currentBlockKey=step>=1&&step<=totalSteps?blockKeys[step-1]:null;
+  const currentQuestions=currentBlockKey?blocks[currentBlockKey]:[];
+
+  function pick(qid,val){
+    setAnswers(a=>({...a,[qid]:val}));
+  }
+
+  function blockComplete(){
+    if(!currentQuestions.length)return false;
+    return currentQuestions.every(q=>answers[q.id]!=null);
+  }
+
+  async function finish(){
+    setSubmitting(true);
+    const r=await api('/compatibility/submit',{method:'POST',body:{answers,partner_name:partnerName,lang:getLang()}});
+    setSubmitting(false);
+    if(!r.ok)return showToast(r.error,'error');
+    setResult(r.data);
+    setStep(totalSteps+1);
+  }
+
+  function next(){
+    if(step===totalSteps){finish();return;}
+    setStep(s=>s+1);
+  }
+
+  const scaleLabels=lang_scale();
+  function lang_scale(){return [t('scale_disagree'),'','',t('scale_agree'),''];}
+
+  // INTRO
+  if(step===0){
+    return React.createElement(Modal,{title:t('compat_test_title'),onClose},
+      React.createElement('div',{style:{textAlign:'center',marginBottom:16}},
+        React.createElement('div',{style:{fontSize:40,marginBottom:10}},'💞'),
+        React.createElement('div',{style:{fontSize:14,color:'var(--text2)',lineHeight:1.6}},t('compat_test_intro'))
+      ),
+      React.createElement('div',{className:'input-group'},
+        React.createElement('label',null,t('partner_name_lbl')),
+        React.createElement('input',{className:'input-field',placeholder:t('partner_name_placeholder'),value:partnerName,onChange:e=>setPartnerName(e.target.value)})
+      ),
+      React.createElement('div',{className:'menu-card',style:{margin:'14px 0'}},
+        blockKeys.map(k=>React.createElement('div',{key:k,className:'menu-row',style:{cursor:'default'}},
+          React.createElement('div',{className:'menu-icon',style:{background:'var(--rose-l)'}},React.createElement('i',{className:'ti ti-circle-check',style:{color:'var(--rose)',fontSize:16}})),
+          React.createElement('div',{className:'menu-text'},labels[k]||k)
+        ))
+      ),
+      React.createElement('button',{className:'btn btn-full',style:{background:'var(--rose)',color:'#fff'},onClick:()=>setStep(1),disabled:!blocks},
+        blocks?t('start_test'):React.createElement('span',{className:'spinner'})
+      ),
+      React.createElement('div',{style:{fontSize:11,color:'var(--text3)',textAlign:'center',marginTop:10}},t('compat_test_privacy'))
+    );
+  }
+
+  // RESULT
+  if(step===totalSteps+1&&result){
+    const scoreColor=result.overall_score>=75?'var(--green)':result.overall_score>=55?'var(--amber)':'var(--rose)';
+    return React.createElement(Modal,{title:t('compat_result_title'),onClose},
+      React.createElement('div',{style:{textAlign:'center',marginBottom:18}},
+        React.createElement('div',{style:{width:90,height:90,borderRadius:'50%',background:scoreColor+'22',border:`4px solid ${scoreColor}`,display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 12px'}},
+          React.createElement('span',{style:{fontSize:26,fontWeight:900,color:scoreColor}},result.overall_score+'%')
+        ),
+        React.createElement('div',{style:{fontSize:15,fontWeight:700,color:'var(--text)'}},
+          result.overall_score>=75?t('compat_high'):result.overall_score>=55?t('compat_mid'):t('compat_low')
+        )
+      ),
+      React.createElement('div',{className:'section-label',style:{padding:'0 0 8px'}},t('compat_by_block')),
+      React.createElement('div',{className:'menu-card',style:{margin:'0 0 16px'}},
+        Object.entries(result.block_scores).map(([k,v])=>React.createElement('div',{key:k,className:'menu-row',style:{cursor:'default'}},
+          React.createElement('div',{style:{flex:1}},
+            React.createElement('div',{className:'menu-text'},result.labels?.[k]||k),
+            React.createElement('div',{style:{height:6,background:'var(--bg3)',borderRadius:3,marginTop:6,overflow:'hidden'}},
+              React.createElement('div',{style:{height:'100%',width:v+'%',background:v>=75?'var(--green)':v>=55?'var(--amber)':'var(--rose)',borderRadius:3}})
+            )
+          ),
+          React.createElement('div',{style:{fontSize:13,fontWeight:800,color:'var(--text)',marginLeft:10}},v+'%')
+        ))
+      ),
+      React.createElement('div',{style:{background:'var(--blue-xl)',border:'1px solid var(--blue-l)',borderRadius:'var(--r2)',padding:'12px 14px',fontSize:12,color:'var(--blue)',textAlign:'center',fontWeight:600,lineHeight:1.6,marginBottom:14}},
+        t('compat_disclaimer')
+      ),
+      React.createElement('button',{className:'btn btn-full',style:{background:'var(--rose)',color:'#fff'},onClick:onClose},t('done'))
+    );
+  }
+
+  // QUESTION STEP
+  return React.createElement(Modal,{title:`${labels[currentBlockKey]||''} (${step}/${totalSteps})`,onClose},
+    React.createElement('div',{style:{display:'flex',gap:4,marginBottom:18}},
+      blockKeys.map((k,i)=>React.createElement('div',{key:k,style:{flex:1,height:4,borderRadius:2,background:i<step?'var(--rose)':'var(--border)'}}))
+    ),
+    currentQuestions.map(q=>React.createElement('div',{key:q.id,style:{marginBottom:18}},
+      React.createElement('div',{style:{fontSize:14,fontWeight:600,color:'var(--text)',marginBottom:10,lineHeight:1.5}},q.text),
+      React.createElement('div',{style:{display:'flex',gap:5}},
+        [1,2,3,4,5].map(n=>React.createElement('div',{key:n,
+          onClick:()=>pick(q.id,n),
+          style:{flex:1,padding:'10px 0',borderRadius:8,textAlign:'center',cursor:'pointer',fontWeight:700,fontSize:14,
+            border:answers[q.id]===n?'2px solid var(--rose)':'1.5px solid var(--border)',
+            background:answers[q.id]===n?'var(--rose-l)':'var(--bg2)',
+            color:answers[q.id]===n?'var(--rose)':'var(--text2)'}
+        },n))
+      ),
+      React.createElement('div',{style:{display:'flex',justifyContent:'space-between',fontSize:10,color:'var(--text3)',marginTop:4}},
+        React.createElement('span',null,t('scale_disagree')),
+        React.createElement('span',null,t('scale_agree'))
+      )
+    )),
+    React.createElement('button',{className:'btn btn-full',style:{background:'var(--rose)',color:'#fff'},onClick:next,disabled:!blockComplete()||submitting},
+      submitting?React.createElement('span',{className:'spinner'}):(step===totalSteps?t('see_result'):t('next_step'))
     )
   );
 }

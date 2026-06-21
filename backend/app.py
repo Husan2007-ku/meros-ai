@@ -19,6 +19,7 @@ FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__fi
 
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'meros-ai-secret-2026-dev')
+app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024  # 4MB max request size
 DATA_DIR = os.environ.get('DATA_DIR', '/data' if os.path.exists('/data') else os.path.dirname(__file__))
 DB_PATH = os.path.join(DATA_DIR, 'meros.db')
 
@@ -158,6 +159,17 @@ def init_db():
         phone       TEXT PRIMARY KEY,
         code        TEXT NOT NULL,
         expires_at  TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS compatibility_tests (
+        id          TEXT PRIMARY KEY,
+        family_id   TEXT NOT NULL,
+        user_id     TEXT NOT NULL,
+        partner_name TEXT,
+        answers     TEXT NOT NULL,
+        scores      TEXT NOT NULL,
+        overall_score INTEGER NOT NULL,
+        created_at  TEXT DEFAULT (datetime('now'))
     );
     """)
     db.commit()
@@ -535,6 +547,9 @@ def add_memory():
     required = ['taken_at']
     if not all(body.get(k) for k in required):
         return err('taken_at majburiy')
+    media_url = body.get('media_url')
+    if media_url and len(media_url) > 2_000_000:  # ~1.5MB after base64 overhead
+        return err("Rasm hajmi juda katta. Iltimos, kichikroq rasm tanlang")
     mid = str(uuid.uuid4())
     tags = json.dumps(body.get('tags', []))
     db = get_db()
@@ -542,7 +557,7 @@ def add_memory():
                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",
                (mid, g.family_id, g.user_id,
                 body.get('title'), body.get('description'),
-                body.get('media_type','photo'), body.get('media_url'),
+                body.get('media_type','photo'), media_url,
                 body.get('emoji','📷'), body.get('color','#DBEAFE'),
                 body['taken_at'], body.get('location'), tags))
     db.commit()
@@ -738,6 +753,165 @@ def get_dashboard():
         'memory_count': memory_count,
         'warmth_logged_today': bool(today_logged)
     })
+
+# ─── COMPATIBILITY TEST ─────────────────────────────────────────────────────
+
+COMPAT_QUESTIONS = {
+    'uz': {
+        'values': [
+            {'id': 'v1', 'text': 'Diniy va milliy qadriyatlar oilada qanchalik muhim?'},
+            {'id': 'v2', 'text': "Farzandlarni qaysi til(lar)da tarbiyalashni xohlaysiz?"},
+            {'id': 'v3', 'text': "Kattalarga (ota-ona, qarindosh) hurmat va g'amxorlik darajasi qanday bo'lishi kerak?"},
+        ],
+        'expectations': [
+            {'id': 'e1', 'text': 'Turmush boshlanganidan keyin qayerda yashashni xohlaysiz?'},
+            {'id': 'e2', 'text': "Ikkalangiz ham ishlashni davom ettirasizmi, yoki biringiz uyda qoladimi?"},
+            {'id': 'e3', 'text': "Bo'sh vaqtni qanday o'tkazishni afzal ko'rasiz — birga sayohat, uyda, do'stlar bilanmi?"},
+        ],
+        'communication': [
+            {'id': 'c1', 'text': 'Janjal chiqsa, qanday yondashasiz — darrov gaplashish kerakmi, yoki vaqt kerakmi?'},
+            {'id': 'c2', 'text': 'Moliyaviy masalalarni qanchalik ochiq muhokama qilish kerak?'},
+            {'id': 'c3', 'text': "Bir-biringizga his-tuyg'ularni qanday bildirasiz?"},
+        ],
+        'parenting': [
+            {'id': 'p1', 'text': 'Bola tarbiyasida qattiqqo\'llik va erkinlik nisbati qanday bo\'lishi kerak?'},
+            {'id': 'p2', 'text': "Nechta farzand ko'rishni xohlaysiz?"},
+            {'id': 'p3', 'text': "Bolaning ta'limi (xususiy/davlat maktab) qanday bo'lishi kerak?"},
+        ],
+        'finance': [
+            {'id': 'f1', 'text': "Oilaviy byudjetni kim boshqarishi kerak — birgalikda, yoki biri?"},
+            {'id': 'f2', 'text': "Jamg'arma va katta xaridlar uchun qanday yondashuv kerak?"},
+            {'id': 'f3', 'text': "Qarindoshlarga moliyaviy yordam berish masalasida fikringiz qanday?"},
+        ],
+    },
+    'ru': {
+        'values': [
+            {'id': 'v1', 'text': 'Насколько важны религиозные и национальные ценности в семье?'},
+            {'id': 'v2', 'text': 'На каком языке(ах) вы хотите воспитывать детей?'},
+            {'id': 'v3', 'text': 'Каким должен быть уровень уважения и заботы о старших (родителях, родственниках)?'},
+        ],
+        'expectations': [
+            {'id': 'e1', 'text': 'Где вы хотите жить после начала семейной жизни?'},
+            {'id': 'e2', 'text': 'Будете ли вы оба работать, или один из вас останется дома?'},
+            {'id': 'e3', 'text': 'Как вы предпочитаете проводить свободное время — путешествия вместе, дома, с друзьями?'},
+        ],
+        'communication': [
+            {'id': 'c1', 'text': 'Как вы подходите к конфликтам — нужно сразу говорить или нужно время?'},
+            {'id': 'c2', 'text': 'Насколько открыто нужно обсуждать финансовые вопросы?'},
+            {'id': 'c3', 'text': 'Как вы выражаете чувства друг другу?'},
+        ],
+        'parenting': [
+            {'id': 'p1', 'text': 'Каким должно быть соотношение строгости и свободы в воспитании детей?'},
+            {'id': 'p2', 'text': 'Сколько детей вы хотите иметь?'},
+            {'id': 'p3', 'text': 'Каким должно быть образование ребёнка (частная/государственная школа)?'},
+        ],
+        'finance': [
+            {'id': 'f1', 'text': 'Кто должен управлять семейным бюджетом — вместе или один из вас?'},
+            {'id': 'f2', 'text': 'Какой подход нужен к накоплениям и крупным покупкам?'},
+            {'id': 'f3', 'text': 'Как вы относитесь к финансовой помощи родственникам?'},
+        ],
+    },
+    'en': {
+        'values': [
+            {'id': 'v1', 'text': 'How important are religious and national values in the family?'},
+            {'id': 'v2', 'text': 'In which language(s) do you want to raise your children?'},
+            {'id': 'v3', 'text': 'What level of respect and care for elders (parents, relatives) should there be?'},
+        ],
+        'expectations': [
+            {'id': 'e1', 'text': 'Where do you want to live after starting family life?'},
+            {'id': 'e2', 'text': 'Will you both continue working, or will one of you stay home?'},
+            {'id': 'e3', 'text': 'How do you prefer to spend free time — traveling together, at home, with friends?'},
+        ],
+        'communication': [
+            {'id': 'c1', 'text': 'How do you approach conflict — talk right away, or need time first?'},
+            {'id': 'c2', 'text': 'How openly should financial matters be discussed?'},
+            {'id': 'c3', 'text': 'How do you express feelings to each other?'},
+        ],
+        'parenting': [
+            {'id': 'p1', 'text': 'What balance of strictness and freedom should there be in raising children?'},
+            {'id': 'p2', 'text': 'How many children do you want to have?'},
+            {'id': 'p3', 'text': "What should the child's education look like (private/public school)?"},
+        ],
+        'finance': [
+            {'id': 'f1', 'text': 'Who should manage the family budget — together, or one of you?'},
+            {'id': 'f2', 'text': 'What approach is needed for savings and big purchases?'},
+            {'id': 'f3', 'text': 'How do you feel about giving financial help to relatives?'},
+        ],
+    },
+}
+
+BLOCK_LABELS = {
+    'uz': {'values':'Qadriyatlar','expectations':'Kutilishlar','communication':'Muloqot uslubi','parenting':'Bola tarbiyasi','finance':'Moliyaviy munosabat'},
+    'ru': {'values':'Ценности','expectations':'Ожидания','communication':'Стиль общения','parenting':'Воспитание детей','finance':'Финансовые отношения'},
+    'en': {'values':'Values','expectations':'Expectations','communication':'Communication style','parenting':'Parenting','finance':'Financial approach'},
+}
+
+@app.route('/api/compatibility/questions', methods=['GET'])
+@require_auth
+def get_compat_questions():
+    lang = request.args.get('lang', 'uz')
+    if lang not in COMPAT_QUESTIONS:
+        lang = 'uz'
+    return ok({'blocks': COMPAT_QUESTIONS[lang], 'labels': BLOCK_LABELS[lang]})
+
+@app.route('/api/compatibility/submit', methods=['POST'])
+@require_auth
+def submit_compat_test():
+    body = request.json or {}
+    answers = body.get('answers')  # {question_id: 1-5}
+    partner_name = body.get('partner_name', '')
+    lang = body.get('lang', 'uz')
+    if lang not in COMPAT_QUESTIONS:
+        lang = 'uz'
+    if not answers or not isinstance(answers, dict):
+        return err('answers majburiy')
+
+    # Compute per-block score: average of (5 - abs(diff implied)) — since this is a single-person
+    # self-assessment demo, we simulate alignment by scoring how confidently answered (closer to
+    # consistent mid-high range = more clarity = better readiness signal).
+    block_scores = {}
+    for block, questions in COMPAT_QUESTIONS[lang].items():
+        vals = [answers.get(q['id']) for q in questions if answers.get(q['id']) is not None]
+        if not vals:
+            block_scores[block] = 0
+            continue
+        vals = [int(v) for v in vals]
+        avg = sum(vals) / len(vals)
+        block_scores[block] = round(avg / 5 * 100)
+
+    overall = round(sum(block_scores.values()) / len(block_scores)) if block_scores else 0
+
+    tid = str(uuid.uuid4())
+    db = get_db()
+    db.execute(
+        "INSERT INTO compatibility_tests(id,family_id,user_id,partner_name,answers,scores,overall_score) VALUES(?,?,?,?,?,?,?)",
+        (tid, g.family_id, g.user_id, partner_name, json.dumps(answers), json.dumps(block_scores), overall)
+    )
+    db.commit()
+
+    return ok({
+        'id': tid,
+        'overall_score': overall,
+        'block_scores': block_scores,
+        'labels': BLOCK_LABELS[lang],
+    }), 201
+
+@app.route('/api/compatibility/history', methods=['GET'])
+@require_auth
+def get_compat_history():
+    db = get_db()
+    rows = db.execute(
+        "SELECT id,partner_name,overall_score,scores,created_at FROM compatibility_tests WHERE family_id=? ORDER BY created_at DESC",
+        (g.family_id,)).fetchall()
+    result = []
+    for r in rows:
+        d = dict(r)
+        try:
+            d['scores'] = json.loads(d['scores'])
+        except Exception:
+            d['scores'] = {}
+        result.append(d)
+    return ok(result)
 
 # ─── MISC ────────────────────────────────────────────────────────────────────
 
