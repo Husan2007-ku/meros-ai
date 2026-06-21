@@ -277,6 +277,16 @@ const I18N={
     new_member:"Oila a'zosini qo'shish",add_btn:"Qo'shish",role_lbl:'Rol',child_role:'Farzand',parent_role:'Ota/Ona',grandparent_role:'Bobo/Buvi',gender_lbl:'Jins',male:'Erkak',female:'Ayol',
     capsule_recipient:'Kimga',capsule_open_date:'Ochilish sanasi',capsule_message:'Xabar',create_btn:'Yaratish',
     kundalik_grades_sub:'Maktab baholari va davomad',
+    early_intervention_title:'Erta aralashuv',early_intervention_sub:'Sizga yordam taklif qilamiz',
+    intervention_detected:"So'nggi kunlarda ballaringiz birozga past. Bu butunlay normal — har bir oilada bo'ladi.",
+    intervention_explain:"Ilmiy tadqiqotlar shuni ko'rsatadiki, kichik muammolar vaqtida gaplashilmasa, kattalashib ketishi mumkin. Shu sabab MEROS AI sizga professional yordam taklif qilmoqda.",
+    intervention_status_title:'Psixolog xizmati — sinov rejimida',intervention_status_sub:"Hozircha bepul psixolog maslahati tayyorlanmoqda. Tez orada faollashadi.",
+    intervention_meanwhile:'Hozircha shularni sinab ko\'ring',
+    tip_1:"Bugun kechqurun telefonlarni yig'ib qo'ying, 15 daqiqa faqat gaplashing",
+    tip_2:"Birovni ayblamasdan his-tuyg'ularingizni aytib bering: \"Men his qilyapman...\"",
+    tip_3:"Kichik bir minnatdorchilik bildiring — buni \"Biz\" bo'limida yuborishingiz mumkin",
+    notify_when_ready:'Xizmat tayyor bo\'lganda xabar bering',
+    intervention_notify_toast:"Rahmat! Psixolog xizmati ishga tushganda sizga birinchi bo'lib xabar beramiz 🔔",
   },
   ru:{
     nav_home:'Главная',nav_health:'Здоровье',nav_memories:'Память',nav_relationship:'Мы',nav_profile:'Профиль',
@@ -323,6 +333,16 @@ const I18N={
     new_member:'Добавить члена семьи',add_btn:'Добавить',role_lbl:'Роль',child_role:'Ребёнок',parent_role:'Родитель',grandparent_role:'Дедушка/Бабушка',gender_lbl:'Пол',male:'Мужской',female:'Женский',
     capsule_recipient:'Кому',capsule_open_date:'Дата открытия',capsule_message:'Сообщение',create_btn:'Создать',
     kundalik_grades_sub:'Школьные оценки и посещаемость',
+    early_intervention_title:'Раннее вмешательство',early_intervention_sub:'Мы предлагаем вам помощь',
+    intervention_detected:'Ваши оценки за последние дни немного снизились. Это совершенно нормально — бывает в каждой семье.',
+    intervention_explain:'Исследования показывают, что небольшие проблемы, если их не обсуждать вовремя, могут перерасти в большие. Поэтому MEROS AI предлагает вам профессиональную помощь.',
+    intervention_status_title:'Услуга психолога — в тестовом режиме',intervention_status_sub:'Бесплатная консультация психолога готовится. Скоро будет активна.',
+    intervention_meanwhile:'А пока попробуйте это',
+    tip_1:'Сегодня вечером отложите телефоны и поговорите 15 минут только друг с другом',
+    tip_2:'Выразите свои чувства без обвинений: "Я чувствую, что..."',
+    tip_3:'Выразите небольшую благодарность — можете отправить это в разделе "Мы"',
+    notify_when_ready:'Уведомить, когда услуга будет готова',
+    intervention_notify_toast:'Спасибо! Мы первыми сообщим вам, когда услуга психолога будет запущена 🔔',
   },
   en:{
     nav_home:'Home',nav_health:'Health',nav_memories:'Memories',nav_relationship:'Us',nav_profile:'Profile',
@@ -369,6 +389,16 @@ const I18N={
     new_member:'Add family member',add_btn:'Add',role_lbl:'Role',child_role:'Child',parent_role:'Parent',grandparent_role:'Grandparent',gender_lbl:'Gender',male:'Male',female:'Female',
     capsule_recipient:'To',capsule_open_date:'Open date',capsule_message:'Message',create_btn:'Create',
     kundalik_grades_sub:'School grades and attendance',
+    early_intervention_title:'Early intervention',early_intervention_sub:"We'd like to offer support",
+    intervention_detected:'Your scores have been a bit low lately. This is completely normal — it happens in every family.',
+    intervention_explain:"Research shows that small issues, if not addressed in time, can grow into bigger ones. That's why MEROS AI is offering you professional support.",
+    intervention_status_title:'Psychologist service — in test mode',intervention_status_sub:'A free psychologist consultation is being prepared. It will be active soon.',
+    intervention_meanwhile:'In the meantime, try this',
+    tip_1:'Tonight, put phones away and talk for just 15 minutes',
+    tip_2:'Share your feelings without blame: "I feel..."',
+    tip_3:'Send a small thank-you — you can do this in the "Us" section',
+    notify_when_ready:"Notify me when it's ready",
+    intervention_notify_toast:"Thanks! We'll be the first to let you know when the psychologist service launches 🔔",
   }
 };
 function getLang(){return localStorage.getItem('meros_lang')||'uz'}
@@ -781,6 +811,7 @@ function RelationshipScreen(){
   const [data,setData]=useState(null);
   const [h,setH]=useState(null);const [s,setS]=useState(null);
   const [saving,setSaving]=useState(false);const [saved,setSaved]=useState(false);
+  const [showIntervention,setShowIntervention]=useState(false);
   useEffect(()=>{api('/warmth').then(r=>{if(r.ok)setData(r.data)});},[]);
 
   async function submit(){
@@ -792,6 +823,7 @@ function RelationshipScreen(){
   }
 
   const last7=(data?.logs||[]).slice(0,7).reverse();
+  const lowScore=data&&data.avg_7_days>0&&data.avg_7_days<3;
 
   return React.createElement('div',{className:'screen'},
     React.createElement('div',{className:'rel-hero'},
@@ -802,6 +834,18 @@ function RelationshipScreen(){
       data&&React.createElement('div',{className:'score-row'},
         React.createElement('div',{className:'score-box'},React.createElement('div',{className:'score-num',style:{color:'var(--rose)'}},data.avg_7_days),React.createElement('div',{className:'score-lbl'},t('avg_7days'))),
         React.createElement('div',{className:'score-box'},React.createElement('div',{className:'score-num',style:{color:'var(--blue)'}},data.streak_days),React.createElement('div',{className:'score-lbl'},t('streak_days')))
+      ),
+      lowScore&&React.createElement('div',{style:{padding:'12px 16px 0'}},
+        React.createElement('div',{className:'card',style:{cursor:'pointer',background:'linear-gradient(135deg,#5C1428,#8B0D3E)',border:'none'},onClick:()=>setShowIntervention(true)},
+          React.createElement('div',{className:'card-row'},
+            React.createElement('div',{className:'icon-box',style:{background:'rgba(255,255,255,.2)'}},React.createElement('i',{className:'ti ti-heart-handshake',style:{color:'#fff',fontSize:22}})),
+            React.createElement('div',{className:'card-info'},
+              React.createElement('div',{className:'card-title',style:{color:'#fff'}},t('early_intervention_title')),
+              React.createElement('div',{className:'card-sub',style:{color:'rgba(255,255,255,.8)'}},t('early_intervention_sub'))
+            ),
+            React.createElement('i',{className:'ti ti-chevron-right',style:{color:'#fff',fontSize:18}})
+          )
+        )
       ),
       last7.length>0&&React.createElement('div',{className:'bars-area'},
         React.createElement('div',{className:'section-label',style:{padding:'14px 0 6px'}},t('recent_days')),
@@ -852,6 +896,43 @@ function RelationshipScreen(){
         )
       ),
       React.createElement('div',{style:{height:16}})
+    ),
+    showIntervention&&React.createElement(InterventionModal,{onClose:()=>setShowIntervention(false)})
+  );
+}
+
+function InterventionModal({onClose}){
+  const {showToast}=useApp();
+  function notifyMe(){
+    showToast(t('intervention_notify_toast'),'success');
+    onClose();
+  }
+  return React.createElement(Modal,{title:t('early_intervention_title'),onClose},
+    React.createElement('div',{style:{textAlign:'center',marginBottom:16}},
+      React.createElement('div',{style:{width:60,height:60,borderRadius:'50%',background:'var(--rose-l)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:26,margin:'0 auto 12px'}},'🤝'),
+      React.createElement('div',{style:{fontSize:15,fontWeight:700,color:'var(--text)',lineHeight:1.5}},t('intervention_detected'))
+    ),
+    React.createElement('div',{style:{background:'var(--bg2)',borderRadius:'var(--r2)',padding:'14px',marginBottom:14,fontSize:13,color:'var(--text2)',lineHeight:1.7}},
+      t('intervention_explain')
+    ),
+    React.createElement('div',{className:'menu-card',style:{margin:'0 0 16px'}},
+      React.createElement('div',{className:'menu-row',style:{cursor:'default'}},
+        React.createElement('div',{className:'menu-icon',style:{background:'var(--amber-l)'}},React.createElement('i',{className:'ti ti-clock',style:{color:'var(--amber)',fontSize:18}})),
+        React.createElement('div',{style:{flex:1}},
+          React.createElement('div',{className:'menu-text'},t('intervention_status_title')),
+          React.createElement('div',{style:{fontSize:11,color:'var(--text3)',marginTop:1}},t('intervention_status_sub'))
+        )
+      )
+    ),
+    React.createElement('div',{className:'section-label',style:{padding:'0 0 8px'}},t('intervention_meanwhile')),
+    React.createElement('div',{className:'menu-card',style:{margin:'0 0 16px'}},
+      [t('tip_1'),t('tip_2'),t('tip_3')].map((tip,i)=>React.createElement('div',{key:i,className:'menu-row',style:{cursor:'default'}},
+        React.createElement('div',{className:'menu-icon',style:{background:'var(--rose-l)',fontSize:14}},'💡'),
+        React.createElement('div',{style:{fontSize:13,color:'var(--text)',lineHeight:1.5}},tip)
+      ))
+    ),
+    React.createElement('button',{className:'btn btn-full',style:{background:'var(--rose)',color:'#fff'},onClick:notifyMe},
+      React.createElement('i',{className:'ti ti-bell-ringing',style:{fontSize:18}}),t('notify_when_ready')
     )
   );
 }
