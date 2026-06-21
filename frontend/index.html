@@ -245,6 +245,12 @@ const I18N={
     time_capsules:'Vaqt kapsulalari',new_capsule:'Yangi vaqt kapsulasi',
     personal_info:"Shaxsiy ma'lumotlar",govt_integrations:'Davlat integratsiyalari',security:'Xavfsizlik',
     language:'Til',select_language:'Tilni tanlang',
+    add_short:"Qo'sh",family_time_alert_title:'Oila vaqti — ekran vaqti yuqori',family_time_alert_sub:"Bugun kechqurun farzandingiz bilan vaqt o'tkazishni unutmang",
+    members_lbl:"A'zolar",memories_lbl:'Xotiralar',relationship_lbl:'Munosabat',
+    health_card_title:"Sog'liq arxivi",health_card_sub:'Emlash, tahlil, o\'lchov',good:'Yaxshi',
+    memories_card_title:'Xotiralar',memories_card_sub_prefix:'ta saqlangan',
+    relationship_card_title:"Munosabat o'lchovi",relationship_card_sub:'7 kunlik statistika',
+    your_family:'Oilangiz',
   },
   ru:{
     nav_home:'Главная',nav_health:'Здоровье',nav_memories:'Память',nav_relationship:'Мы',nav_profile:'Профиль',
@@ -264,6 +270,12 @@ const I18N={
     time_capsules:'Капсулы времени',new_capsule:'Новая капсула времени',
     personal_info:'Личные данные',govt_integrations:'Гос. интеграции',security:'Безопасность',
     language:'Язык',select_language:'Выберите язык',
+    add_short:'Добавить',family_time_alert_title:'Семейное время — высокая активность экрана',family_time_alert_sub:'Не забудьте провести вечер с ребёнком',
+    members_lbl:'Члены семьи',memories_lbl:'Воспоминания',relationship_lbl:'Отношения',
+    health_card_title:'Архив здоровья',health_card_sub:'Прививки, анализы, измерения',good:'Хорошо',
+    memories_card_title:'Воспоминания',memories_card_sub_prefix:'сохранено',
+    relationship_card_title:'Термометр отношений',relationship_card_sub:'Статистика за 7 дней',
+    your_family:'Ваша семья',
   },
   en:{
     nav_home:'Home',nav_health:'Health',nav_memories:'Memories',nav_relationship:'Us',nav_profile:'Profile',
@@ -283,6 +295,12 @@ const I18N={
     time_capsules:'Time capsules',new_capsule:'New time capsule',
     personal_info:'Personal info',govt_integrations:'Government integrations',security:'Security',
     language:'Language',select_language:'Select language',
+    add_short:'Add',family_time_alert_title:'Family time — high screen activity',family_time_alert_sub:"Don't forget to spend tonight with your child",
+    members_lbl:'Members',memories_lbl:'Memories',relationship_lbl:'Relationship',
+    health_card_title:'Health archive',health_card_sub:'Vaccines, tests, measurements',good:'Good',
+    memories_card_title:'Memories',memories_card_sub_prefix:'saved',
+    relationship_card_title:'Relationship check',relationship_card_sub:'7-day statistics',
+    your_family:'Your family',
   }
 };
 function getLang(){return localStorage.getItem('meros_lang')||'uz'}
@@ -388,7 +406,7 @@ function AuthScreen(){
 
 /* HOME */
 function HomeScreen({onRefresh}){
-  const {showToast,showModal}=useApp();
+  const {showToast,showModal,lang}=useApp();
   const [dash,setDash]=useState(null);
   const [oila,setOila]=useState(true);
   const [emPick,setEmPick]=useState(null);
@@ -396,8 +414,10 @@ function HomeScreen({onRefresh}){
   const avColors=['#1A78C2','#C2185B','#2D7A4F','#7B2D8B','#D97706','#0891B2'];
   const emojis=['😔','😕','😐','😊','😄'];
   const msgs={1:'Qiyin kun... Yaxshi bo\'lasiz 💙',2:'Biroz og\'irroq. Sherigingiz bilan gaplashing',3:'Normal kun. Ertaga yaxshiroq 🙂',4:'Yaxshi kun! Shunday davom eting 😊',5:'Ajoyib! Baxtingiz oilaga yuqsin 🌟'};
+  const hour=new Date().getHours();
+  const showFamilyTimeAlert=hour>=18&&hour<22; // faqat kechqurun — real ekran-vaqt kuzatuvi integratsiyasidan keyin to'liq ishlaydi
 
-  useEffect(()=>{api('/dashboard').then(r=>{if(r.ok)setDash(r.data)});},[onRefresh]);
+  useEffect(()=>{api('/dashboard').then(r=>{if(r.ok)setDash(r.data)});},[onRefresh,lang]);
 
   async function pickEm(val){
     setEmPick(val);
@@ -413,7 +433,7 @@ function HomeScreen({onRefresh}){
   return React.createElement('div',{className:'screen'},
     React.createElement('div',{className:'home-hero'},
       React.createElement('div',{className:'home-greeting'},getGreeting()+','),
-      React.createElement('div',{className:'home-fam-name'},(dash.family?.name||'Oilangiz')+' 👨‍👩‍👧‍👦'),
+      React.createElement('div',{className:'home-fam-name'},(dash.family?.name||t('your_family'))+' 👨‍👩‍👧‍👦'),
       React.createElement('div',{className:'fam-strip'},
         members.map((m,i)=>React.createElement('div',{key:m.id,className:'av-wrap'},
           React.createElement('div',{className:'av',style:{background:avColors[i%avColors.length]}},getInitials(m.name)),
@@ -421,17 +441,17 @@ function HomeScreen({onRefresh}){
         )),
         React.createElement('div',{className:'av-wrap',onClick:()=>showModal('member')},
           React.createElement('div',{className:'av-add'},React.createElement('i',{className:'ti ti-plus',style:{color:'rgba(255,255,255,.65)',fontSize:20}})),
-          React.createElement('div',{className:'av-lbl',style:{color:'rgba(255,255,255,.5)'}},"Qo'sh")
+          React.createElement('div',{className:'av-lbl',style:{color:'rgba(255,255,255,.5)'}},t('add_short'))
         )
       )
     ),
     React.createElement('div',{className:'scrollable'},
-      oila&&React.createElement('div',{className:'oila-wrap'},
+      oila&&showFamilyTimeAlert&&React.createElement('div',{className:'oila-wrap'},
         React.createElement('div',{className:'oila-banner'},
           React.createElement('i',{className:'ti ti-device-mobile-off'}),
           React.createElement('div',{style:{flex:1}},
-            React.createElement('div',{className:'oila-tit'},t('family_time')+' — 3h'),
-            React.createElement('div',{className:'oila-sub'},"Farzandingiz siz bilan o'ynashni kutmoqda")
+            React.createElement('div',{className:'oila-tit'},t('family_time_alert_title')),
+            React.createElement('div',{className:'oila-sub'},t('family_time_alert_sub'))
           ),
           React.createElement('button',{style:{color:'var(--text3)',fontSize:18,padding:4},onClick:()=>setOila(false)},React.createElement('i',{className:'ti ti-x'}))
         )
@@ -449,9 +469,9 @@ function HomeScreen({onRefresh}){
       React.createElement('div',{style:{padding:'0 16px'}},
         React.createElement('div',{className:'card',style:{cursor:'default'}},
           React.createElement('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}},
-            [{lbl:"A'zolar",val:members.length,ic:'ti-users',c:'var(--blue)',bg:'var(--blue-l)'},
-             {lbl:'Xotiralar',val:dash.memory_count||0,ic:'ti-photo',c:'var(--purple)',bg:'var(--purple-l)'},
-             {lbl:'Munosabat',val:(dash.warmth_avg_7days||0)+'/5',ic:'ti-heart',c:'var(--rose)',bg:'var(--rose-l)'}
+            [{lbl:t('members_lbl'),val:members.length,ic:'ti-users',c:'var(--blue)',bg:'var(--blue-l)'},
+             {lbl:t('memories_lbl'),val:dash.memory_count||0,ic:'ti-photo',c:'var(--purple)',bg:'var(--purple-l)'},
+             {lbl:t('relationship_lbl'),val:(dash.warmth_avg_7days||0)+'/5',ic:'ti-heart',c:'var(--rose)',bg:'var(--rose-l)'}
             ].map(x=>React.createElement('div',{key:x.lbl,style:{textAlign:'center',padding:10,background:x.bg,borderRadius:10}},
               React.createElement('i',{className:`ti ${x.ic}`,style:{fontSize:20,color:x.c,display:'block',marginBottom:4}}),
               React.createElement('div',{style:{fontSize:17,fontWeight:900,color:x.c}},x.val),
@@ -462,10 +482,10 @@ function HomeScreen({onRefresh}){
       ),
       React.createElement('div',{className:'section-label'},t('quick_actions')),
       React.createElement('div',{style:{padding:'0 16px'}},
-        [{title:"Sog'liq arxivi",sub:'Emlash, tahlil, o\'lchov',ic:'ti-heart-rate',c:'#2D7A4F',bg:'#E8F5EE',
-          bdg:dash.overdue_vaccines>0?{t:dash.overdue_vaccines+' kechikkan',cls:'badge-amber'}:{t:'Yaxshi',cls:'badge-green'}},
-         {title:'Xotiralar',sub:`${dash.memory_count} ta saqlanган`,ic:'ti-photo',c:'var(--purple)',bg:'var(--purple-l)',bdg:{t:dash.memory_count+' ta',cls:'badge-purple'}},
-         {title:"Munosabat o'lchovi",sub:'7 kunlik statistika',ic:'ti-heart',c:'var(--rose)',bg:'var(--rose-l)',bdg:{t:dash.warmth_avg_7days+'/5',cls:'badge-blue'}},
+        [{title:t('health_card_title'),sub:t('health_card_sub'),ic:'ti-heart-rate',c:'#2D7A4F',bg:'#E8F5EE',
+          bdg:dash.overdue_vaccines>0?{t:dash.overdue_vaccines+' !',cls:'badge-amber'}:{t:t('good'),cls:'badge-green'}},
+         {title:t('memories_card_title'),sub:`${dash.memory_count} ${t('memories_card_sub_prefix')}`,ic:'ti-photo',c:'var(--purple)',bg:'var(--purple-l)',bdg:{t:dash.memory_count,cls:'badge-purple'}},
+         {title:t('relationship_card_title'),sub:t('relationship_card_sub'),ic:'ti-heart',c:'var(--rose)',bg:'var(--rose-l)',bdg:{t:dash.warmth_avg_7days+'/5',cls:'badge-blue'}},
         ].map(x=>React.createElement('div',{key:x.title,className:'card'},
           React.createElement('div',{className:'card-row'},
             React.createElement('div',{className:'icon-box',style:{background:x.bg}},React.createElement('i',{className:`ti ${x.ic}`,style:{color:x.c,fontSize:22}})),
