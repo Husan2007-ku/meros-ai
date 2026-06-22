@@ -185,6 +185,20 @@ def init_db():
     """)
     db.commit()
 
+    # Migration: add invite_code column if it doesn't exist (for databases created before this feature)
+    cols = [row[1] for row in db.execute("PRAGMA table_info(families)").fetchall()]
+    if 'invite_code' not in cols:
+        db.execute("ALTER TABLE families ADD COLUMN invite_code TEXT")
+        db.commit()
+
+    # Backfill: ensure existing families (created before this feature) have a code
+    families_without_code = db.execute("SELECT id FROM families WHERE invite_code IS NULL").fetchall()
+    for fam in families_without_code:
+        new_code = generate_invite_code()
+        db.execute("UPDATE families SET invite_code=? WHERE id=?", (new_code, fam['id']))
+    if families_without_code:
+        db.commit()
+
     # Seed demo data
     _seed_demo(db)
     db.close()
