@@ -74,6 +74,22 @@ input,textarea,select{font-family:inherit;font-size:inherit}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
 
+.chat-overlay{position:fixed;inset:0;background:var(--bg);z-index:600;display:flex;flex-direction:column;max-width:430px;margin:0 auto;animation:slideUp .22s ease-out}
+.chat-header{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg)}
+.chat-back{font-size:22px;color:var(--text);cursor:pointer;padding:2px}
+.chat-title{font-size:15px;font-weight:800;flex:1}
+.chat-body{flex:1;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:8px;background:var(--bg2)}
+.chat-bubble{max-width:78%;padding:9px 13px;border-radius:16px;font-size:14px;line-height:1.4;word-wrap:break-word}
+.chat-bubble.mine{align-self:flex-end;background:var(--rose);color:#fff;border-bottom-right-radius:4px}
+.chat-bubble.theirs{align-self:flex-start;background:var(--bg);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:4px}
+.chat-time{font-size:10px;opacity:.65;margin-top:3px;display:block}
+.chat-input-row{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--border);background:var(--bg);flex-shrink:0;padding-bottom:max(10px,env(safe-area-inset-bottom))}
+.chat-input{flex:1;border:1.5px solid var(--border);border-radius:22px;padding:10px 16px;font-size:14px;outline:none;background:var(--bg2)}
+.chat-input:focus{border-color:var(--rose)}
+.chat-send{width:40px;height:40px;border-radius:50%;background:var(--rose);color:#fff;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;flex-shrink:0}
+.chat-send:disabled{opacity:.4}
+.chat-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--text3);text-align:center;padding:24px}
+
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1A1A2E;color:#fff;padding:11px 20px;border-radius:100px;font-size:13px;font-weight:600;z-index:999;white-space:nowrap;animation:toastIn .25s ease-out;box-shadow:var(--shadow2)}
 .toast.error{background:var(--red)}
 .toast.success{background:var(--green)}
@@ -304,6 +320,10 @@ const I18N={
     joined_family_toast:'Oilaga muvaffaqiyatli qo\'shildingiz! 🎉',new_family_toast:"Xush kelibsiz! Oila profilingiz yaratildi",
     invite_card_title:'Sherigingizni taklif qiling',invite_card_sub:'Bu kodni eringiz/xotiningizga yuboring — u shu kod orqali ro\'yxatdan o\'tib, sizning oilangizga qo\'shiladi',
     copy:'Nusxa',code_copied:'Kod nusxalandi ✓',
+    parent_school_title:'Ota-ona Maktabi',parent_school_sub:"Bu hafta sinab ko'ring",
+    tip_tried_toast:"Ajoyib! Kichik qadamlar katta o'zgarish yaratadi 🌟",mark_tried:'Sinab ko\'rdim ✓',
+    couple_chat_title:'Suhbat',couple_chat_sub:"Sherigingiz bilan xabar almashing",
+    chat_empty_state:"Hali xabar yo'q. Birinchi bo'lib salom ayting! 💬",chat_placeholder:'Xabar yozing...',
   },
   ru:{
     nav_home:'Главная',nav_health:'Здоровье',nav_memories:'Память',nav_relationship:'Мы',nav_profile:'Профиль',
@@ -377,6 +397,10 @@ const I18N={
     joined_family_toast:'Вы успешно присоединились к семье! 🎉',new_family_toast:'Добро пожаловать! Ваш семейный профиль создан',
     invite_card_title:'Пригласите партнёра',invite_card_sub:'Отправьте этот код мужу/жене — он/она зарегистрируется по коду и присоединится к вашей семье',
     copy:'Копировать',code_copied:'Код скопирован ✓',
+    parent_school_title:'Школа родителей',parent_school_sub:'Попробуйте это на этой неделе',
+    tip_tried_toast:'Отлично! Маленькие шаги создают большие перемены 🌟',mark_tried:'Я попробовал ✓',
+    couple_chat_title:'Переписка',couple_chat_sub:'Обменивайтесь сообщениями с партнёром',
+    chat_empty_state:'Пока нет сообщений. Напишите первыми! 💬',chat_placeholder:'Напишите сообщение...',
   },
   en:{
     nav_home:'Home',nav_health:'Health',nav_memories:'Memories',nav_relationship:'Us',nav_profile:'Profile',
@@ -450,6 +474,10 @@ const I18N={
     joined_family_toast:'You joined the family! 🎉',new_family_toast:'Welcome! Your family profile has been created',
     invite_card_title:'Invite your partner',invite_card_sub:"Send this code to your spouse — they'll sign up with it and join your family",
     copy:'Copy',code_copied:'Code copied ✓',
+    parent_school_title:'Parent School',parent_school_sub:'Try this this week',
+    tip_tried_toast:'Great! Small steps create big change 🌟',mark_tried:'I tried it ✓',
+    couple_chat_title:'Chat',couple_chat_sub:'Exchange messages with your partner',
+    chat_empty_state:'No messages yet. Say hi first! 💬',chat_placeholder:'Type a message...',
   }
 };
 function getLang(){return localStorage.getItem('meros_lang')||'uz'}
@@ -513,6 +541,8 @@ function AuthScreen(){
     setLoading(false);
     if(!r.ok)return showToast(r.error||'Xatolik yuz berdi','error');
     localStorage.setItem('meros_token',r.data.token);
+    const uid=r.data.user?.id||r.data.user_id;
+    if(uid)localStorage.setItem('meros_user_id',uid);
     setToken(r.data.token);
     if(tab==='register')showToast(inviteCode?t('joined_family_toast'):t('new_family_toast'),'success');
   }
@@ -686,6 +716,141 @@ function HomeScreen({onRefresh}){
 }
 
 /* HEALTH */
+/* PARENT SCHOOL — weekly age-appropriate tip */
+const PARENT_TIPS = {
+  uz: {
+    '0-3': [
+      {t:"Bugun bolangiz bilan 10 daqiqa ko'z to'qnashtirib gapiring — bu nutq rivojlanishi uchun oltin davr.",ic:'👁️'},
+      {t:"Har gapirganida bolaning nomini aytib, sekin va aniq talaffuz qiling — u sizni taqlid qiladi.",ic:'🗣️'},
+      {t:"Bolaning har bir tovushiga (gugurlashiga) javob bering — bu suhbat ko'nikmasini shakllantiradi.",ic:'💬'},
+      {t:"Kuniga 3 marta birga kitob varaqlang, hatto u hali so'zlarni tushunmasa ham.",ic:'📖'},
+    ],
+    '3-7': [
+      {t:"Xato qilganda jazolash o'rniga: \"Bundan nima o'rgandik?\" deb so'rang.",ic:'🌱'},
+      {t:"Bolaning savollariga \"Sen nima deb o'ylaysan?\" deb javob qaytaring — bu mustaqil fikrlashni rivojlantiradi.",ic:'🤔'},
+      {t:"Kichik vazifalar bering (stol yig'ish, o'yinchoq terish) — mustaqillik tuyg'usi shakllanadi.",ic:'🧸'},
+      {t:"Kuniga kamida 20 daqiqa birga rolli o'yin o'ynang — bu ijodkorlik va ijtimoiy ko'nikmalarni rivojlantiradi.",ic:'🎭'},
+    ],
+    '7-12': [
+      {t:"Bahosi past bo'lsa, avval \"Nima qiyin bo'ldi?\" deb so'rang, keyin yechim qidiring.",ic:'📝'},
+      {t:"Haftada bir marta \"oilaviy kengash\" o'tkazib, bolaning fikrini so'rang — u eshitilganini his qiladi.",ic:'🗳️'},
+      {t:"Mustaqil qaror qabul qilish imkonini bering (kiyim, hobbi) — bu o'z-o'ziga ishonchni oshiradi.",ic:'⚖️'},
+      {t:"Do'stlari haqida so'rang, ayblamasdan tinglang — bu ochiq muloqotni saqlaydi.",ic:'👬'},
+    ],
+    '12-18': [
+      {t:"Maslahat berishdan oldin \"Sen nima qilishni xohlaysan?\" deb so'rang — bu hurmatni bildiradi.",ic:'🎯'},
+      {t:"Xatolarini muhokama qilganda ovozingizni baland qilmang — u yopilib qolishi mumkin.",ic:'🔇'},
+      {t:"Kelajak rejalari haqida bosim o'tkazmasdan, qiziqishlarini suhbat qiling.",ic:'🚀'},
+      {t:"Shaxsiy vaqt va fazosini hurmat qiling — bu ishonchni mustahkamlaydi.",ic:'🚪'},
+    ],
+  },
+  ru: {
+    '0-3': [
+      {t:'Сегодня поговорите с ребёнком 10 минут, смотря в глаза — это золотой период развития речи.',ic:'👁️'},
+      {t:'Произносите имя ребёнка медленно и чётко при каждом обращении — он подражает вам.',ic:'🗣️'},
+      {t:'Отвечайте на каждый звук ребёнка (гуление) — это формирует навык диалога.',ic:'💬'},
+      {t:'Листайте книгу вместе 3 раза в день, даже если он пока не понимает слов.',ic:'📖'},
+    ],
+    '3-7': [
+      {t:'Вместо наказания за ошибку спросите: "Что мы узнали из этого?"',ic:'🌱'},
+      {t:'На вопросы ребёнка отвечайте: "А ты как думаешь?" — это развивает самостоятельное мышление.',ic:'🤔'},
+      {t:'Давайте небольшие задания (убрать стол, игрушки) — формируется чувство самостоятельности.',ic:'🧸'},
+      {t:'Играйте в ролевые игры минимум 20 минут в день — развивает творчество и социальные навыки.',ic:'🎭'},
+    ],
+    '7-12': [
+      {t:'При низкой оценке сначала спросите "Что было трудно?", потом ищите решение.',ic:'📝'},
+      {t:'Раз в неделю проводите "семейный совет" и спрашивайте мнение ребёнка — он почувствует, что его слышат.',ic:'🗳️'},
+      {t:'Дайте возможность самостоятельных решений (одежда, хобби) — повышает уверенность в себе.',ic:'⚖️'},
+      {t:'Спрашивайте о друзьях, слушайте без осуждения — это сохраняет открытое общение.',ic:'👬'},
+    ],
+    '12-18': [
+      {t:'Перед советом спросите "Что ты хочешь сделать?" — это показывает уважение.',ic:'🎯'},
+      {t:'Не повышайте голос при обсуждении ошибок — подросток может замкнуться.',ic:'🔇'},
+      {t:'Обсуждайте планы на будущее без давления, через интересы.',ic:'🚀'},
+      {t:'Уважайте личное время и пространство — это укрепляет доверие.',ic:'🚪'},
+    ],
+  },
+  en: {
+    '0-3': [
+      {t:"Spend 10 minutes today making eye contact and talking with your child — this is the golden period for speech development.",ic:'👁️'},
+      {t:"Say your child's name slowly and clearly each time you speak — they imitate you.",ic:'🗣️'},
+      {t:"Respond to every sound your baby makes (cooing) — this builds conversational skills.",ic:'💬'},
+      {t:"Look through a book together 3 times a day, even if they don't understand words yet.",ic:'📖'},
+    ],
+    '3-7': [
+      {t:'Instead of punishing mistakes, ask: "What did we learn from this?"',ic:'🌱'},
+      {t:'Answer your child\'s questions with "What do you think?" — this builds independent thinking.',ic:'🤔'},
+      {t:'Give small tasks (setting the table, tidying toys) — builds a sense of independence.',ic:'🧸'},
+      {t:'Play pretend/role games together for at least 20 minutes a day — builds creativity and social skills.',ic:'🎭'},
+    ],
+    '7-12': [
+      {t:'If a grade is low, first ask "What was hard?" before looking for a solution.',ic:'📝'},
+      {t:'Hold a weekly "family council" and ask for your child\'s opinion — they\'ll feel heard.',ic:'🗳️'},
+      {t:'Let them make independent decisions (clothes, hobbies) — builds self-confidence.',ic:'⚖️'},
+      {t:"Ask about their friends and listen without judging — keeps communication open.",ic:'👬'},
+    ],
+    '12-18': [
+      {t:'Before giving advice ask "What do you want to do?" — shows respect.',ic:'🎯'},
+      {t:"Don't raise your voice when discussing mistakes — teens may shut down.",ic:'🔇'},
+      {t:'Discuss future plans without pressure, through their interests.',ic:'🚀'},
+      {t:'Respect their personal time and space — this strengthens trust.',ic:'🚪'},
+    ],
+  },
+};
+
+function getAgeGroup(birthDate){
+  if(!birthDate)return '3-7';
+  const age=new Date().getFullYear()-parseInt(birthDate);
+  if(age<=3)return '0-3';
+  if(age<=7)return '3-7';
+  if(age<=12)return '7-12';
+  return '12-18';
+}
+
+function getWeekNumber(){
+  const now=new Date();
+  const start=new Date(now.getFullYear(),0,1);
+  return Math.floor((now-start)/(7*24*60*60*1000));
+}
+
+function ParentSchoolCard({child}){
+  const {showToast}=useApp();
+  const [expanded,setExpanded]=useState(false);
+  const lang=getLang();
+  const ageGroup=getAgeGroup(child?.birth_date);
+  const tips=(PARENT_TIPS[lang]||PARENT_TIPS.uz)[ageGroup]||[];
+  const weekIdx=tips.length?getWeekNumber()%tips.length:0;
+  const tip=tips[weekIdx];
+
+  function markTried(){
+    showToast(t('tip_tried_toast'),'success');
+    setExpanded(false);
+  }
+
+  if(!tip)return null;
+
+  return React.createElement('div',{className:'card',style:{background:'linear-gradient(135deg,#92400E,#D97706)',border:'none',cursor:'pointer'},onClick:()=>setExpanded(e=>!e)},
+    React.createElement('div',{className:'card-row'},
+      React.createElement('div',{className:'icon-box',style:{background:'rgba(255,255,255,.2)',fontSize:22}},'🎓'),
+      React.createElement('div',{className:'card-info'},
+        React.createElement('div',{className:'card-title',style:{color:'#fff'}},t('parent_school_title')),
+        React.createElement('div',{className:'card-sub',style:{color:'rgba(255,255,255,.85)'}},t('parent_school_sub'))
+      ),
+      React.createElement('i',{className:`ti ${expanded?'ti-chevron-up':'ti-chevron-down'}`,style:{color:'#fff',fontSize:18}})
+    ),
+    expanded&&React.createElement('div',{style:{marginTop:12,paddingTop:12,borderTop:'1px solid rgba(255,255,255,.25)'}},
+      React.createElement('div',{style:{display:'flex',gap:10,alignItems:'flex-start'}},
+        React.createElement('span',{style:{fontSize:24}},tip.ic),
+        React.createElement('div',{style:{fontSize:13,color:'#fff',lineHeight:1.6,flex:1}},tip.t)
+      ),
+      React.createElement('button',{onClick:(e)=>{e.stopPropagation();markTried();},
+        style:{marginTop:12,width:'100%',padding:'9px',borderRadius:'var(--r2)',background:'#fff',color:'#92400E',fontWeight:700,fontSize:13,border:'none',cursor:'pointer'}},
+        t('mark_tried')
+      )
+    )
+  );
+}
+
 function HealthScreen(){
   const {showToast}=useApp();
   const [members,setMembers]=useState([]);
@@ -730,6 +895,10 @@ function HealthScreen(){
             React.createElement('i',{className:'ti ti-chevron-right',style:{color:'#fff',fontSize:18}})
           )
         )
+      ),
+
+      sel&&sel.role==='child'&&React.createElement('div',{style:{padding:'10px 16px 0'}},
+        React.createElement(ParentSchoolCard,{child:sel})
       ),
 
       React.createElement('div',{className:'stats-grid'},
@@ -887,7 +1056,16 @@ function RelationshipScreen(){
   const [saving,setSaving]=useState(false);const [saved,setSaved]=useState(false);
   const [showIntervention,setShowIntervention]=useState(false);
   const [showCompatTest,setShowCompatTest]=useState(false);
+  const [showChat,setShowChat]=useState(false);
+  const [unread,setUnread]=useState(0);
   useEffect(()=>{api('/warmth').then(r=>{if(r.ok)setData(r.data)});},[]);
+  useEffect(()=>{
+    api('/messages/unread-count').then(r=>{if(r.ok)setUnread(r.data.unread)});
+    const iv=setInterval(()=>{
+      api('/messages/unread-count').then(r=>{if(r.ok)setUnread(r.data.unread)});
+    },15000);
+    return()=>clearInterval(iv);
+  },[]);
 
   async function submit(){
     if(!h||!s)return showToast('Ikki savolga ham javob bering','error');
@@ -906,6 +1084,20 @@ function RelationshipScreen(){
       React.createElement('div',{className:'page-sub'},t('relationship_sub'))
     ),
     React.createElement('div',{className:'scrollable'},
+      React.createElement('div',{style:{padding:'12px 16px 0'}},
+        React.createElement('div',{className:'card',style:{cursor:'pointer',position:'relative'},onClick:()=>{setShowChat(true);setUnread(0);}},
+          React.createElement('div',{className:'card-row'},
+            React.createElement('div',{className:'icon-box',style:{background:'var(--rose-l)'}},React.createElement('i',{className:'ti ti-messages',style:{color:'var(--rose)',fontSize:22}})),
+            React.createElement('div',{className:'card-info'},
+              React.createElement('div',{className:'card-title'},t('couple_chat_title')),
+              React.createElement('div',{className:'card-sub'},t('couple_chat_sub'))
+            ),
+            unread>0
+              ?React.createElement('span',{style:{background:'var(--rose)',color:'#fff',fontSize:11,fontWeight:800,borderRadius:20,minWidth:22,height:22,display:'flex',alignItems:'center',justifyContent:'center',padding:'0 6px'}},unread)
+              :React.createElement('i',{className:'ti ti-chevron-right',style:{color:'var(--text3)',fontSize:18}})
+          )
+        )
+      ),
       React.createElement('div',{style:{padding:'12px 16px 0'}},
         React.createElement('div',{className:'card',style:{cursor:'pointer',background:'linear-gradient(135deg,#7A0933,#C2185B)',border:'none'},onClick:()=>setShowCompatTest(true)},
           React.createElement('div',{className:'card-row'},
@@ -985,7 +1177,82 @@ function RelationshipScreen(){
       React.createElement('div',{style:{height:16}})
     ),
     showIntervention&&React.createElement(InterventionModal,{onClose:()=>setShowIntervention(false)}),
-    showCompatTest&&React.createElement(CompatTestModal,{onClose:()=>setShowCompatTest(false)})
+    showCompatTest&&React.createElement(CompatTestModal,{onClose:()=>setShowCompatTest(false)}),
+    showChat&&React.createElement(ChatModal,{onClose:()=>setShowChat(false)})
+  );
+}
+
+function ChatModal({onClose}){
+  const {showToast}=useApp();
+  const [messages,setMessages]=useState(null);
+  const [text,setText]=useState('');
+  const [sending,setSending]=useState(false);
+  const bodyRef=useRef(null);
+  const myId=localStorage.getItem('meros_user_id');
+
+  function loadMessages(scrollToBottom){
+    api('/messages').then(r=>{
+      if(r.ok){
+        setMessages(r.data);
+        if(scrollToBottom)setTimeout(()=>{
+          if(bodyRef.current)bodyRef.current.scrollTop=bodyRef.current.scrollHeight;
+        },50);
+      }
+    });
+  }
+
+  useEffect(()=>{
+    loadMessages(true);
+    const iv=setInterval(()=>loadMessages(false),8000);
+    return()=>clearInterval(iv);
+  },[]);
+
+  async function send(){
+    const body=text.trim();
+    if(!body||sending)return;
+    setSending(true);
+    setText('');
+    const r=await api('/messages',{method:'POST',body:{body}});
+    setSending(false);
+    if(!r.ok){showToast(r.error,'error');setText(body);return;}
+    loadMessages(true);
+  }
+
+  function handleKey(e){
+    if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}
+  }
+
+  function formatTime(iso){
+    try{
+      const d=new Date(iso+(iso.includes('Z')?'':'Z'));
+      return d.toLocaleTimeString(getLang()==='ru'?'ru-RU':getLang()==='en'?'en-US':'uz-UZ',{hour:'2-digit',minute:'2-digit'});
+    }catch(e){return '';}
+  }
+
+  return React.createElement('div',{className:'chat-overlay'},
+    React.createElement('div',{className:'chat-header'},
+      React.createElement('div',{className:'chat-back',onClick:onClose},React.createElement('i',{className:'ti ti-arrow-left'})),
+      React.createElement('div',{className:'chat-title'},t('couple_chat_title')),
+      React.createElement('i',{className:'ti ti-heart',style:{color:'var(--rose)',fontSize:20}})
+    ),
+    React.createElement('div',{className:'chat-body',ref:bodyRef},
+      messages===null&&React.createElement('div',{className:'chat-empty'},React.createElement('span',{className:'spinner',style:{borderTopColor:'var(--rose)',borderColor:'rgba(194,24,91,.2)'}})),
+      messages&&messages.length===0&&React.createElement('div',{className:'chat-empty'},
+        React.createElement('i',{className:'ti ti-message-heart',style:{fontSize:40}}),
+        React.createElement('div',null,t('chat_empty_state'))
+      ),
+      messages&&messages.map(m=>React.createElement('div',{key:m.id,className:`chat-bubble ${m.sender_id===myId?'mine':'theirs'}`},
+        m.body,
+        React.createElement('span',{className:'chat-time'},formatTime(m.created_at))
+      ))
+    ),
+    React.createElement('div',{className:'chat-input-row'},
+      React.createElement('input',{className:'chat-input',placeholder:t('chat_placeholder'),value:text,
+        onChange:e=>setText(e.target.value),onKeyDown:handleKey}),
+      React.createElement('button',{className:'chat-send',onClick:send,disabled:!text.trim()||sending},
+        sending?React.createElement('span',{className:'spinner',style:{width:16,height:16,borderWidth:2}}):React.createElement('i',{className:'ti ti-send',style:{fontSize:17}})
+      )
+    )
   );
 }
 
