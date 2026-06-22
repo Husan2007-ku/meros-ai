@@ -62,6 +62,7 @@ def init_db():
         id          TEXT PRIMARY KEY,
         name        TEXT NOT NULL,
         created_by  TEXT NOT NULL,
+        invite_code TEXT UNIQUE,
         created_at  TEXT DEFAULT (datetime('now'))
     );
 
@@ -189,8 +190,8 @@ def _seed_demo(db):
 
     pw = hashlib.sha256("demo123".encode()).hexdigest()
 
-    db.execute("INSERT INTO families VALUES (?,?,?,datetime('now'))",
-               (fam_id, "Malikov oilasi", user_id))
+    db.execute("INSERT INTO families(id,name,created_by,invite_code) VALUES (?,?,?,?)",
+               (fam_id, "Malikov oilasi", user_id, "MEROS01"))
 
     db.execute("""INSERT INTO users VALUES (?,?,?,?,?,?,?,?,datetime('now'))""",
                (user_id, '+998901234567', 'Malikov Husan',
@@ -279,6 +280,14 @@ def _seed_demo(db):
 
 # ─── AUTH HELPERS ────────────────────────────────────────────────────────────
 
+def generate_invite_code():
+    """Generate a short, human-friendly invite code like 'M7K2A9'."""
+    import random
+    import string
+    alphabet = string.ascii_uppercase + string.digits
+    alphabet = alphabet.replace('0', '').replace('O', '').replace('1', '').replace('I', '')  # avoid confusion
+    return ''.join(random.choices(alphabet, k=6))
+
 def make_token(user_id, family_id):
     payload = {
         'sub': user_id,
@@ -362,6 +371,7 @@ def register():
     password  = body.get('password', '').strip()
     birth_date= body.get('birth_date', '')
     gender    = body.get('gender', 'male')
+    invite_code = body.get('invite_code', '').strip().upper()
 
     if not all([phone, full_name, password]):
         return err('Telefon, ism va parol majburiy')
@@ -372,20 +382,29 @@ def register():
         return err('Bu raqam allaqachon ro\'yxatdan o\'tgan')
 
     user_id = str(uuid.uuid4())
-    fam_id  = str(uuid.uuid4())
     pw_hash = hashlib.sha256(password.encode()).hexdigest()
 
-    db.execute("INSERT INTO families VALUES (?,?,?,datetime('now'))",
-               (fam_id, f"{full_name} oilasi", user_id))
+    # If an invite code is provided, join that existing family instead of creating a new one
+    fam_id = None
+    if invite_code:
+        fam_row = db.execute("SELECT id FROM families WHERE invite_code=?", (invite_code,)).fetchone()
+        if not fam_row:
+            return err("Taklif kodi topilmadi. Iltimos qaytadan tekshiring.")
+        fam_id = fam_row['id']
+    else:
+        fam_id = str(uuid.uuid4())
+        new_invite_code = generate_invite_code()
+        db.execute("INSERT INTO families(id,name,created_by,invite_code) VALUES (?,?,?,?)",
+                   (fam_id, f"{full_name} oilasi", user_id, new_invite_code))
+
     db.execute("""INSERT INTO users(id,phone,full_name,birth_date,gender,password_hash,family_id,role)
                   VALUES(?,?,?,?,?,?,?,'adult')""",
                (user_id, phone, full_name, birth_date, gender, pw_hash, fam_id))
 
-    name_parts = full_name.strip().split()
-    initials = ''.join(p[0].upper() for p in name_parts[:2])
     db.execute("""INSERT INTO family_members(id,family_id,user_id,name,birth_date,gender,role,avatar_color)
-                  VALUES(?,?,?,?,?,?,'parent','#1A56A0')""",
-               (str(uuid.uuid4()), fam_id, user_id, full_name, birth_date, gender))
+                  VALUES(?,?,?,?,?,?,'parent',?)""",
+               (str(uuid.uuid4()), fam_id, user_id, full_name, birth_date, gender,
+                '#C2185B' if gender == 'female' else '#1A78C2'))
     db.commit()
 
     token = make_token(user_id, fam_id)
@@ -403,6 +422,18 @@ def login():
         return err("Telefon yoki parol noto'g'ri", 401)
     token = make_token(user['id'], user['family_id'])
     return ok({'token': token, 'user': row_to_dict(user)})
+
+@app.route('/api/family/invite-code', methods=['GET'])
+@require_auth
+def get_invite_code():
+    db = get_db()
+    fam = db.execute("SELECT invite_code FROM families WHERE id=?", (g.family_id,)).fetchone()
+    code = fam['invite_code'] if fam and fam['invite_code'] else None
+    if not code:
+        code = generate_invite_code()
+        db.execute("UPDATE families SET invite_code=? WHERE id=?", (code, g.family_id))
+        db.commit()
+    return ok({'invite_code': code})
 
 # ─── FAMILY ──────────────────────────────────────────────────────────────────
 
