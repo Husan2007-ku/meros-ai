@@ -172,6 +172,16 @@ def init_db():
         overall_score INTEGER NOT NULL,
         created_at  TEXT DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS messages (
+        id          TEXT PRIMARY KEY,
+        family_id   TEXT NOT NULL,
+        sender_id   TEXT NOT NULL,
+        body        TEXT NOT NULL,
+        kind        TEXT DEFAULT 'text',
+        is_read     INTEGER DEFAULT 0,
+        created_at  TEXT DEFAULT (datetime('now'))
+    );
     """)
     db.commit()
 
@@ -943,6 +953,52 @@ def get_compat_history():
             d['scores'] = {}
         result.append(d)
     return ok(result)
+
+# ─── MESSAGES (COUPLE CHAT) ─────────────────────────────────────────────────
+
+@app.route('/api/messages', methods=['GET'])
+@require_auth
+def get_messages():
+    db = get_db()
+    rows = db.execute(
+        "SELECT m.*, u.full_name as sender_name FROM messages m "
+        "JOIN users u ON m.sender_id = u.id "
+        "WHERE m.family_id=? ORDER BY m.created_at ASC LIMIT 100",
+        (g.family_id,)).fetchall()
+    # Mark messages from others as read
+    db.execute("UPDATE messages SET is_read=1 WHERE family_id=? AND sender_id!=?",
+               (g.family_id, g.user_id))
+    db.commit()
+    return ok(rows_to_list(rows))
+
+@app.route('/api/messages', methods=['POST'])
+@require_auth
+def send_message():
+    body = request.json or {}
+    text = (body.get('body') or '').strip()
+    kind = body.get('kind', 'text')
+    if not text:
+        return err('Xabar matni bo\'sh bo\'lmasligi kerak')
+    if len(text) > 1000:
+        return err('Xabar juda uzun (max 1000 belgi)')
+    mid = str(uuid.uuid4())
+    db = get_db()
+    db.execute("INSERT INTO messages(id,family_id,sender_id,body,kind) VALUES(?,?,?,?,?)",
+               (mid, g.family_id, g.user_id, text, kind))
+    db.commit()
+    row = db.execute(
+        "SELECT m.*, u.full_name as sender_name FROM messages m "
+        "JOIN users u ON m.sender_id = u.id WHERE m.id=?", (mid,)).fetchone()
+    return ok(row_to_dict(row)), 201
+
+@app.route('/api/messages/unread-count', methods=['GET'])
+@require_auth
+def unread_message_count():
+    db = get_db()
+    cnt = db.execute(
+        "SELECT COUNT(*) as cnt FROM messages WHERE family_id=? AND sender_id!=? AND is_read=0",
+        (g.family_id, g.user_id)).fetchone()['cnt']
+    return ok({'unread': cnt})
 
 # ─── MISC ────────────────────────────────────────────────────────────────────
 
