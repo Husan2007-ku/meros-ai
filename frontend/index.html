@@ -39,7 +39,7 @@ input,textarea,select{font-family:inherit;font-size:inherit}
 .nav-btn.active{color:var(--blue)}
 .nav-btn i{font-size:22px;line-height:1}
 
-.card{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px}
+.card{background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;cursor:pointer}
 .card-row{display:flex;align-items:center;gap:12px}
 .icon-box{width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:21px;flex-shrink:0}
 .card-info{flex:1;min-width:0}
@@ -328,6 +328,9 @@ const I18N={
     lullaby_coming_title:'Tez kunda',lullaby_coming_sub:"Ona ovozini yozib, AI shu ovozda alla aytadigan va shaxsiylashtirilgan ertak to'qiydigan funksiya tayyorlanmoqda",
     lullaby_notify_toast:"Rahmat! Tayyor bo'lganda birinchi bo'lib sizga xabar beramiz 🔔",
     govt_int_disclaimer:"Bu integratsiyalar hozircha namoyish maqsadida. Haqiqiy ulanish faqat tegishli davlat idoralari ruxsati bilan amalga oshiriladi.",
+    capsule_ready:'Ochish vaqti keldi! →',all_years:'Hammasi',
+    anniversary_not_set:'Muhim sanani belgilang',anniversary_not_set_sub:"Nikoh sanangizni qo'shsangiz, har yili eslatib turamiz",
+    anniversary_setup_toast:"Tez kunda muhim sanalarni qo'shish funksiyasi ishga tushadi 🗓️",
     couple_chat_title:'Suhbat',couple_chat_sub:"Sherigingiz bilan xabar almashing",
     chat_empty_state:"Hali xabar yo'q. Birinchi bo'lib salom ayting! 💬",chat_placeholder:'Xabar yozing...',
   },
@@ -411,6 +414,9 @@ const I18N={
     lullaby_coming_title:'Скоро',lullaby_coming_sub:'Готовится функция записи голоса мамы для колыбельных и AI-сказок, персонализированных для вашего ребёнка',
     lullaby_notify_toast:'Спасибо! Мы сообщим вам первыми, когда это будет готово 🔔',
     govt_int_disclaimer:'Эти интеграции пока демонстрационные. Реальное подключение возможно только с разрешения соответствующих госорганов.',
+    capsule_ready:'Время открытия пришло! →',all_years:'Все',
+    anniversary_not_set:'Укажите важную дату',anniversary_not_set_sub:'Добавьте дату свадьбы — мы будем напоминать каждый год',
+    anniversary_setup_toast:'Скоро появится функция добавления важных дат 🗓️',
     couple_chat_title:'Переписка',couple_chat_sub:'Обменивайтесь сообщениями с партнёром',
     chat_empty_state:'Пока нет сообщений. Напишите первыми! 💬',chat_placeholder:'Напишите сообщение...',
   },
@@ -494,6 +500,9 @@ const I18N={
     lullaby_coming_title:'Coming soon',lullaby_coming_sub:"We're building a feature to record a mother's voice for lullabies and AI tales personalized for your child",
     lullaby_notify_toast:"Thanks! We'll be the first to let you know when it's ready 🔔",
     govt_int_disclaimer:'These integrations are currently for demonstration purposes. Real connection requires approval from the relevant government agencies.',
+    capsule_ready:"Time to open! →",all_years:'All',
+    anniversary_not_set:'Set an important date',anniversary_not_set_sub:"Add your anniversary and we'll remind you every year",
+    anniversary_setup_toast:'The feature to add important dates is coming soon 🗓️',
     couple_chat_title:'Chat',couple_chat_sub:'Exchange messages with your partner',
     chat_empty_state:'No messages yet. Say hi first! 💬',chat_placeholder:'Type a message...',
   }
@@ -625,7 +634,7 @@ function AuthScreen(){
 }
 
 /* HOME */
-function HomeScreen({onRefresh}){
+function HomeScreen({onRefresh,onNavigate}){
   const {showToast,showModal,lang}=useApp();
   const [dash,setDash]=useState(null);
   const [oila,setOila]=useState(true);
@@ -702,11 +711,11 @@ function HomeScreen({onRefresh}){
       ),
       React.createElement('div',{className:'section-label'},t('quick_actions')),
       React.createElement('div',{style:{padding:'0 16px'}},
-        [{title:t('health_card_title'),sub:t('health_card_sub'),ic:'ti-heart-rate',c:'#2D7A4F',bg:'#E8F5EE',
+        [{title:t('health_card_title'),sub:t('health_card_sub'),ic:'ti-heart-rate',c:'#2D7A4F',bg:'#E8F5EE',page:'health',
           bdg:dash.overdue_vaccines>0?{t:dash.overdue_vaccines+' !',cls:'badge-amber'}:{t:t('good'),cls:'badge-green'}},
-         {title:t('memories_card_title'),sub:`${dash.memory_count} ${t('memories_card_sub_prefix')}`,ic:'ti-photo',c:'var(--purple)',bg:'var(--purple-l)',bdg:{t:dash.memory_count,cls:'badge-purple'}},
-         {title:t('relationship_card_title'),sub:t('relationship_card_sub'),ic:'ti-heart',c:'var(--rose)',bg:'var(--rose-l)',bdg:{t:dash.warmth_avg_7days+'/5',cls:'badge-blue'}},
-        ].map(x=>React.createElement('div',{key:x.title,className:'card'},
+         {title:t('memories_card_title'),sub:`${dash.memory_count} ${t('memories_card_sub_prefix')}`,ic:'ti-photo',c:'var(--purple)',bg:'var(--purple-l)',page:'memories',bdg:{t:dash.memory_count,cls:'badge-purple'}},
+         {title:t('relationship_card_title'),sub:t('relationship_card_sub'),ic:'ti-heart',c:'var(--rose)',bg:'var(--rose-l)',page:'relationship',bdg:{t:dash.warmth_avg_7days+'/5',cls:'badge-blue'}},
+        ].map(x=>React.createElement('div',{key:x.title,className:'card',onClick:()=>onNavigate&&onNavigate(x.page)},
           React.createElement('div',{className:'card-row'},
             React.createElement('div',{className:'icon-box',style:{background:x.bg}},React.createElement('i',{className:`ti ${x.ic}`,style:{color:x.c,fontSize:22}})),
             React.createElement('div',{className:'card-info'},React.createElement('div',{className:'card-title'},x.title),React.createElement('div',{className:'card-sub'},x.sub)),
@@ -1034,7 +1043,7 @@ function MemoriesScreen({refresh}){
     ),
     React.createElement('div',{className:'scrollable'},
       React.createElement('div',{className:'chip-row'},
-        years.map(y=>React.createElement('div',{key:y,className:`chip${year===y?' active':''}`,onClick:()=>setYear(y)},y||'Hammasi'))
+        years.map(y=>React.createElement('div',{key:y,className:`chip${year===y?' active':''}`,onClick:()=>setYear(y)},y||t('all_years')))
       ),
       React.createElement('div',{className:'photo-grid'},
         mems.map(m=>React.createElement('div',{key:m.id,className:'photo-cell',style:{background:m.media_url?'#000':m.color},title:m.title||'',onClick:()=>setViewMem(m)},
@@ -1052,7 +1061,7 @@ function MemoriesScreen({refresh}){
           React.createElement('div',{className:'cap-icon'},c.can_open?'📬':'⏳'),
           React.createElement('div',{className:'cap-info'},
             React.createElement('div',{className:'cap-title'},c.title),
-            React.createElement('div',{className:c.can_open?'cap-open':'cap-date'},c.can_open?'Ochish vaqti keldi! →':`${c.open_date} · ${c.recipient}`)
+            React.createElement('div',{className:c.can_open?'cap-open':'cap-date'},c.can_open?t('capsule_ready'):`${c.open_date} · ${c.recipient}`)
           ),
           React.createElement('i',{className:`ti ${c.can_open?'ti-lock-open':'ti-lock'}`,style:{color:c.can_open?'var(--green)':'var(--text3)',fontSize:17}})
         ))
@@ -1161,14 +1170,14 @@ function RelationshipScreen(){
       ),
       React.createElement('div',{className:'section-label'},t('important_dates')),
       React.createElement('div',{style:{padding:'0 16px'}},
-        React.createElement('div',{className:'card'},
+        React.createElement('div',{className:'card',onClick:()=>showToast(t('anniversary_setup_toast'),'')},
           React.createElement('div',{className:'card-row'},
             React.createElement('div',{className:'icon-box',style:{background:'var(--rose-l)'}},React.createElement('i',{className:'ti ti-gift',style:{color:'var(--rose)',fontSize:22}})),
-            React.createElement('div',{className:'card-info'},React.createElement('div',{className:'card-title'},`${t('anniversary')} — 12 ${t('days_left')}`),React.createElement('div',{className:'card-sub'},`2019-07-15 · 6 ${t('together')}`)),
-            React.createElement('i',{className:'ti ti-bell',style:{color:'var(--amber)',fontSize:19}})
+            React.createElement('div',{className:'card-info'},React.createElement('div',{className:'card-title'},t('anniversary_not_set')),React.createElement('div',{className:'card-sub'},t('anniversary_not_set_sub'))),
+            React.createElement('i',{className:'ti ti-chevron-right',style:{color:'var(--text3)',fontSize:18}})
           )
         ),
-        React.createElement('div',{className:'card'},
+        React.createElement('div',{className:'card',onClick:()=>{setShowChat(true);setUnread(0);}},
           React.createElement('div',{className:'card-row'},
             React.createElement('div',{className:'icon-box',style:{background:'var(--rose-l)'}},React.createElement('i',{className:'ti ti-message-heart',style:{color:'var(--rose)',fontSize:22}})),
             React.createElement('div',{className:'card-info'},React.createElement('div',{className:'card-title'},t('gratitude_today')),React.createElement('div',{className:'card-sub'},t('send_msg'))),
@@ -1744,7 +1753,7 @@ function AddMemoryModal({onClose,onDone}){
 
 function MemoryViewModal({onClose,memory}){
   if(!memory)return null;
-  return React.createElement(Modal,{title:memory.title||'Xotira',onClose},
+  return React.createElement(Modal,{title:memory.title||t('memories_lbl'),onClose},
     memory.media_url&&React.createElement('img',{src:memory.media_url,style:{width:'100%',borderRadius:'var(--r2)',marginBottom:14,maxHeight:320,objectFit:'cover'}}),
     memory.description&&React.createElement('p',{style:{fontSize:14,color:'var(--text2)',marginBottom:12,lineHeight:1.6}},memory.description),
     React.createElement('div',{style:{display:'flex',gap:14,fontSize:12,color:'var(--text3)'}},
@@ -1813,7 +1822,7 @@ function App(){
   ];
 
   const pages={
-    home:()=>React.createElement(HomeScreen,{key:'home'+refresh,onRefresh:refresh}),
+    home:()=>React.createElement(HomeScreen,{key:'home'+refresh,onRefresh:refresh,onNavigate:setPage}),
     health:()=>React.createElement(HealthScreen,{key:'health'+refresh}),
     memories:()=>React.createElement(MemoriesScreen,{key:'mem'+refresh,refresh}),
     relationship:()=>React.createElement(RelationshipScreen,{key:'rel'}),
