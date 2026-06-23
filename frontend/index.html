@@ -322,6 +322,12 @@ const I18N={
     copy:'Nusxa',code_copied:'Kod nusxalandi ✓',
     parent_school_title:'Ota-ona Maktabi',parent_school_sub:"Bu hafta sinab ko'ring",
     tip_tried_toast:"Ajoyib! Kichik qadamlar katta o'zgarish yaratadi 🌟",mark_tried:'Sinab ko\'rdim ✓',
+    new_generation:'Yangi avlod',tree_note:"Farzandlaringiz 18 yoshga to'lganda o'z shajarasini boshlaydi — zanjir abadiy davom etadi",tree_empty:"Hozircha oila a'zolari qo'shilmagan",
+    docs_empty_title:'Hujjatlar hali yo\'q',docs_empty_sub:"AXBROR integratsiyasi ishga tushgandan keyin pasport, nikoh va tug'ilish guvohnomalari avtomatik shu yerda paydo bo'ladi",
+    docs_connect_btn:'Xabar bering, qachon tayyor bo\'ladi',docs_connect_toast:"Rahmat! AXBROR integratsiyasi tayyor bo'lganda xabar beramiz 🔔",
+    lullaby_coming_title:'Tez kunda',lullaby_coming_sub:"Ona ovozini yozib, AI shu ovozda alla aytadigan va shaxsiylashtirilgan ertak to'qiydigan funksiya tayyorlanmoqda",
+    lullaby_notify_toast:"Rahmat! Tayyor bo'lganda birinchi bo'lib sizga xabar beramiz 🔔",
+    govt_int_disclaimer:"Bu integratsiyalar hozircha namoyish maqsadida. Haqiqiy ulanish faqat tegishli davlat idoralari ruxsati bilan amalga oshiriladi.",
     couple_chat_title:'Suhbat',couple_chat_sub:"Sherigingiz bilan xabar almashing",
     chat_empty_state:"Hali xabar yo'q. Birinchi bo'lib salom ayting! 💬",chat_placeholder:'Xabar yozing...',
   },
@@ -399,6 +405,12 @@ const I18N={
     copy:'Копировать',code_copied:'Код скопирован ✓',
     parent_school_title:'Школа родителей',parent_school_sub:'Попробуйте это на этой неделе',
     tip_tried_toast:'Отлично! Маленькие шаги создают большие перемены 🌟',mark_tried:'Я попробовал ✓',
+    new_generation:'Новое поколение',tree_note:'Когда ваши дети достигнут 18 лет, они начнут свою родословную — цепочка продолжается вечно',tree_empty:'Члены семьи пока не добавлены',
+    docs_empty_title:'Документов пока нет',docs_empty_sub:'После запуска интеграции с АХБОР паспорт, свидетельства о браке и рождении будут появляться здесь автоматически',
+    docs_connect_btn:'Сообщить, когда будет готово',docs_connect_toast:'Спасибо! Мы сообщим, когда интеграция с АХБОР будет готова 🔔',
+    lullaby_coming_title:'Скоро',lullaby_coming_sub:'Готовится функция записи голоса мамы для колыбельных и AI-сказок, персонализированных для вашего ребёнка',
+    lullaby_notify_toast:'Спасибо! Мы сообщим вам первыми, когда это будет готово 🔔',
+    govt_int_disclaimer:'Эти интеграции пока демонстрационные. Реальное подключение возможно только с разрешения соответствующих госорганов.',
     couple_chat_title:'Переписка',couple_chat_sub:'Обменивайтесь сообщениями с партнёром',
     chat_empty_state:'Пока нет сообщений. Напишите первыми! 💬',chat_placeholder:'Напишите сообщение...',
   },
@@ -476,6 +488,12 @@ const I18N={
     copy:'Copy',code_copied:'Code copied ✓',
     parent_school_title:'Parent School',parent_school_sub:'Try this this week',
     tip_tried_toast:'Great! Small steps create big change 🌟',mark_tried:'I tried it ✓',
+    new_generation:'New generation',tree_note:"When your children turn 18, they'll start their own lineage — the chain continues forever",tree_empty:'No family members added yet',
+    docs_empty_title:'No documents yet',docs_empty_sub:'Once the AXBROR integration launches, passports, marriage and birth certificates will appear here automatically',
+    docs_connect_btn:"Notify me when it's ready",docs_connect_toast:"Thanks! We'll notify you when the AXBROR integration is ready 🔔",
+    lullaby_coming_title:'Coming soon',lullaby_coming_sub:"We're building a feature to record a mother's voice for lullabies and AI tales personalized for your child",
+    lullaby_notify_toast:"Thanks! We'll be the first to let you know when it's ready 🔔",
+    govt_int_disclaimer:'These integrations are currently for demonstration purposes. Real connection requires approval from the relevant government agencies.',
     couple_chat_title:'Chat',couple_chat_sub:'Exchange messages with your partner',
     chat_empty_state:'No messages yet. Say hi first! 💬',chat_placeholder:'Type a message...',
   }
@@ -1505,6 +1523,7 @@ function ProfileScreen(){
           React.createElement('div',{className:`toggle${togs[x.k]?' on':''}`,onClick:()=>toggleInt(x.k,x.name)})
         ))
       ),
+      React.createElement('div',{style:{fontSize:11,color:'var(--text3)',padding:'0 16px 4px',lineHeight:1.5}},t('govt_int_disclaimer')),
       React.createElement('div',{className:'section-label'},t('security_section')),
       React.createElement('div',{className:'menu-card'},
         React.createElement('div',{className:'menu-row',onClick:()=>showToast(t('biometric')+' — Face ID / Touch ID ✓','success')},
@@ -1541,7 +1560,7 @@ function ProfileScreen(){
 }
 
 /* PROFILE SUB-MODALS */
-function ProfileDetailModal({onClose,fam}){
+function ProfileDetailModal({onClose,fam,myPhone}){
   return React.createElement(Modal,{title:t('personal_profile'),onClose},
     React.createElement('div',{style:{textAlign:'center',marginBottom:18}},
       React.createElement('div',{style:{width:64,height:64,borderRadius:'50%',background:'var(--blue-l)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,fontWeight:800,color:'var(--blue)',margin:'0 auto 10px'}},getInitials(fam?.family?.name||'MA')),
@@ -1549,8 +1568,7 @@ function ProfileDetailModal({onClose,fam}){
       React.createElement('div',{style:{fontSize:12,color:'var(--text2)',marginTop:2}},'Toshkent, O\'zbekiston')
     ),
     React.createElement('div',{className:'menu-card',style:{margin:0}},
-      [[t('phone'),'+998 90 123 45 67'],[t('family_members_count'),(fam?.members?.length||0)+''],['',fam?.family?.created_at?.slice(0,10)||'2026-06-01'],['Freemium','']]
-      .filter(([k,v])=>k&&v!==undefined)
+      [[t('phone'),myPhone||'—'],[t('family_members_count'),(fam?.members?.length||0)+''],[t('date_lbl'),fam?.family?.created_at?.slice(0,10)||'—']]
       .map(([k,v])=>React.createElement('div',{key:k,className:'menu-row',style:{cursor:'default'}},
         React.createElement('div',{className:'menu-text',style:{color:'var(--text2)',fontWeight:500}},k),
         React.createElement('div',{style:{fontSize:13,fontWeight:700,color:'var(--text)'}},v)
@@ -1563,15 +1581,16 @@ function FamilyTreeModal({onClose,fam}){
   const members=fam?.members||[];
   const parents=members.filter(m=>m.role==='parent');
   const children=members.filter(m=>m.role==='child');
-  return React.createElement(Modal,{title:'Oilaviy shajara daraxti',onClose},
+  return React.createElement(Modal,{title:t('family_tree'),onClose},
     React.createElement('div',{style:{textAlign:'center',padding:'10px 0 20px'}},
+      parents.length===0&&children.length===0&&React.createElement('div',{style:{fontSize:13,color:'var(--text3)',padding:'20px 0'}},t('tree_empty')),
       React.createElement('div',{style:{display:'flex',justifyContent:'center',gap:16,marginBottom:24}},
         parents.map((p,i)=>React.createElement('div',{key:p.id,style:{textAlign:'center'}},
           React.createElement('div',{style:{width:52,height:52,borderRadius:'50%',background:i===0?'#1A78C2':'#C2185B',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:800,fontSize:15,margin:'0 auto 6px'}},getInitials(p.name)),
           React.createElement('div',{style:{fontSize:12,fontWeight:700}},p.name.split(' ')[0])
         ))
       ),
-      React.createElement('div',{style:{width:2,height:24,background:'var(--border2)',margin:'0 auto'}}),
+      (parents.length>0||children.length>0)&&React.createElement('div',{style:{width:2,height:24,background:'var(--border2)',margin:'0 auto'}}),
       React.createElement('div',{style:{display:'flex',justifyContent:'center',gap:14,marginTop:8,flexWrap:'wrap'}},
         children.map((c,i)=>React.createElement('div',{key:c.id,style:{textAlign:'center'}},
           React.createElement('div',{style:{width:44,height:44,borderRadius:'50%',background:['#2D7A4F','#7B2D8B','#D97706'][i%3],display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:800,fontSize:13,margin:'0 auto 6px'}},getInitials(c.name)),
@@ -1579,68 +1598,40 @@ function FamilyTreeModal({onClose,fam}){
         )),
         React.createElement('div',{style:{textAlign:'center'}},
           React.createElement('div',{style:{width:44,height:44,borderRadius:'50%',border:'2px dashed var(--border2)',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--text3)',margin:'0 auto 6px'}},React.createElement('i',{className:'ti ti-plus'})),
-          React.createElement('div',{style:{fontSize:11,color:'var(--text3)'}},"Yangi avlod")
+          React.createElement('div',{style:{fontSize:11,color:'var(--text3)'}},t('new_generation'))
         )
       )
     ),
     React.createElement('div',{style:{background:'var(--green-l)',borderRadius:'var(--r2)',padding:'12px 14px',fontSize:12,color:'var(--green)',textAlign:'center',fontWeight:600}},
-      "🌳 Farzandlaringiz 18 yoshga to'lganda o'z shajarasini boshlaydi — zanjir abadiy davom etadi"
+      '🌳 '+t('tree_note')
     )
   );
 }
 
 function DocumentsModal({onClose}){
   const {showToast}=useApp();
-  const docs=[
-    {name:'Nikoh guvohnomasi',date:'2019-07-15',ic:'ti-certificate',c:'var(--rose)'},
-    {name:'Azizning tug\'ilganlik haqida guvohnomasi',date:'2017-05-12',ic:'ti-file-certificate',c:'var(--blue)'},
-    {name:'Lolaning tug\'ilganlik haqida guvohnomasi',date:'2021-02-08',ic:'ti-file-certificate',c:'var(--blue)'},
-  ];
-  return React.createElement(Modal,{title:'Hujjatlar arxivi',onClose},
-    React.createElement('div',{className:'menu-card',style:{margin:'0 0 14px'}},
-      docs.map(d=>React.createElement('div',{key:d.name,className:'menu-row',onClick:()=>showToast(d.name+' ko\'rilmoqda...','')},
-        React.createElement('div',{className:'menu-icon',style:{background:'var(--blue-l)'}},React.createElement('i',{className:`ti ${d.ic}`,style:{color:d.c,fontSize:18}})),
-        React.createElement('div',{style:{flex:1}},
-          React.createElement('div',{className:'menu-text'},d.name),
-          React.createElement('div',{style:{fontSize:11,color:'var(--text3)',marginTop:1}},d.date+' · AXBROR orqali')
-        ),
-        React.createElement('i',{className:'ti ti-chevron-right',style:{color:'var(--text3)',fontSize:15}})
-      ))
+  return React.createElement(Modal,{title:t('documents_archive'),onClose},
+    React.createElement('div',{style:{textAlign:'center',padding:'24px 12px'}},
+      React.createElement('div',{style:{width:60,height:60,borderRadius:'50%',background:'var(--amber-l)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:26,margin:'0 auto 14px'}},'📂'),
+      React.createElement('div',{style:{fontSize:14,fontWeight:700,color:'var(--text)',marginBottom:8}},t('docs_empty_title')),
+      React.createElement('div',{style:{fontSize:13,color:'var(--text2)',lineHeight:1.6}},t('docs_empty_sub'))
     ),
-    React.createElement('button',{className:'btn btn-primary btn-full',onClick:()=>showToast('AXBROR integratsiyasi orqali yangi hujjat avtomatik qo\'shiladi','success')},
-      React.createElement('i',{className:'ti ti-cloud-download',style:{fontSize:18}}),"AXBROR'dan yangilash"
+    React.createElement('button',{className:'btn btn-primary btn-full',onClick:()=>showToast(t('docs_connect_toast'),'')},
+      React.createElement('i',{className:'ti ti-cloud-download',style:{fontSize:18}}),t('docs_connect_btn')
     )
   );
 }
 
 function LullabyModal({onClose}){
   const {showToast}=useApp();
-  const [playing,setPlaying]=useState(null);
-  const items=[
-    {t:"Lola uchun alla (ona ovozida)",sub:'Zulfiyaning ovozi · 2:14',ic:'🎵'},
-    {t:"Aziz uchun ertak: \"Botir va Yulduz\"",sub:'AI yaratgan · 4:32',ic:'📖'},
-  ];
-  function play(i){
-    setPlaying(i);
-    showToast('🎵 Ijro etilmoqda...','');
-    setTimeout(()=>setPlaying(null),2500);
-  }
-  return React.createElement(Modal,{title:'Alla va ertaklar',onClose},
-    React.createElement('div',{style:{fontSize:12,color:'var(--text2)',marginBottom:14,textAlign:'center'}},
-      "Onaning haqiqiy ovozida AI alla aytadi va shaxsiylashtirilgan ertaklar to'qiydi"
+  return React.createElement(Modal,{title:t('lullaby_tales'),onClose},
+    React.createElement('div',{style:{textAlign:'center',padding:'10px 12px 20px'}},
+      React.createElement('div',{style:{width:60,height:60,borderRadius:'50%',background:'var(--purple-l)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:26,margin:'0 auto 14px'}},'🎵'),
+      React.createElement('div',{style:{fontSize:14,fontWeight:700,color:'var(--text)',marginBottom:8}},t('lullaby_coming_title')),
+      React.createElement('div',{style:{fontSize:13,color:'var(--text2)',lineHeight:1.6}},t('lullaby_coming_sub'))
     ),
-    React.createElement('div',{className:'menu-card',style:{margin:'0 0 14px'}},
-      items.map((x,i)=>React.createElement('div',{key:x.t,className:'menu-row',onClick:()=>play(i)},
-        React.createElement('div',{className:'menu-icon',style:{background:'var(--purple-l)',fontSize:18}},x.ic),
-        React.createElement('div',{style:{flex:1}},
-          React.createElement('div',{className:'menu-text'},x.t),
-          React.createElement('div',{style:{fontSize:11,color:'var(--text3)',marginTop:1}},x.sub)
-        ),
-        React.createElement('i',{className:`ti ${playing===i?'ti-player-pause-filled':'ti-player-play-filled'}`,style:{color:'var(--purple)',fontSize:20}})
-      ))
-    ),
-    React.createElement('button',{className:'btn btn-full',style:{background:'var(--purple)',color:'#fff'},onClick:()=>showToast("Ona ovozi yozib olinmoqda... (1-3 daqiqa namuna kifoya)",'')},
-      React.createElement('i',{className:'ti ti-microphone',style:{fontSize:18}}),'Yangi ovoz yozish'
+    React.createElement('button',{className:'btn btn-full',style:{background:'var(--purple)',color:'#fff'},onClick:()=>showToast(t('lullaby_notify_toast'),'success')},
+      React.createElement('i',{className:'ti ti-bell-ringing',style:{fontSize:18}}),t('notify_when_ready')
     )
   );
 }
@@ -1833,7 +1824,7 @@ function App(){
     member:()=>React.createElement(AddMemberModal,{onClose:closeModal,onDone}),
     memory:()=>React.createElement(AddMemoryModal,{onClose:closeModal,onDone}),
     capsule:()=>React.createElement(AddCapsuleModal,{onClose:closeModal,onDone}),
-    profileDetail:()=>React.createElement(ProfileDetailModal,{onClose:closeModal,fam:famCache}),
+    profileDetail:()=>React.createElement(ProfileDetailModal,{onClose:closeModal,fam:famCache,myPhone:famCache?.me?.phone}),
     familyTree:()=>React.createElement(FamilyTreeModal,{onClose:closeModal,fam:famCache}),
     documents:()=>React.createElement(DocumentsModal,{onClose:closeModal}),
     lullaby:()=>React.createElement(LullabyModal,{onClose:closeModal}),

@@ -467,7 +467,8 @@ def get_family():
     db = get_db()
     family  = db.execute("SELECT * FROM families WHERE id=?", (g.family_id,)).fetchone()
     members = db.execute("SELECT * FROM family_members WHERE family_id=?", (g.family_id,)).fetchall()
-    return ok({'family': row_to_dict(family), 'members': rows_to_list(members)})
+    me      = db.execute("SELECT id, phone, full_name FROM users WHERE id=?", (g.user_id,)).fetchone()
+    return ok({'family': row_to_dict(family), 'members': rows_to_list(members), 'me': row_to_dict(me)})
 
 @app.route('/api/family/members', methods=['POST'])
 @require_auth
