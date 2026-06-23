@@ -328,6 +328,10 @@ const I18N={
     lullaby_coming_title:'Tez kunda',lullaby_coming_sub:"Ona ovozini yozib, AI shu ovozda alla aytadigan va shaxsiylashtirilgan ertak to'qiydigan funksiya tayyorlanmoqda",
     lullaby_notify_toast:"Rahmat! Tayyor bo'lganda birinchi bo'lib sizga xabar beramiz 🔔",
     govt_int_disclaimer:"Bu integratsiyalar hozircha namoyish maqsadida. Haqiqiy ulanish faqat tegishli davlat idoralari ruxsati bilan amalga oshiriladi.",
+    select_child:'Farzandni tanlang',content_type:'Tur',lullaby_mode:'Alla',story_mode:'Ertak',
+    play_audio:'Ijro etish',stop_playback:"To'xtatish",
+    tts_not_supported:"Brauzeringiz ovozli ijroni qo'llab-quvvatlamaydi. Chrome yoki Edge dan foydalaning.",
+    tts_disclaimer:"Hozircha sintezlangan AI ovozi ishlatiladi. Ona ovozini klonlash funksiyasi ishlab chiqilmoqda.",
     capsule_ready:'Ochish vaqti keldi! →',all_years:'Hammasi',
     anniversary_not_set:'Muhim sanani belgilang',anniversary_not_set_sub:"Nikoh sanangizni qo'shsangiz, har yili eslatib turamiz",
     anniversary_setup_toast:"Tez kunda muhim sanalarni qo'shish funksiyasi ishga tushadi 🗓️",
@@ -414,6 +418,10 @@ const I18N={
     lullaby_coming_title:'Скоро',lullaby_coming_sub:'Готовится функция записи голоса мамы для колыбельных и AI-сказок, персонализированных для вашего ребёнка',
     lullaby_notify_toast:'Спасибо! Мы сообщим вам первыми, когда это будет готово 🔔',
     govt_int_disclaimer:'Эти интеграции пока демонстрационные. Реальное подключение возможно только с разрешения соответствующих госорганов.',
+    select_child:'Выберите ребёнка',content_type:'Тип',lullaby_mode:'Колыбельная',story_mode:'Сказка',
+    play_audio:'Воспроизвести',stop_playback:'Остановить',
+    tts_not_supported:'Ваш браузер не поддерживает озвучивание. Используйте Chrome или Edge.',
+    tts_disclaimer:'Сейчас используется синтезированный голос AI. Функция клонирования голоса мамы в разработке.',
     capsule_ready:'Время открытия пришло! →',all_years:'Все',
     anniversary_not_set:'Укажите важную дату',anniversary_not_set_sub:'Добавьте дату свадьбы — мы будем напоминать каждый год',
     anniversary_setup_toast:'Скоро появится функция добавления важных дат 🗓️',
@@ -500,6 +508,10 @@ const I18N={
     lullaby_coming_title:'Coming soon',lullaby_coming_sub:"We're building a feature to record a mother's voice for lullabies and AI tales personalized for your child",
     lullaby_notify_toast:"Thanks! We'll be the first to let you know when it's ready 🔔",
     govt_int_disclaimer:'These integrations are currently for demonstration purposes. Real connection requires approval from the relevant government agencies.',
+    select_child:'Select a child',content_type:'Type',lullaby_mode:'Lullaby',story_mode:'Story',
+    play_audio:'Play',stop_playback:'Stop',
+    tts_not_supported:'Your browser does not support voice playback. Please use Chrome or Edge.',
+    tts_disclaimer:"Currently using a synthesized AI voice. A mother's voice cloning feature is in development.",
     capsule_ready:"Time to open! →",all_years:'All',
     anniversary_not_set:'Set an important date',anniversary_not_set_sub:"Add your anniversary and we'll remind you every year",
     anniversary_setup_toast:'The feature to add important dates is coming soon 🗓️',
@@ -1631,17 +1643,104 @@ function DocumentsModal({onClose}){
   );
 }
 
-function LullabyModal({onClose}){
+/* LULLABY TALES — real text-to-speech using Web Speech API */
+const LULLABY_TEXTS = {
+  uz: (name)=>`Uyqu kel, ${name}ginam, uyqu kel. Ko'zlaringni yum, jonim. Oy chiqdi osmonga, yulduzlar charaqlaydi. Sen mening baxtim, sen mening quvonchim. Uxlagin, asalim, ertaga yana o'ynaymiz. Allá-yó, allá-yó, ${name}jonim, allá-yó.`,
+  ru: (name)=>`Спи, ${name}, спи спокойно. Закрывай глазки, моя радость. Луна взошла на небо, звёзды сияют ярко. Ты моё счастье, ты моя радость. Спи, малыш мой, завтра снова будем играть. Баю-бай, баю-бай, ${name}, баю-бай.`,
+  en: (name)=>`Sleep now, ${name}, sleep so sweet. Close your eyes, my little one. The moon has risen in the sky, the stars are shining bright. You are my joy, you are my treasure. Sleep, my darling, tomorrow we'll play again. Hush now, hush now, ${name}, hush now.`,
+};
+
+const STORY_TEMPLATES = {
+  uz: (name)=>`Bir bor ekan, bir yo'q ekan, ${name} ismli juda botir va mehribon bola yashagan ekan. Bir kuni ${name} bog'da sayr qilib yurganida, kichkina, qanoti shikastlangan chumchuqni topib oladi. ${name} chumchuqni uyga olib boradi, unga g'amxorlik qiladi, har kuni don beradi va suv ichiradi. Bir necha kundan keyin chumchuqning qanoti tuzaladi va u yana uchishga qodir bo'ladi. Lekin chumchuq ${name}ni tashlab ketishni xohlamaydi — chunki u ${name}ning mehribonligini va sabrini his qilgan edi. Shu kundan boshlab chumchuq har kuni ${name}ning derazasiga kelib, unga eng go'zal qo'shiqlarini kuylab bera boshlaydi. ${name} esa bilib oladiki, kichkina yaxshilik ham katta do'stlikka olib kelishi mumkin ekan. Tamom.`,
+  ru: (name)=>`Жил-был очень добрый и смелый ребёнок по имени ${name}. Однажды, гуляя в саду, ${name} нашёл маленького воробья с повреждённым крылышком. ${name} принёс воробья домой, заботился о нём, каждый день кормил и поил. Через несколько дней крылышко воробья зажило, и он снова смог летать. Но воробей не хотел покидать ${name} — он чувствовал доброту и терпение этого ребёнка. С того дня воробей каждый день прилетал к окну ${name} и пел самые красивые песни. А ${name} понял, что даже маленькая доброта может привести к большой дружбе. Конец.`,
+  en: (name)=>`Once upon a time, there lived a very kind and brave child named ${name}. One day, while walking in the garden, ${name} found a little sparrow with a hurt wing. ${name} brought the sparrow home, took care of it, and fed it water and seeds every day. After a few days, the sparrow's wing healed, and it could fly again. But the sparrow didn't want to leave ${name} — it had felt the child's kindness and patience. From that day on, the sparrow came to ${name}'s window every day and sang the most beautiful songs. And ${name} learned that even a small act of kindness can lead to a great friendship. The end.`,
+};
+
+function speakText(text, lang, onStart, onEnd){
+  if(!('speechSynthesis' in window)){
+    return false;
+  }
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  const langMap = {uz:'tr-TR', ru:'ru-RU', en:'en-US'}; // uz fallback to tr (closer phonetics) since uz voices are rare
+  utter.lang = langMap[lang] || 'en-US';
+  utter.rate = 0.85;
+  utter.pitch = 1.15;
+  utter.onstart = onStart;
+  utter.onend = onEnd;
+  utter.onerror = onEnd;
+  window.speechSynthesis.speak(utter);
+  return true;
+}
+
+function LullabyModal({onClose,members}){
   const {showToast}=useApp();
+  const lang=getLang();
+  const children=(members||[]).filter(m=>m.role==='child');
+  const [selectedChild,setSelectedChild]=useState(children[0]||null);
+  const [mode,setMode]=useState('lullaby'); // lullaby | story
+  const [playing,setPlaying]=useState(false);
+  const [supported,setSupported]=useState(true);
+
+  useEffect(()=>{
+    setSupported('speechSynthesis' in window);
+    return ()=>{ if('speechSynthesis' in window) window.speechSynthesis.cancel(); };
+  },[]);
+
+  const childName = selectedChild?.name?.split(' ')[0] || (lang==='ru'?'малыш':lang==='en'?'little one':'jonim');
+  const text = mode==='lullaby' ? LULLABY_TEXTS[lang](childName) : STORY_TEMPLATES[lang](childName);
+
+  function play(){
+    if(!supported){
+      showToast(t('tts_not_supported'),'error');
+      return;
+    }
+    const ok = speakText(text, lang, ()=>setPlaying(true), ()=>setPlaying(false));
+    if(!ok) showToast(t('tts_not_supported'),'error');
+  }
+  function stop(){
+    window.speechSynthesis?.cancel();
+    setPlaying(false);
+  }
+
   return React.createElement(Modal,{title:t('lullaby_tales'),onClose},
-    React.createElement('div',{style:{textAlign:'center',padding:'10px 12px 20px'}},
-      React.createElement('div',{style:{width:60,height:60,borderRadius:'50%',background:'var(--purple-l)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:26,margin:'0 auto 14px'}},'🎵'),
-      React.createElement('div',{style:{fontSize:14,fontWeight:700,color:'var(--text)',marginBottom:8}},t('lullaby_coming_title')),
-      React.createElement('div',{style:{fontSize:13,color:'var(--text2)',lineHeight:1.6}},t('lullaby_coming_sub'))
+    children.length>0&&React.createElement('div',{className:'input-group'},
+      React.createElement('label',null,t('select_child')),
+      React.createElement('div',{style:{display:'flex',gap:7,flexWrap:'wrap'}},
+        children.map(c=>React.createElement('button',{key:c.id,onClick:()=>{stop();setSelectedChild(c);},
+          style:{padding:'7px 14px',borderRadius:20,fontSize:13,fontWeight:600,cursor:'pointer',
+            border:selectedChild?.id===c.id?'2px solid var(--purple)':'1.5px solid var(--border)',
+            background:selectedChild?.id===c.id?'var(--purple-l)':'var(--bg2)',
+            color:selectedChild?.id===c.id?'var(--purple)':'var(--text2)'}},
+          c.name.split(' ')[0]))
+      )
     ),
-    React.createElement('button',{className:'btn btn-full',style:{background:'var(--purple)',color:'#fff'},onClick:()=>showToast(t('lullaby_notify_toast'),'success')},
-      React.createElement('i',{className:'ti ti-bell-ringing',style:{fontSize:18}}),t('notify_when_ready')
-    )
+    React.createElement('div',{className:'input-group'},
+      React.createElement('label',null,t('content_type')),
+      React.createElement('div',{style:{display:'flex',gap:8}},
+        React.createElement('button',{onClick:()=>{stop();setMode('lullaby');},
+          style:{flex:1,padding:'10px',borderRadius:'var(--r2)',cursor:'pointer',
+            border:mode==='lullaby'?'2px solid var(--purple)':'1.5px solid var(--border)',
+            background:mode==='lullaby'?'var(--purple-l)':'var(--bg2)',
+            color:mode==='lullaby'?'var(--purple)':'var(--text2)',fontWeight:600}},
+          '🎵 '+t('lullaby_mode')),
+        React.createElement('button',{onClick:()=>{stop();setMode('story');},
+          style:{flex:1,padding:'10px',borderRadius:'var(--r2)',cursor:'pointer',
+            border:mode==='story'?'2px solid var(--purple)':'1.5px solid var(--border)',
+            background:mode==='story'?'var(--purple-l)':'var(--bg2)',
+            color:mode==='story'?'var(--purple)':'var(--text2)',fontWeight:600}},
+          '📖 '+t('story_mode'))
+      )
+    ),
+    React.createElement('div',{style:{background:'var(--bg2)',borderRadius:'var(--r2)',padding:14,marginBottom:14,fontSize:13,color:'var(--text)',lineHeight:1.7,maxHeight:160,overflowY:'auto'}},
+      text
+    ),
+    !supported&&React.createElement('div',{style:{fontSize:12,color:'var(--amber)',marginBottom:12,textAlign:'center'}},t('tts_not_supported')),
+    React.createElement('button',{className:'btn btn-full',style:{background:'var(--purple)',color:'#fff'},onClick:playing?stop:play,disabled:!supported},
+      React.createElement('i',{className:`ti ${playing?'ti-player-pause-filled':'ti-player-play-filled'}`,style:{fontSize:18}}),
+      playing?t('stop_playback'):t('play_audio')
+    ),
+    React.createElement('div',{style:{fontSize:11,color:'var(--text3)',textAlign:'center',marginTop:10,lineHeight:1.5}},t('tts_disclaimer'))
   );
 }
 
@@ -1796,7 +1895,7 @@ function App(){
 
   function showToast(msg,type=''){setToast({msg,type,key:Date.now()})}
   function showModal(modalType){
-    if(['profileDetail','familyTree','documents'].includes(modalType)&&!famCache){
+    if(['profileDetail','familyTree','documents','lullaby'].includes(modalType)&&!famCache){
       api('/family').then(r=>{if(r.ok)setFamCache(r.data)});
     }
     setModal(modalType);
@@ -1836,7 +1935,7 @@ function App(){
     profileDetail:()=>React.createElement(ProfileDetailModal,{onClose:closeModal,fam:famCache,myPhone:famCache?.me?.phone}),
     familyTree:()=>React.createElement(FamilyTreeModal,{onClose:closeModal,fam:famCache}),
     documents:()=>React.createElement(DocumentsModal,{onClose:closeModal}),
-    lullaby:()=>React.createElement(LullabyModal,{onClose:closeModal}),
+    lullaby:()=>React.createElement(LullabyModal,{onClose:closeModal,members:famCache?.members}),
   };
 
   return React.createElement(Ctx.Provider,{value:ctx},
