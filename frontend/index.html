@@ -332,6 +332,12 @@ const I18N={
     play_audio:'Ijro etish',stop_playback:"To'xtatish",
     tts_not_supported:"Brauzeringiz ovozli ijroni qo'llab-quvvatlamaydi. Chrome yoki Edge dan foydalaning.",
     tts_disclaimer:"Hozircha sintezlangan AI ovozi ishlatiladi. Ona ovozini klonlash funksiyasi ishlab chiqilmoqda.",
+    ai_voice_tab:'AI ovoz',mom_voice_tab:'Ona ovozi',
+    voice_record_intro:"Ovozingizni yozib qoldiring — kelajakda AI shu ovozda alla aytadi va ertak so'zlaydi",
+    tap_to_record:'Yozishni boshlash uchun bosing',recording_in_progress:'Yozilmoqda... qayta bosing to\'xtatish uchun',
+    mic_not_supported:"Brauzeringiz mikrofonni qo'llab-quvvatlamaydi",mic_permission_denied:"Mikrofonga ruxsat berilmadi. Brauzer sozlamalarini tekshiring",
+    recording_saved:'Ovoz saqlandi',record_again:'Qayta yozish',
+    voice_clone_coming_note:"🎉 Ovozingiz tayyor! AI klonlash funksiyasi (shu ovozda alla/ertak aytish) tez kunda ishga tushadi. Hozircha ovozingizni yuqoridagi pleer orqali eshitishingiz mumkin.",
     capsule_ready:'Ochish vaqti keldi! →',all_years:'Hammasi',
     anniversary_not_set:'Muhim sanani belgilang',anniversary_not_set_sub:"Nikoh sanangizni qo'shsangiz, har yili eslatib turamiz",
     anniversary_setup_toast:"Tez kunda muhim sanalarni qo'shish funksiyasi ishga tushadi 🗓️",
@@ -422,6 +428,12 @@ const I18N={
     play_audio:'Воспроизвести',stop_playback:'Остановить',
     tts_not_supported:'Ваш браузер не поддерживает озвучивание. Используйте Chrome или Edge.',
     tts_disclaimer:'Сейчас используется синтезированный голос AI. Функция клонирования голоса мамы в разработке.',
+    ai_voice_tab:'AI голос',mom_voice_tab:'Голос мамы',
+    voice_record_intro:'Запишите свой голос — в будущем AI будет петь колыбельные и рассказывать сказки этим голосом',
+    tap_to_record:'Нажмите, чтобы начать запись',recording_in_progress:'Запись... нажмите снова для остановки',
+    mic_not_supported:'Ваш браузер не поддерживает микрофон',mic_permission_denied:'Доступ к микрофону не разрешён. Проверьте настройки браузера',
+    recording_saved:'Голос сохранён',record_again:'Записать снова',
+    voice_clone_coming_note:'🎉 Ваш голос готов! Функция AI-клонирования (колыбельные/сказки этим голосом) скоро будет запущена. Пока вы можете прослушать запись через плеер выше.',
     capsule_ready:'Время открытия пришло! →',all_years:'Все',
     anniversary_not_set:'Укажите важную дату',anniversary_not_set_sub:'Добавьте дату свадьбы — мы будем напоминать каждый год',
     anniversary_setup_toast:'Скоро появится функция добавления важных дат 🗓️',
@@ -512,6 +524,12 @@ const I18N={
     play_audio:'Play',stop_playback:'Stop',
     tts_not_supported:'Your browser does not support voice playback. Please use Chrome or Edge.',
     tts_disclaimer:"Currently using a synthesized AI voice. A mother's voice cloning feature is in development.",
+    ai_voice_tab:'AI voice',mom_voice_tab:"Mom's voice",
+    voice_record_intro:"Record your voice — in the future, AI will sing lullabies and tell stories in this voice",
+    tap_to_record:'Tap to start recording',recording_in_progress:'Recording... tap again to stop',
+    mic_not_supported:'Your browser does not support microphone access',mic_permission_denied:'Microphone access was denied. Check your browser settings',
+    recording_saved:'Voice saved',record_again:'Record again',
+    voice_clone_coming_note:"🎉 Your voice is ready! The AI cloning feature (lullabies/stories in this voice) is launching soon. For now you can listen to the recording above.",
     capsule_ready:"Time to open! →",all_years:'All',
     anniversary_not_set:'Set an important date',anniversary_not_set_sub:"Add your anniversary and we'll remind you every year",
     anniversary_setup_toast:'The feature to add important dates is coming soon 🗓️',
@@ -1673,9 +1691,119 @@ function speakText(text, lang, onStart, onEnd){
   return true;
 }
 
+function VoiceRecorderSection(){
+  const {showToast}=useApp();
+  const [recording,setRecording]=useState(false);
+  const [audioUrl,setAudioUrl]=useState(null);
+  const [seconds,setSeconds]=useState(0);
+  const [permissionDenied,setPermissionDenied]=useState(false);
+  const mediaRecorderRef=useRef(null);
+  const chunksRef=useRef([]);
+  const timerRef=useRef(null);
+  const streamRef=useRef(null);
+
+  useEffect(()=>{
+    return ()=>{
+      if(timerRef.current)clearInterval(timerRef.current);
+      if(streamRef.current)streamRef.current.getTracks().forEach(tr=>tr.stop());
+      if(audioUrl)URL.revokeObjectURL(audioUrl);
+    };
+  },[]);
+
+  async function startRecording(){
+    if(!navigator.mediaDevices?.getUserMedia){
+      showToast(t('mic_not_supported'),'error');
+      return;
+    }
+    try{
+      const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+      streamRef.current=stream;
+      chunksRef.current=[];
+      const mr=new MediaRecorder(stream);
+      mediaRecorderRef.current=mr;
+      mr.ondataavailable=e=>{if(e.data.size>0)chunksRef.current.push(e.data);};
+      mr.onstop=()=>{
+        const blob=new Blob(chunksRef.current,{type:'audio/webm'});
+        const url=URL.createObjectURL(blob);
+        setAudioUrl(url);
+        stream.getTracks().forEach(tr=>tr.stop());
+      };
+      mr.start();
+      setRecording(true);
+      setSeconds(0);
+      timerRef.current=setInterval(()=>setSeconds(s=>{
+        if(s>=180){stopRecording();return s;} // max 3 minutes
+        return s+1;
+      }),1000);
+    }catch(e){
+      setPermissionDenied(true);
+      showToast(t('mic_permission_denied'),'error');
+    }
+  }
+
+  function stopRecording(){
+    if(mediaRecorderRef.current&&mediaRecorderRef.current.state!=='inactive'){
+      mediaRecorderRef.current.stop();
+    }
+    if(timerRef.current)clearInterval(timerRef.current);
+    setRecording(false);
+  }
+
+  function deleteRecording(){
+    if(audioUrl)URL.revokeObjectURL(audioUrl);
+    setAudioUrl(null);
+    setSeconds(0);
+  }
+
+  function formatTime(s){
+    const m=Math.floor(s/60);
+    const sec=s%60;
+    return `${m}:${sec.toString().padStart(2,'0')}`;
+  }
+
+  return React.createElement('div',null,
+    React.createElement('div',{style:{fontSize:13,color:'var(--text2)',marginBottom:16,textAlign:'center',lineHeight:1.6}},
+      t('voice_record_intro')
+    ),
+    !audioUrl&&React.createElement('div',{style:{textAlign:'center',padding:'20px 0'}},
+      React.createElement('button',{
+        onClick:recording?stopRecording:startRecording,
+        style:{width:84,height:84,borderRadius:'50%',border:'none',cursor:'pointer',
+          background:recording?'var(--red)':'var(--purple)',
+          display:'flex',alignItems:'center',justifyContent:'center',
+          boxShadow:recording?'0 0 0 8px rgba(192,57,43,.15)':'0 4px 14px rgba(109,40,217,.3)',
+          transition:'all .2s'}},
+        React.createElement('i',{className:`ti ${recording?'ti-player-stop-filled':'ti-microphone'}`,style:{fontSize:32,color:'#fff'}})
+      ),
+      React.createElement('div',{style:{marginTop:14,fontSize:20,fontWeight:800,color:recording?'var(--red)':'var(--text)'}},
+        formatTime(seconds)
+      ),
+      React.createElement('div',{style:{fontSize:12,color:'var(--text3)',marginTop:4}},
+        recording?t('recording_in_progress'):t('tap_to_record')
+      )
+    ),
+    audioUrl&&React.createElement('div',{style:{padding:'10px 0'}},
+      React.createElement('div',{style:{textAlign:'center',marginBottom:14}},
+        React.createElement('div',{style:{width:60,height:60,borderRadius:'50%',background:'var(--green-l)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:26,margin:'0 auto 10px'}},'✓'),
+        React.createElement('div',{style:{fontSize:14,fontWeight:700,color:'var(--green)'}},t('recording_saved')+` (${formatTime(seconds)})`)
+      ),
+      React.createElement('audio',{src:audioUrl,controls:true,style:{width:'100%',marginBottom:14}}),
+      React.createElement('div',{style:{display:'flex',gap:8}},
+        React.createElement('button',{onClick:deleteRecording,className:'btn btn-outline',style:{flex:1}},
+          React.createElement('i',{className:'ti ti-trash',style:{fontSize:16}}),t('record_again')
+        )
+      )
+    ),
+    audioUrl&&React.createElement('div',{style:{background:'var(--blue-xl)',border:'1px solid var(--blue-l)',borderRadius:'var(--r2)',padding:'12px 14px',fontSize:12,color:'var(--blue)',textAlign:'center',fontWeight:600,lineHeight:1.6,marginTop:14}},
+      t('voice_clone_coming_note')
+    )
+  );
+}
+
 function LullabyModal({onClose,members}){
   const {showToast}=useApp();
   const lang=getLang();
+  const [tab,setTab]=useState('ai'); // ai | record
   const children=(members||[]).filter(m=>m.role==='child');
   const [selectedChild,setSelectedChild]=useState(children[0]||null);
   const [mode,setMode]=useState('lullaby'); // lullaby | story
@@ -1704,43 +1832,52 @@ function LullabyModal({onClose,members}){
   }
 
   return React.createElement(Modal,{title:t('lullaby_tales'),onClose},
-    children.length>0&&React.createElement('div',{className:'input-group'},
-      React.createElement('label',null,t('select_child')),
-      React.createElement('div',{style:{display:'flex',gap:7,flexWrap:'wrap'}},
-        children.map(c=>React.createElement('button',{key:c.id,onClick:()=>{stop();setSelectedChild(c);},
-          style:{padding:'7px 14px',borderRadius:20,fontSize:13,fontWeight:600,cursor:'pointer',
-            border:selectedChild?.id===c.id?'2px solid var(--purple)':'1.5px solid var(--border)',
-            background:selectedChild?.id===c.id?'var(--purple-l)':'var(--bg2)',
-            color:selectedChild?.id===c.id?'var(--purple)':'var(--text2)'}},
-          c.name.split(' ')[0]))
-      )
+    React.createElement('div',{className:'auth-tabs',style:{marginBottom:18}},
+      React.createElement('button',{className:`auth-tab${tab==='ai'?' active':''}`,onClick:()=>{stop();setTab('ai');}},'🤖 '+t('ai_voice_tab')),
+      React.createElement('button',{className:`auth-tab${tab==='record'?' active':''}`,onClick:()=>{stop();setTab('record');}},'🎙️ '+t('mom_voice_tab'))
     ),
-    React.createElement('div',{className:'input-group'},
-      React.createElement('label',null,t('content_type')),
-      React.createElement('div',{style:{display:'flex',gap:8}},
-        React.createElement('button',{onClick:()=>{stop();setMode('lullaby');},
-          style:{flex:1,padding:'10px',borderRadius:'var(--r2)',cursor:'pointer',
-            border:mode==='lullaby'?'2px solid var(--purple)':'1.5px solid var(--border)',
-            background:mode==='lullaby'?'var(--purple-l)':'var(--bg2)',
-            color:mode==='lullaby'?'var(--purple)':'var(--text2)',fontWeight:600}},
-          '🎵 '+t('lullaby_mode')),
-        React.createElement('button',{onClick:()=>{stop();setMode('story');},
-          style:{flex:1,padding:'10px',borderRadius:'var(--r2)',cursor:'pointer',
-            border:mode==='story'?'2px solid var(--purple)':'1.5px solid var(--border)',
-            background:mode==='story'?'var(--purple-l)':'var(--bg2)',
-            color:mode==='story'?'var(--purple)':'var(--text2)',fontWeight:600}},
-          '📖 '+t('story_mode'))
-      )
+
+    tab==='ai'&&React.createElement(React.Fragment,null,
+      children.length>0&&React.createElement('div',{className:'input-group'},
+        React.createElement('label',null,t('select_child')),
+        React.createElement('div',{style:{display:'flex',gap:7,flexWrap:'wrap'}},
+          children.map(c=>React.createElement('button',{key:c.id,onClick:()=>{stop();setSelectedChild(c);},
+            style:{padding:'7px 14px',borderRadius:20,fontSize:13,fontWeight:600,cursor:'pointer',
+              border:selectedChild?.id===c.id?'2px solid var(--purple)':'1.5px solid var(--border)',
+              background:selectedChild?.id===c.id?'var(--purple-l)':'var(--bg2)',
+              color:selectedChild?.id===c.id?'var(--purple)':'var(--text2)'}},
+            c.name.split(' ')[0]))
+        )
+      ),
+      React.createElement('div',{className:'input-group'},
+        React.createElement('label',null,t('content_type')),
+        React.createElement('div',{style:{display:'flex',gap:8}},
+          React.createElement('button',{onClick:()=>{stop();setMode('lullaby');},
+            style:{flex:1,padding:'10px',borderRadius:'var(--r2)',cursor:'pointer',
+              border:mode==='lullaby'?'2px solid var(--purple)':'1.5px solid var(--border)',
+              background:mode==='lullaby'?'var(--purple-l)':'var(--bg2)',
+              color:mode==='lullaby'?'var(--purple)':'var(--text2)',fontWeight:600}},
+            '🎵 '+t('lullaby_mode')),
+          React.createElement('button',{onClick:()=>{stop();setMode('story');},
+            style:{flex:1,padding:'10px',borderRadius:'var(--r2)',cursor:'pointer',
+              border:mode==='story'?'2px solid var(--purple)':'1.5px solid var(--border)',
+              background:mode==='story'?'var(--purple-l)':'var(--bg2)',
+              color:mode==='story'?'var(--purple)':'var(--text2)',fontWeight:600}},
+            '📖 '+t('story_mode'))
+        )
+      ),
+      React.createElement('div',{style:{background:'var(--bg2)',borderRadius:'var(--r2)',padding:14,marginBottom:14,fontSize:13,color:'var(--text)',lineHeight:1.7,maxHeight:160,overflowY:'auto'}},
+        text
+      ),
+      !supported&&React.createElement('div',{style:{fontSize:12,color:'var(--amber)',marginBottom:12,textAlign:'center'}},t('tts_not_supported')),
+      React.createElement('button',{className:'btn btn-full',style:{background:'var(--purple)',color:'#fff'},onClick:playing?stop:play,disabled:!supported},
+        React.createElement('i',{className:`ti ${playing?'ti-player-pause-filled':'ti-player-play-filled'}`,style:{fontSize:18}}),
+        playing?t('stop_playback'):t('play_audio')
+      ),
+      React.createElement('div',{style:{fontSize:11,color:'var(--text3)',textAlign:'center',marginTop:10,lineHeight:1.5}},t('tts_disclaimer'))
     ),
-    React.createElement('div',{style:{background:'var(--bg2)',borderRadius:'var(--r2)',padding:14,marginBottom:14,fontSize:13,color:'var(--text)',lineHeight:1.7,maxHeight:160,overflowY:'auto'}},
-      text
-    ),
-    !supported&&React.createElement('div',{style:{fontSize:12,color:'var(--amber)',marginBottom:12,textAlign:'center'}},t('tts_not_supported')),
-    React.createElement('button',{className:'btn btn-full',style:{background:'var(--purple)',color:'#fff'},onClick:playing?stop:play,disabled:!supported},
-      React.createElement('i',{className:`ti ${playing?'ti-player-pause-filled':'ti-player-play-filled'}`,style:{fontSize:18}}),
-      playing?t('stop_playback'):t('play_audio')
-    ),
-    React.createElement('div',{style:{fontSize:11,color:'var(--text3)',textAlign:'center',marginTop:10,lineHeight:1.5}},t('tts_disclaimer'))
+
+    tab==='record'&&React.createElement(VoiceRecorderSection)
   );
 }
 
