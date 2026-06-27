@@ -19,6 +19,7 @@ FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__fi
 
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'meros-ai-secret-2026-dev')
+app.config['MAX_CONTENT_LENGTH'] = 12 * 1024 * 1024  # 12MB hard cap (covers our largest media type + headers)
 app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024  # 4MB max request size
 DATA_DIR = os.environ.get('DATA_DIR', '/data' if os.path.exists('/data') else os.path.dirname(__file__))
 DB_PATH = os.path.join(DATA_DIR, 'meros.db')
@@ -106,10 +107,21 @@ def init_db():
         created_at  TEXT DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS albums (
+        id          TEXT PRIMARY KEY,
+        family_id   TEXT NOT NULL,
+        creator_id  TEXT NOT NULL,
+        name        TEXT NOT NULL,
+        emoji       TEXT DEFAULT '📁',
+        color       TEXT DEFAULT '#DBEAFE',
+        created_at  TEXT DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS memories (
         id          TEXT PRIMARY KEY,
         family_id   TEXT NOT NULL,
         uploader_id TEXT NOT NULL,
+        album_id    TEXT,
         title       TEXT,
         description TEXT,
         media_type  TEXT DEFAULT 'photo',
@@ -179,6 +191,7 @@ def init_db():
         sender_id   TEXT NOT NULL,
         body        TEXT NOT NULL,
         kind        TEXT DEFAULT 'text',
+        media_url   TEXT,
         is_read     INTEGER DEFAULT 0,
         created_at  TEXT DEFAULT (datetime('now'))
     );
@@ -197,6 +210,18 @@ def init_db():
         new_code = generate_invite_code()
         db.execute("UPDATE families SET invite_code=? WHERE id=?", (new_code, fam['id']))
     if families_without_code:
+        db.commit()
+
+    # Migration: add album_id column to memories if it doesn't exist
+    mem_cols = [row[1] for row in db.execute("PRAGMA table_info(memories)").fetchall()]
+    if 'album_id' not in mem_cols:
+        db.execute("ALTER TABLE memories ADD COLUMN album_id TEXT")
+        db.commit()
+
+    # Migration: add media_url column to messages if it doesn't exist
+    msg_cols = [row[1] for row in db.execute("PRAGMA table_info(messages)").fetchall()]
+    if 'media_url' not in msg_cols:
+        db.execute("ALTER TABLE messages ADD COLUMN media_url TEXT")
         db.commit()
 
     # Seed demo data
@@ -274,7 +299,9 @@ def _seed_demo(db):
         (str(uuid.uuid4()), fam_id, user_id, "Bog'da", None, 'photo', None, '🌿', '#ECFDF5', '2025-04-10', "Bog'", '["oila"]'),
     ]
     for m in memories_data:
-        db.execute("INSERT INTO memories VALUES (?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'))", m)
+        db.execute("""INSERT INTO memories
+            (id,family_id,uploader_id,title,description,media_type,media_url,emoji,color,taken_at,location,tags,created_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'))""", m)
 
     open_date1 = f"{2017+18}-05-12"
     open_date2 = f"{2021+18}-02-08"
@@ -633,22 +660,79 @@ def add_health_record():
     row = db.execute("SELECT * FROM health_records WHERE id=?", (rid,)).fetchone()
     return ok(row_to_dict(row)), 201
 
+# ─── ALBUMS ──────────────────────────────────────────────────────────────────
+
+@app.route('/api/albums', methods=['GET'])
+@require_auth
+def get_albums():
+    db = get_db()
+    rows = db.execute(
+        "SELECT * FROM albums WHERE family_id=? ORDER BY created_at DESC", (g.family_id,)
+    ).fetchall()
+    albums = rows_to_list(rows)
+    for a in albums:
+        cnt = db.execute(
+            "SELECT COUNT(*) as cnt FROM memories WHERE family_id=? AND album_id=?",
+            (g.family_id, a['id'])
+        ).fetchone()['cnt']
+        a['memory_count'] = cnt
+    return ok(albums)
+
+@app.route('/api/albums', methods=['POST'])
+@require_auth
+def create_album():
+    body = request.json or {}
+    name = (body.get('name') or '').strip()
+    if not name:
+        return err("Albom nomi bo'sh bo'lmasligi kerak")
+    aid = str(uuid.uuid4())
+    db = get_db()
+    db.execute(
+        "INSERT INTO albums(id,family_id,creator_id,name,emoji,color) VALUES(?,?,?,?,?,?)",
+        (aid, g.family_id, g.user_id, name, body.get('emoji', '📁'), body.get('color', '#DBEAFE'))
+    )
+    db.commit()
+    row = db.execute("SELECT * FROM albums WHERE id=?", (aid,)).fetchone()
+    d = row_to_dict(row)
+    d['memory_count'] = 0
+    return ok(d), 201
+
+@app.route('/api/albums/<aid>', methods=['DELETE'])
+@require_auth
+def delete_album(aid):
+    db = get_db()
+    # Memories in this album become un-albumed, not deleted
+    db.execute("UPDATE memories SET album_id=NULL WHERE album_id=? AND family_id=?", (aid, g.family_id))
+    db.execute("DELETE FROM albums WHERE id=? AND family_id=?", (aid, g.family_id))
+    db.commit()
+    return ok({'message': "O'chirildi"})
+
 # ─── MEMORIES ────────────────────────────────────────────────────────────────
+
+MAX_MEDIA_BYTES = {
+    'photo': 2_000_000,   # ~1.5MB after base64 overhead
+    'video': 8_000_000,   # ~6MB after base64 overhead — short clips only
+    'audio': 4_000_000,   # ~3MB after base64 overhead
+}
 
 @app.route('/api/memories', methods=['GET'])
 @require_auth
 def get_memories():
-    year  = request.args.get('year')
-    limit = int(request.args.get('limit', 50))
+    year     = request.args.get('year')
+    album_id = request.args.get('album_id')
+    limit    = int(request.args.get('limit', 50))
     db = get_db()
+    query = "SELECT * FROM memories WHERE family_id=?"
+    params = [g.family_id]
     if year:
-        rows = db.execute(
-            "SELECT * FROM memories WHERE family_id=? AND strftime('%Y',taken_at)=? ORDER BY taken_at DESC LIMIT ?",
-            (g.family_id, year, limit)).fetchall()
-    else:
-        rows = db.execute(
-            "SELECT * FROM memories WHERE family_id=? ORDER BY taken_at DESC LIMIT ?",
-            (g.family_id, limit)).fetchall()
+        query += " AND strftime('%Y',taken_at)=?"
+        params.append(year)
+    if album_id:
+        query += " AND album_id=?"
+        params.append(album_id)
+    query += " ORDER BY taken_at DESC LIMIT ?"
+    params.append(limit)
+    rows = db.execute(query, params).fetchall()
     result = []
     for r in rows:
         d = dict(r)
@@ -666,17 +750,20 @@ def add_memory():
     required = ['taken_at']
     if not all(body.get(k) for k in required):
         return err('taken_at majburiy')
+    media_type = body.get('media_type', 'photo')
     media_url = body.get('media_url')
-    if media_url and len(media_url) > 2_000_000:  # ~1.5MB after base64 overhead
-        return err("Rasm hajmi juda katta. Iltimos, kichikroq rasm tanlang")
+    max_bytes = MAX_MEDIA_BYTES.get(media_type, 2_000_000)
+    if media_url and len(media_url) > max_bytes:
+        kind_label = {'photo': 'Rasm', 'video': 'Video', 'audio': 'Audio'}.get(media_type, 'Fayl')
+        return err(f"{kind_label} hajmi juda katta. Iltimos, qisqaroq/kichikroq fayl tanlang")
     mid = str(uuid.uuid4())
     tags = json.dumps(body.get('tags', []))
     db = get_db()
-    db.execute("""INSERT INTO memories(id,family_id,uploader_id,title,description,media_type,media_url,emoji,color,taken_at,location,tags)
-                  VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",
-               (mid, g.family_id, g.user_id,
+    db.execute("""INSERT INTO memories(id,family_id,uploader_id,album_id,title,description,media_type,media_url,emoji,color,taken_at,location,tags)
+                  VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+               (mid, g.family_id, g.user_id, body.get('album_id'),
                 body.get('title'), body.get('description'),
-                body.get('media_type','photo'), media_url,
+                media_type, media_url,
                 body.get('emoji','📷'), body.get('color','#DBEAFE'),
                 body['taken_at'], body.get('location'), tags))
     db.commit()
@@ -1049,20 +1136,36 @@ def get_messages():
     db.commit()
     return ok(rows_to_list(rows))
 
+MAX_CHAT_MEDIA_BYTES = {
+    'photo': 2_000_000,
+    'video': 8_000_000,
+    'audio': 4_000_000,
+}
+
 @app.route('/api/messages', methods=['POST'])
 @require_auth
 def send_message():
     body = request.json or {}
     text = (body.get('body') or '').strip()
     kind = body.get('kind', 'text')
-    if not text:
+    media_url = body.get('media_url')
+
+    if kind == 'text' and not text:
         return err('Xabar matni bo\'sh bo\'lmasligi kerak')
+    if kind != 'text' and not media_url:
+        return err('Media fayl topilmadi')
     if len(text) > 1000:
         return err('Xabar juda uzun (max 1000 belgi)')
+    if media_url:
+        max_bytes = MAX_CHAT_MEDIA_BYTES.get(kind, 2_000_000)
+        if len(media_url) > max_bytes:
+            kind_label = {'photo': 'Rasm', 'video': 'Video', 'audio': 'Ovozli xabar'}.get(kind, 'Fayl')
+            return err(f"{kind_label} hajmi juda katta")
+
     mid = str(uuid.uuid4())
     db = get_db()
-    db.execute("INSERT INTO messages(id,family_id,sender_id,body,kind) VALUES(?,?,?,?,?)",
-               (mid, g.family_id, g.user_id, text, kind))
+    db.execute("INSERT INTO messages(id,family_id,sender_id,body,kind,media_url) VALUES(?,?,?,?,?,?)",
+               (mid, g.family_id, g.user_id, text, kind, media_url))
     db.commit()
     row = db.execute(
         "SELECT m.*, u.full_name as sender_name FROM messages m "
@@ -1079,6 +1182,10 @@ def unread_message_count():
     return ok({'unread': cnt})
 
 # ─── MISC ────────────────────────────────────────────────────────────────────
+
+@app.errorhandler(413)
+def too_large(e):
+    return err("Yuborilgan fayl juda katta. Iltimos, kichikroq fayl tanlang", 413)
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
