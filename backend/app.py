@@ -500,6 +500,11 @@ def update_profile():
         "UPDATE family_members SET name=?, birth_date=?, gender=? WHERE user_id=? AND family_id=?",
         (full_name, birth_date, gender, g.user_id, g.family_id)
     )
+    # If this user created the family, keep the family display name in sync too
+    family = db.execute("SELECT created_by FROM families WHERE id=?", (g.family_id,)).fetchone()
+    if family and family['created_by'] == g.user_id:
+        new_family_name = f"{full_name} oilasi"
+        db.execute("UPDATE families SET name=? WHERE id=?", (new_family_name, g.family_id))
     db.commit()
 
     user = db.execute("SELECT id, phone, full_name, birth_date, gender FROM users WHERE id=?", (g.user_id,)).fetchone()
