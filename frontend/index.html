@@ -274,6 +274,9 @@ const I18N={
     avg_7days:"O'rtacha (7 kun)",streak_days:'Ketma-ket kun',recent_days:"So'nggi kunlar",important_dates:'Muhim sanalar',
     anniversary:'Nikoh yubileyi',days_left:'kun qoldi',together:'yil birga',gratitude_today:'Bugungi minnatdorchilik',send_msg:'Sherigingizga xabar yuboring',
     todays_score:'Bugungi ball',q_happy:'Bugun qanchalik baxtli edingiz?',q_supported:"Sherigingiz qo'llab-quvvatladimi?",save:'Saqlash',answer_both_questions:'Ikki savolga ham javob bering',
+    edit_profile:'Profilni tahrirlash',name_required:"Ism bo'sh bo'lmasligi kerak",profile_updated:'Profil yangilandi ✓',cancel:'Bekor qilish',
+    change_password:'Parolni o\'zgartirish',current_password:'Joriy parol',new_password:'Yangi parol',
+    fill_both_passwords:'Ikki parol maydonini ham to\'ldiring',password_too_short:'Yangi parol kamida 6 belgidan iborat bo\'lishi kerak',password_updated:'Parol yangilandi ✓',
     score_saved:'Bugungi ball saqlandi ✓',ask_tomorrow:"Ertaga yana so'raymiz",
     // Profile screen
     family_members_count:"ta a'zo",personal_data:"Shaxsiy ma'lumotlar",
@@ -373,6 +376,9 @@ const I18N={
     avg_7days:'Среднее (7 дней)',streak_days:'Дней подряд',recent_days:'Последние дни',important_dates:'Важные даты',
     anniversary:'Годовщина свадьбы',days_left:'дней осталось',together:'лет вместе',gratitude_today:'Благодарность на сегодня',send_msg:'Отправьте сообщение партнёру',
     todays_score:'Оценка на сегодня',q_happy:'Насколько вы были счастливы сегодня?',q_supported:'Поддержал ли вас партнёр?',save:'Сохранить',answer_both_questions:'Ответьте на оба вопроса',
+    edit_profile:'Редактировать профиль',name_required:'Имя не может быть пустым',profile_updated:'Профиль обновлён ✓',cancel:'Отмена',
+    change_password:'Изменить пароль',current_password:'Текущий пароль',new_password:'Новый пароль',
+    fill_both_passwords:'Заполните оба поля пароля',password_too_short:'Новый пароль должен быть не менее 6 символов',password_updated:'Пароль обновлён ✓',
     score_saved:'Оценка сохранена ✓',ask_tomorrow:'Спросим снова завтра',
     family_members_count:'членов семьи',personal_data:'Личные данные',
     personal_profile:'Личный профиль',family_tree:'Семейное древо',documents_archive:'Архив документов',lullaby_tales:'Колыбельные и сказки',
@@ -469,6 +475,9 @@ const I18N={
     avg_7days:'Average (7 days)',streak_days:'Day streak',recent_days:'Recent days',important_dates:'Important dates',
     anniversary:'Wedding anniversary',days_left:'days left',together:'years together',gratitude_today:"Today's gratitude",send_msg:'Send a message to your partner',
     todays_score:"Today's score",q_happy:'How happy were you today?',q_supported:'Did your partner support you?',save:'Save',answer_both_questions:'Please answer both questions',
+    edit_profile:'Edit profile',name_required:'Name cannot be empty',profile_updated:'Profile updated ✓',cancel:'Cancel',
+    change_password:'Change password',current_password:'Current password',new_password:'New password',
+    fill_both_passwords:'Fill in both password fields',password_too_short:'New password must be at least 6 characters',password_updated:'Password updated ✓',
     score_saved:"Today's score saved ✓",ask_tomorrow:"We'll ask again tomorrow",
     family_members_count:'members',personal_data:'Personal info',
     personal_profile:'Personal profile',family_tree:'Family tree',documents_archive:'Documents archive',lullaby_tales:'Lullabies & tales',
@@ -1607,19 +1616,114 @@ function ProfileScreen(){
 }
 
 /* PROFILE SUB-MODALS */
-function ProfileDetailModal({onClose,fam,myPhone}){
+function ProfileDetailModal({onClose,fam,me,onUpdated}){
+  const {showToast}=useApp();
+  const [editing,setEditing]=useState(false);
+  const [name,setName]=useState(me?.full_name||'');
+  const [phone,setPhone]=useState(me?.phone||'');
+  const [birthDate,setBirthDate]=useState(me?.birth_date||'');
+  const [gender,setGender]=useState(me?.gender||'male');
+  const [saving,setSaving]=useState(false);
+
+  // Password change sub-state
+  const [showPwForm,setShowPwForm]=useState(false);
+  const [curPw,setCurPw]=useState('');
+  const [newPw,setNewPw]=useState('');
+  const [pwSaving,setPwSaving]=useState(false);
+
+  function startEdit(){
+    setName(me?.full_name||'');
+    setPhone(me?.phone||'');
+    setBirthDate(me?.birth_date||'');
+    setGender(me?.gender||'male');
+    setEditing(true);
+  }
+
+  async function saveProfile(){
+    if(!name.trim())return showToast(t('name_required'),'error');
+    setSaving(true);
+    const r=await api('/profile',{method:'PATCH',body:{full_name:name.trim(),phone:phone.trim(),birth_date:birthDate,gender}});
+    setSaving(false);
+    if(!r.ok)return showToast(r.error,'error');
+    showToast(t('profile_updated'),'success');
+    setEditing(false);
+    onUpdated?.();
+  }
+
+  async function savePassword(){
+    if(!curPw||!newPw)return showToast(t('fill_both_passwords'),'error');
+    if(newPw.length<6)return showToast(t('password_too_short'),'error');
+    setPwSaving(true);
+    const r=await api('/profile/password',{method:'PATCH',body:{current_password:curPw,new_password:newPw}});
+    setPwSaving(false);
+    if(!r.ok)return showToast(r.error,'error');
+    showToast(t('password_updated'),'success');
+    setShowPwForm(false);setCurPw('');setNewPw('');
+  }
+
+  if(editing){
+    return React.createElement(Modal,{title:t('edit_profile'),onClose:()=>setEditing(false)},
+      React.createElement('div',{className:'input-group'},
+        React.createElement('label',null,t('full_name')),
+        React.createElement('input',{className:'input-field',value:name,onChange:e=>setName(e.target.value)})
+      ),
+      React.createElement('div',{className:'input-group'},
+        React.createElement('label',null,t('phone')),
+        React.createElement('input',{className:'input-field',type:'tel',value:phone,onChange:e=>setPhone(e.target.value)})
+      ),
+      React.createElement('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}},
+        React.createElement('div',{className:'input-group',style:{marginBottom:0}},
+          React.createElement('label',null,t('date_lbl')),
+          React.createElement('input',{className:'input-field',type:'date',value:birthDate,onChange:e=>setBirthDate(e.target.value)})
+        ),
+        React.createElement('div',{className:'input-group',style:{marginBottom:0}},
+          React.createElement('label',null,t('gender_lbl')),
+          React.createElement('select',{className:'input-field',value:gender,onChange:e=>setGender(e.target.value)},
+            React.createElement('option',{value:'male'},t('male')),
+            React.createElement('option',{value:'female'},t('female'))
+          )
+        )
+      ),
+      React.createElement('div',{style:{height:14}}),
+      React.createElement('button',{className:'btn btn-primary btn-full',onClick:saveProfile,disabled:saving},
+        saving?React.createElement('span',{className:'spinner'}):t('save')
+      ),
+      React.createElement('button',{className:'btn btn-outline btn-full',style:{marginTop:8},onClick:()=>setEditing(false)},t('cancel'))
+    );
+  }
+
   return React.createElement(Modal,{title:t('personal_profile'),onClose},
     React.createElement('div',{style:{textAlign:'center',marginBottom:18}},
-      React.createElement('div',{style:{width:64,height:64,borderRadius:'50%',background:'var(--blue-l)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,fontWeight:800,color:'var(--blue)',margin:'0 auto 10px'}},getInitials(fam?.family?.name||'MA')),
-      React.createElement('div',{style:{fontSize:17,fontWeight:800}},fam?.family?.name||t('your_family')),
+      React.createElement('div',{style:{width:64,height:64,borderRadius:'50%',background:'var(--blue-l)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:22,fontWeight:800,color:'var(--blue)',margin:'0 auto 10px'}},getInitials(me?.full_name||'MA')),
+      React.createElement('div',{style:{fontSize:17,fontWeight:800}},me?.full_name||t('your_family')),
       React.createElement('div',{style:{fontSize:12,color:'var(--text2)',marginTop:2}},'Toshkent, O\'zbekiston')
     ),
-    React.createElement('div',{className:'menu-card',style:{margin:0}},
-      [[t('phone'),myPhone||'—'],[t('family_members_count'),(fam?.members?.length||0)+''],[t('date_lbl'),fam?.family?.created_at?.slice(0,10)||'—']]
+    React.createElement('div',{className:'menu-card',style:{margin:'0 0 14px'}},
+      [[t('phone'),me?.phone||'—'],[t('family_members_count'),(fam?.members?.length||0)+''],[t('date_lbl'),fam?.family?.created_at?.slice(0,10)||'—']]
       .map(([k,v])=>React.createElement('div',{key:k,className:'menu-row',style:{cursor:'default'}},
         React.createElement('div',{className:'menu-text',style:{color:'var(--text2)',fontWeight:500}},k),
         React.createElement('div',{style:{fontSize:13,fontWeight:700,color:'var(--text)'}},v)
       ))
+    ),
+    React.createElement('button',{className:'btn btn-primary btn-full',style:{marginBottom:8},onClick:startEdit},
+      React.createElement('i',{className:'ti ti-edit',style:{fontSize:16}}),t('edit_profile')
+    ),
+    !showPwForm&&React.createElement('button',{className:'btn btn-outline btn-full',onClick:()=>setShowPwForm(true)},
+      React.createElement('i',{className:'ti ti-lock',style:{fontSize:16}}),t('change_password')
+    ),
+    showPwForm&&React.createElement('div',{style:{marginTop:10,paddingTop:14,borderTop:'1px solid var(--border)'}},
+      React.createElement('div',{className:'input-group'},
+        React.createElement('label',null,t('current_password')),
+        React.createElement('input',{className:'input-field',type:'password',value:curPw,onChange:e=>setCurPw(e.target.value)})
+      ),
+      React.createElement('div',{className:'input-group'},
+        React.createElement('label',null,t('new_password')),
+        React.createElement('input',{className:'input-field',type:'password',value:newPw,onChange:e=>setNewPw(e.target.value)})
+      ),
+      React.createElement('button',{className:'btn btn-primary btn-full',onClick:savePassword,disabled:pwSaving},
+        pwSaving?React.createElement('span',{className:'spinner'}):t('save')
+      ),
+      React.createElement('button',{className:'btn btn-outline btn-full',style:{marginTop:8},onClick:()=>{setShowPwForm(false);setCurPw('');setNewPw('');}},t('cancel'))
     )
   );
 }
@@ -2077,7 +2181,10 @@ function App(){
     member:()=>React.createElement(AddMemberModal,{onClose:closeModal,onDone}),
     memory:()=>React.createElement(AddMemoryModal,{onClose:closeModal,onDone}),
     capsule:()=>React.createElement(AddCapsuleModal,{onClose:closeModal,onDone}),
-    profileDetail:()=>React.createElement(ProfileDetailModal,{onClose:closeModal,fam:famCache,myPhone:famCache?.me?.phone}),
+    profileDetail:()=>React.createElement(ProfileDetailModal,{onClose:closeModal,fam:famCache,me:famCache?.me,onUpdated:()=>{
+      api('/family').then(r=>{if(r.ok)setFamCache(r.data)});
+      onDone();
+    }}),
     familyTree:()=>React.createElement(FamilyTreeModal,{onClose:closeModal,fam:famCache}),
     documents:()=>React.createElement(DocumentsModal,{onClose:closeModal}),
     lullaby:()=>React.createElement(LullabyModal,{onClose:closeModal,members:famCache?.members}),

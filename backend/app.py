@@ -467,8 +467,66 @@ def get_family():
     db = get_db()
     family  = db.execute("SELECT * FROM families WHERE id=?", (g.family_id,)).fetchone()
     members = db.execute("SELECT * FROM family_members WHERE family_id=?", (g.family_id,)).fetchall()
-    me      = db.execute("SELECT id, phone, full_name FROM users WHERE id=?", (g.user_id,)).fetchone()
+    me      = db.execute("SELECT id, phone, full_name, birth_date, gender FROM users WHERE id=?", (g.user_id,)).fetchone()
     return ok({'family': row_to_dict(family), 'members': rows_to_list(members), 'me': row_to_dict(me)})
+
+@app.route('/api/profile', methods=['PATCH'])
+@require_auth
+def update_profile():
+    body = request.json or {}
+    full_name = (body.get('full_name') or '').strip()
+    phone     = (body.get('phone') or '').strip()
+    birth_date= body.get('birth_date', '')
+    gender    = body.get('gender', '')
+
+    if not full_name:
+        return err("Ism bo'sh bo'lmasligi kerak")
+    if not re.match(r'^\+998\d{9}$', phone):
+        return err("Telefon raqami noto'g'ri. Format: +998901234567")
+
+    db = get_db()
+
+    # If phone changed, make sure it's not taken by someone else
+    existing = db.execute("SELECT id FROM users WHERE phone=? AND id!=?", (phone, g.user_id)).fetchone()
+    if existing:
+        return err("Bu telefon raqami boshqa hisobda band")
+
+    db.execute(
+        "UPDATE users SET full_name=?, phone=?, birth_date=?, gender=? WHERE id=?",
+        (full_name, phone, birth_date, gender, g.user_id)
+    )
+    # Keep the corresponding family_members row in sync (name shown across the app)
+    db.execute(
+        "UPDATE family_members SET name=?, birth_date=?, gender=? WHERE user_id=? AND family_id=?",
+        (full_name, birth_date, gender, g.user_id, g.family_id)
+    )
+    db.commit()
+
+    user = db.execute("SELECT id, phone, full_name, birth_date, gender FROM users WHERE id=?", (g.user_id,)).fetchone()
+    return ok(row_to_dict(user))
+
+@app.route('/api/profile/password', methods=['PATCH'])
+@require_auth
+def change_password():
+    body = request.json or {}
+    current_pw = (body.get('current_password') or '').strip()
+    new_pw     = (body.get('new_password') or '').strip()
+
+    if not current_pw or not new_pw:
+        return err('Joriy va yangi parol majburiy')
+    if len(new_pw) < 6:
+        return err("Yangi parol kamida 6 belgidan iborat bo'lishi kerak")
+
+    db = get_db()
+    user = db.execute("SELECT password_hash FROM users WHERE id=?", (g.user_id,)).fetchone()
+    current_hash = hashlib.sha256(current_pw.encode()).hexdigest()
+    if user['password_hash'] != current_hash:
+        return err("Joriy parol noto'g'ri")
+
+    new_hash = hashlib.sha256(new_pw.encode()).hexdigest()
+    db.execute("UPDATE users SET password_hash=? WHERE id=?", (new_hash, g.user_id))
+    db.commit()
+    return ok({'message': "Parol muvaffaqiyatli o'zgartirildi"})
 
 @app.route('/api/family/members', methods=['POST'])
 @require_auth
