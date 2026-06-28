@@ -82,6 +82,7 @@ input,textarea,select{font-family:inherit;font-size:inherit}
 .chat-bubble{max-width:78%;padding:9px 13px;border-radius:16px;font-size:14px;line-height:1.4;word-wrap:break-word}
 .chat-bubble img,.chat-bubble video{margin:-3px -6px 4px;max-width:calc(100% + 12px)}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-10px)}40%{transform:translateX(10px)}60%{transform:translateX(-8px)}80%{transform:translateX(8px)}}
 .chat-bubble.mine{align-self:flex-end;background:var(--rose);color:#fff;border-bottom-right-radius:4px}
 .chat-bubble.theirs{align-self:flex-start;background:var(--bg);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:4px}
 .chat-time{font-size:10px;opacity:.65;margin-top:3px;display:block}
@@ -353,6 +354,11 @@ const I18N={
     video_select:'Video tanlash uchun bosing',video_size_hint:'Max 6MB, qisqa videolar',
     audio_record:'Ovozli xabar yozish',audio_too_long:"Ovozli xabar juda uzun chiqdi. Qisqaroq yozib ko'ring",
     title_required:'Sarlavha majburiy',memory_saved_toast:'Xotira saqlandi ✓',
+    enter_pin_title:'Kodni kiriting',enter_pin_sub:'Ilovaga kirish uchun 4 xonali kod',wrong_pin:"Kod noto'g'ri, qayta urinib ko'ring",forgot_pin_logout:'Kodni unutdingizmi? Chiqish va qayta kirish',
+    pin_setup_title:'Ilovani himoyalang',pin_setup_sub:"Profilingizni begona insonlardan himoya qilish uchun 4 xonali shaxsiy kod o'rnating. Bu kod faqat shu qurilmada saqlanadi.",
+    pin_setup_start:"Kod o'rnatish",pin_setup_skip:"Hozir emas",
+    pin_create_title:'Yangi kod yarating',pin_create_sub:'4 xonali kod kiriting',
+    pin_confirm_title:'Kodni tasdiqlang',pin_confirm_sub:'Kodni qayta kiriting',pin_mismatch:"Kodlar mos kelmadi, qaytadan urinib ko'ring",
     anniversary_not_set:'Muhim sanani belgilang',anniversary_not_set_sub:"Nikoh sanangizni qo'shsangiz, har yili eslatib turamiz",
     anniversary_setup_toast:"Tez kunda muhim sanalarni qo'shish funksiyasi ishga tushadi 🗓️",
     couple_chat_title:'Suhbat',couple_chat_sub:"Sherigingiz bilan xabar almashing",
@@ -461,6 +467,11 @@ const I18N={
     video_select:'Нажмите, чтобы выбрать видео',video_size_hint:'Макс 6МБ, короткие видео',
     audio_record:'Записать голосовое сообщение',audio_too_long:'Голосовое сообщение слишком длинное. Запишите короче',
     title_required:'Заголовок обязателен',memory_saved_toast:'Воспоминание сохранено ✓',
+    enter_pin_title:'Введите код',enter_pin_sub:'4-значный код для входа в приложение',wrong_pin:'Неверный код, попробуйте снова',forgot_pin_logout:'Забыли код? Выйти и войти заново',
+    pin_setup_title:'Защитите приложение',pin_setup_sub:'Установите 4-значный личный код, чтобы защитить ваш профиль от посторонних. Код сохраняется только на этом устройстве.',
+    pin_setup_start:'Установить код',pin_setup_skip:'Не сейчас',
+    pin_create_title:'Создайте новый код',pin_create_sub:'Введите 4-значный код',
+    pin_confirm_title:'Подтвердите код',pin_confirm_sub:'Введите код ещё раз',pin_mismatch:'Коды не совпадают, попробуйте снова',
     anniversary_not_set:'Укажите важную дату',anniversary_not_set_sub:'Добавьте дату свадьбы — мы будем напоминать каждый год',
     anniversary_setup_toast:'Скоро появится функция добавления важных дат 🗓️',
     couple_chat_title:'Переписка',couple_chat_sub:'Обменивайтесь сообщениями с партнёром',
@@ -569,6 +580,11 @@ const I18N={
     video_select:'Tap to select a video',video_size_hint:'Max 6MB, short clips',
     audio_record:'Record a voice message',audio_too_long:'Voice message is too long. Try a shorter one',
     title_required:'Title is required',memory_saved_toast:'Memory saved ✓',
+    enter_pin_title:'Enter PIN',enter_pin_sub:'4-digit code to access the app',wrong_pin:'Wrong code, try again',forgot_pin_logout:'Forgot your PIN? Log out and sign in again',
+    pin_setup_title:'Protect your app',pin_setup_sub:'Set a 4-digit personal code to protect your profile from others. The code is stored only on this device.',
+    pin_setup_start:'Set up PIN',pin_setup_skip:'Not now',
+    pin_create_title:'Create a new PIN',pin_create_sub:'Enter a 4-digit code',
+    pin_confirm_title:'Confirm PIN',pin_confirm_sub:'Enter the code again',pin_mismatch:"Codes didn't match, try again",
     anniversary_not_set:'Set an important date',anniversary_not_set_sub:"Add your anniversary and we'll remind you every year",
     anniversary_setup_toast:'The feature to add important dates is coming soon 🗓️',
     couple_chat_title:'Chat',couple_chat_sub:'Exchange messages with your partner',
@@ -2507,6 +2523,139 @@ function AddCapsuleModal({onClose,onDone}){
 }
 
 /* ROOT */
+/* PIN LOCK — bank-app style numeric passcode layer */
+function PinDots({length,filled}){
+  return React.createElement('div',{style:{display:'flex',gap:14,justifyContent:'center',margin:'24px 0'}},
+    Array.from({length}).map((_,i)=>React.createElement('div',{key:i,style:{
+      width:16,height:16,borderRadius:'50%',
+      background:i<filled?'var(--blue)':'transparent',
+      border:`2px solid ${i<filled?'var(--blue)':'var(--border2)'}`,
+      transition:'all .15s'
+    }}))
+  );
+}
+
+function PinKeypad({onPress,onBackspace,disabled}){
+  const keys=['1','2','3','4','5','6','7','8','9','','0','back'];
+  return React.createElement('div',{style:{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14,maxWidth:280,margin:'0 auto'}},
+    keys.map((k,i)=>{
+      if(k==='')return React.createElement('div',{key:i});
+      if(k==='back')return React.createElement('button',{key:i,onClick:onBackspace,disabled:disabled,
+        style:{aspectRatio:'1',borderRadius:'50%',border:'none',background:'none',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'var(--text2)'}},
+        React.createElement('i',{className:'ti ti-backspace',style:{fontSize:22}}));
+      return React.createElement('button',{key:i,onClick:()=>onPress(k),disabled:disabled,
+        style:{aspectRatio:'1',borderRadius:'50%',border:'1.5px solid var(--border)',background:'var(--bg)',fontSize:22,fontWeight:600,color:'var(--text)',cursor:'pointer'}},k);
+    })
+  );
+}
+
+function PinLockScreen({onUnlock,onLogout,getPinKey}){
+  const {showToast}=useApp();
+  const [entered,setEntered]=useState('');
+  const [shake,setShake]=useState(false);
+  const [attempts,setAttempts]=useState(0);
+
+  function press(digit){
+    if(entered.length>=4)return;
+    const next=entered+digit;
+    setEntered(next);
+    if(next.length===4){
+      setTimeout(()=>checkPin(next),150);
+    }
+  }
+  function backspace(){ setEntered(e=>e.slice(0,-1)); }
+
+  function checkPin(pin){
+    const key=getPinKey();
+    const saved=key?localStorage.getItem(key):null;
+    if(pin===saved){
+      onUnlock();
+    } else {
+      setShake(true);
+      setAttempts(a=>a+1);
+      showToast(t('wrong_pin'),'error');
+      setTimeout(()=>{setEntered('');setShake(false);},400);
+    }
+  }
+
+  return React.createElement('div',{className:'auth-screen',style:{justifyContent:'flex-start',paddingTop:'14vh'}},
+    React.createElement('div',{style:{textAlign:'center'}},
+      React.createElement('div',{style:{width:64,height:64,borderRadius:'50%',background:'rgba(255,255,255,.15)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 18px'}},
+        React.createElement('i',{className:'ti ti-lock',style:{fontSize:28,color:'#fff'}})
+      ),
+      React.createElement('div',{style:{color:'#fff',fontSize:18,fontWeight:700,marginBottom:6}},t('enter_pin_title')),
+      React.createElement('div',{style:{color:'rgba(255,255,255,.7)',fontSize:13,marginBottom:6}},t('enter_pin_sub'))
+    ),
+    React.createElement('div',{style:{animation:shake?'shake .4s':'none'}},
+      React.createElement(PinDots,{length:4,filled:entered.length})
+    ),
+    React.createElement('div',{style:{background:'#fff',borderRadius:24,padding:'24px 20px',margin:'10px 16px 0',maxWidth:340,width:'100%',alignSelf:'center'}},
+      React.createElement(PinKeypad,{onPress:press,onBackspace:backspace})
+    ),
+    React.createElement('button',{onClick:onLogout,style:{marginTop:24,background:'none',border:'none',color:'rgba(255,255,255,.75)',fontSize:13,textDecoration:'underline',cursor:'pointer'}},
+      t('forgot_pin_logout')
+    )
+  );
+}
+
+function PinSetupModal({onDone,onSkip}){
+  const {showToast}=useApp();
+  const [stage,setStage]=useState('intro'); // intro | first | confirm
+  const [firstPin,setFirstPin]=useState('');
+  const [entered,setEntered]=useState('');
+  const [shake,setShake]=useState(false);
+
+  function press(digit){
+    if(entered.length>=4)return;
+    const next=entered+digit;
+    setEntered(next);
+    if(next.length===4)setTimeout(()=>handleComplete(next),150);
+  }
+  function backspace(){ setEntered(e=>e.slice(0,-1)); }
+
+  function handleComplete(pin){
+    if(stage==='first'){
+      setFirstPin(pin);
+      setEntered('');
+      setStage('confirm');
+    } else if(stage==='confirm'){
+      if(pin===firstPin){
+        onDone(pin);
+      } else {
+        setShake(true);
+        showToast(t('pin_mismatch'),'error');
+        setTimeout(()=>{setEntered('');setFirstPin('');setStage('first');setShake(false);},500);
+      }
+    }
+  }
+
+  if(stage==='intro'){
+    return React.createElement('div',{className:'modal-overlay'},
+      React.createElement('div',{className:'modal',style:{textAlign:'center',paddingTop:28}},
+        React.createElement('div',{style:{width:64,height:64,borderRadius:'50%',background:'var(--blue-l)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 16px'}},
+          React.createElement('i',{className:'ti ti-shield-lock',style:{fontSize:28,color:'var(--blue)'}})
+        ),
+        React.createElement('h2',{style:{marginBottom:8}},t('pin_setup_title')),
+        React.createElement('p',{style:{fontSize:13,color:'var(--text2)',lineHeight:1.6,marginBottom:20,padding:'0 8px'}},t('pin_setup_sub')),
+        React.createElement('button',{className:'btn btn-primary btn-full',onClick:()=>setStage('first')},t('pin_setup_start')),
+        React.createElement('button',{onClick:onSkip,style:{marginTop:12,background:'none',border:'none',color:'var(--text3)',fontSize:13,cursor:'pointer'}},t('pin_setup_skip'))
+      )
+    );
+  }
+
+  return React.createElement('div',{className:'modal-overlay'},
+    React.createElement('div',{className:'modal',style:{textAlign:'center',paddingTop:28}},
+      React.createElement('div',{style:{fontSize:16,fontWeight:700,marginBottom:6}},stage==='first'?t('pin_create_title'):t('pin_confirm_title')),
+      React.createElement('div',{style:{fontSize:13,color:'var(--text2)',marginBottom:6}},stage==='first'?t('pin_create_sub'):t('pin_confirm_sub')),
+      React.createElement('div',{style:{animation:shake?'shake .4s':'none'}},
+        React.createElement(PinDots,{length:4,filled:entered.length})
+      ),
+      React.createElement(PinKeypad,{onPress:press,onBackspace:backspace}),
+      React.createElement('button',{onClick:onSkip,style:{marginTop:20,background:'none',border:'none',color:'var(--text3)',fontSize:13,cursor:'pointer'}},t('pin_setup_skip'))
+    )
+  );
+}
+
 function App(){
   const [token,setToken]=useState(localStorage.getItem('meros_token'));
   const [page,setPage]=useState('home');
@@ -2515,6 +2664,28 @@ function App(){
   const [refresh,setRefresh]=useState(0);
   const [famCache,setFamCache]=useState(null);
   const [lang,setLang]=useState(getLang());
+  const [pinUnlocked,setPinUnlocked]=useState(false);
+  const [pinSetupNeeded,setPinSetupNeeded]=useState(false);
+
+  function getPinKey(){
+    const uid=localStorage.getItem('meros_user_id');
+    return uid?`meros_pin_${uid}`:null;
+  }
+  function hasPinSet(){
+    const key=getPinKey();
+    return key?!!localStorage.getItem(key):false;
+  }
+
+  useEffect(()=>{
+    if(!token)return;
+    if(hasPinSet()){
+      setPinUnlocked(false);
+      setPinSetupNeeded(false);
+    } else {
+      setPinUnlocked(true); // no PIN configured yet for this account — let them in, then prompt setup once
+      setPinSetupNeeded(true);
+    }
+  },[token]);
 
   function showToast(msg,type=''){setToast({msg,type,key:Date.now()})}
   function showModal(modalType){
@@ -2524,9 +2695,19 @@ function App(){
     setModal(modalType);
   }
   function closeModal(){setModal(null)}
-  function logout(){localStorage.removeItem('meros_token');setToken(null);setPage('home')}
+  function logout(){
+    localStorage.removeItem('meros_token');
+    localStorage.removeItem('meros_user_id');
+    setToken(null);setPage('home');setPinUnlocked(false);
+  }
   function onDone(){setRefresh(r=>r+1)}
   function changeLang(l){localStorage.setItem('meros_lang',l);setLang(l);setRefresh(r=>r+1)}
+  function savePin(pin){
+    const key=getPinKey();
+    if(key)localStorage.setItem(key,pin);
+    setPinSetupNeeded(false);
+  }
+  function skipPinSetup(){ setPinSetupNeeded(false); }
 
   const ctx={showToast,showModal,logout,setToken,lang,changeLang};
 
@@ -2534,6 +2715,17 @@ function App(){
     React.createElement(AuthScreen),
     toast&&React.createElement(Toast,{key:toast.key,...toast,onDone:()=>setToast(null)})
   );
+
+  if(!pinUnlocked){
+    return React.createElement(Ctx.Provider,{value:ctx},
+      React.createElement(PinLockScreen,{
+        onUnlock:()=>setPinUnlocked(true),
+        onLogout:logout,
+        getPinKey
+      }),
+      toast&&React.createElement(Toast,{key:toast.key,...toast,onDone:()=>setToast(null)})
+    );
+  }
 
   const nav=[
     {k:'home',ic:'ti-home',lbl:t('nav_home')},
@@ -2582,7 +2774,8 @@ function App(){
       )
     ),
     toast&&React.createElement(Toast,{key:toast.key,...toast,onDone:()=>setToast(null)}),
-    modal&&(modals[modalKey]?modals[modalKey]():null)
+    modal&&(modals[modalKey]?modals[modalKey]():null),
+    pinSetupNeeded&&React.createElement(PinSetupModal,{onDone:savePin,onSkip:skipPinSetup})
   );
 }
 
