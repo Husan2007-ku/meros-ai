@@ -359,6 +359,8 @@ const I18N={
     pin_setup_start:"Kod o'rnatish",pin_setup_skip:"Hozir emas",
     pin_create_title:'Yangi kod yarating',pin_create_sub:'4 xonali kod kiriting',
     pin_confirm_title:'Kodni tasdiqlang',pin_confirm_sub:'Kodni qayta kiriting',pin_mismatch:"Kodlar mos kelmadi, qaytadan urinib ko'ring",
+    pin_lock_label:'4 xonali kod himoyasi',pin_status_toast:"Profilingiz shaxsiy kod bilan himoyalangan",
+    avatar_updated_toast:'Rasm yangilandi ✓',tap_avatar_hint:"Rasmni o'zgartirish uchun ustiga bosing",
     anniversary_not_set:'Muhim sanani belgilang',anniversary_not_set_sub:"Nikoh sanangizni qo'shsangiz, har yili eslatib turamiz",
     anniversary_setup_toast:"Tez kunda muhim sanalarni qo'shish funksiyasi ishga tushadi 🗓️",
     couple_chat_title:'Suhbat',couple_chat_sub:"Sherigingiz bilan xabar almashing",
@@ -472,6 +474,8 @@ const I18N={
     pin_setup_start:'Установить код',pin_setup_skip:'Не сейчас',
     pin_create_title:'Создайте новый код',pin_create_sub:'Введите 4-значный код',
     pin_confirm_title:'Подтвердите код',pin_confirm_sub:'Введите код ещё раз',pin_mismatch:'Коды не совпадают, попробуйте снова',
+    pin_lock_label:'Защита 4-значным кодом',pin_status_toast:'Ваш профиль защищён личным кодом',
+    avatar_updated_toast:'Фото обновлено ✓',tap_avatar_hint:'Нажмите на фото, чтобы изменить',
     anniversary_not_set:'Укажите важную дату',anniversary_not_set_sub:'Добавьте дату свадьбы — мы будем напоминать каждый год',
     anniversary_setup_toast:'Скоро появится функция добавления важных дат 🗓️',
     couple_chat_title:'Переписка',couple_chat_sub:'Обменивайтесь сообщениями с партнёром',
@@ -585,6 +589,8 @@ const I18N={
     pin_setup_start:'Set up PIN',pin_setup_skip:'Not now',
     pin_create_title:'Create a new PIN',pin_create_sub:'Enter a 4-digit code',
     pin_confirm_title:'Confirm PIN',pin_confirm_sub:'Enter the code again',pin_mismatch:"Codes didn't match, try again",
+    pin_lock_label:'4-digit PIN protection',pin_status_toast:'Your profile is protected with a personal PIN',
+    avatar_updated_toast:'Photo updated ✓',tap_avatar_hint:'Tap the photo to change it',
     anniversary_not_set:'Set an important date',anniversary_not_set_sub:"Add your anniversary and we'll remind you every year",
     anniversary_setup_toast:'The feature to add important dates is coming soon 🗓️',
     couple_chat_title:'Chat',couple_chat_sub:'Exchange messages with your partner',
@@ -748,8 +754,11 @@ function HomeScreen({onRefresh,onNavigate}){
       React.createElement('div',{className:'home-greeting'},getGreeting()+','),
       React.createElement('div',{className:'home-fam-name'},(dash.family?.name||t('your_family'))+' 👨‍👩‍👧‍👦'),
       React.createElement('div',{className:'fam-strip'},
-        members.map((m,i)=>React.createElement('div',{key:m.id,className:'av-wrap'},
-          React.createElement('div',{className:'av',style:{background:avColors[i%avColors.length]}},getInitials(m.name)),
+        members.map((m,i)=>React.createElement('div',{key:m.id,className:'av-wrap',onClick:()=>showModal('memberProfile:'+m.id)},
+          m.avatar_url
+            ?React.createElement('div',{className:'av',style:{padding:0,overflow:'hidden'}},
+                React.createElement('img',{src:m.avatar_url,style:{width:'100%',height:'100%',objectFit:'cover'}}))
+            :React.createElement('div',{className:'av',style:{background:avColors[i%avColors.length]}},getInitials(m.name)),
           React.createElement('div',{className:'av-lbl'},m.name.split(' ')[0])
         )),
         React.createElement('div',{className:'av-wrap',onClick:()=>showModal('member')},
@@ -1735,7 +1744,7 @@ function ProfileScreen(){
   const {logout,showToast,showModal,lang,changeLang}=useApp();
   const [fam,setFam]=useState(null);
   const [inviteCode,setInviteCode]=useState(null);
-  const [togs,setTogs]=useState({axbror:true,ssv:true,kundalik:true,mehnat:false});
+  const [togs,setTogs]=useState({axbror:false,ssv:false,kundalik:false,mehnat:false});
   useEffect(()=>{api('/family').then(r=>{if(r.ok)setFam(r.data)});},[]);
   useEffect(()=>{api('/family/invite-code').then(r=>{if(r.ok)setInviteCode(r.data.invite_code)});},[]);
 
@@ -1746,27 +1755,15 @@ function ProfileScreen(){
   }
 
   const ints=[
-    {k:'axbror',name:t('axbror_name'),st:`${t('connected')} · ${t('axbror_sub')}`,ic:'ti-building-bank',bg:'var(--blue-l)',c:'var(--blue)'},
-    {k:'ssv',name:t('health_min_name'),st:`${t('connected')} · ${t('health_min_sub')}`,ic:'ti-stethoscope',bg:'var(--green-l)',c:'var(--green)'},
-    {k:'kundalik',name:t('kundalik_name'),st:`${t('connected')} · ${t('kundalik_sub')}`,ic:'ti-school',bg:'var(--amber-l)',c:'var(--amber)'},
+    {k:'axbror',name:t('axbror_name'),st:t('not_connected'),ic:'ti-building-bank',bg:'var(--blue-l)',c:'var(--blue)'},
+    {k:'ssv',name:t('health_min_name'),st:t('not_connected'),ic:'ti-stethoscope',bg:'var(--green-l)',c:'var(--green)'},
+    {k:'kundalik',name:t('kundalik_name'),st:t('not_connected'),ic:'ti-school',bg:'var(--amber-l)',c:'var(--amber)'},
     {k:'mehnat',name:t('labor_name'),st:t('not_connected'),ic:'ti-briefcase',bg:'var(--purple-l)',c:'var(--purple)'},
   ];
 
   function toggleInt(k,name){
     setTogs(tg=>({...tg,[k]:!tg[k]}));
     showToast(togs[k]?`${name} — ${t('not_connected')}`:`${name} 🔒`,'');
-  }
-
-  async function exportData(){
-    if(!fam)return;
-    const payload={family:fam.family,members:fam.members,exported_at:new Date().toISOString(),app:'MEROS AI'};
-    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');
-    a.href=url;a.download='meros-ai-malumotlar.json';
-    document.body.appendChild(a);a.click();document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    showToast(t('export_data')+' ✓','success');
   }
 
   const menuItems=[
@@ -1819,20 +1816,10 @@ function ProfileScreen(){
       React.createElement('div',{style:{fontSize:11,color:'var(--text3)',padding:'0 16px 4px',lineHeight:1.5}},t('govt_int_disclaimer')),
       React.createElement('div',{className:'section-label'},t('security_section')),
       React.createElement('div',{className:'menu-card'},
-        React.createElement('div',{className:'menu-row',onClick:()=>showToast(t('biometric')+' — Face ID / Touch ID ✓','success')},
-          React.createElement('div',{className:'menu-icon',style:{background:'var(--blue-l)'}},React.createElement('i',{className:'ti ti-fingerprint',style:{color:'var(--blue)',fontSize:18}})),
-          React.createElement('div',{className:'menu-text'},t('biometric')),
-          React.createElement('span',{style:{fontSize:11,fontWeight:700,padding:'3px 9px',borderRadius:20,background:'var(--green-l)',color:'var(--green)'}},t('enabled'))
-        ),
-        React.createElement('div',{className:'menu-row',onClick:()=>showToast('AES-256 🔒','success')},
-          React.createElement('div',{className:'menu-icon',style:{background:'var(--blue-l)'}},React.createElement('i',{className:'ti ti-shield-lock',style:{color:'var(--blue)',fontSize:18}})),
-          React.createElement('div',{className:'menu-text'},t('encryption')),
+        React.createElement('div',{className:'menu-row',onClick:()=>showToast(t('pin_status_toast'),'')},
+          React.createElement('div',{className:'menu-icon',style:{background:'var(--blue-l)'}},React.createElement('i',{className:'ti ti-lock',style:{color:'var(--blue)',fontSize:18}})),
+          React.createElement('div',{className:'menu-text'},t('pin_lock_label')),
           React.createElement('span',{style:{fontSize:11,fontWeight:700,padding:'3px 9px',borderRadius:20,background:'var(--green-l)',color:'var(--green)'}},t('active'))
-        ),
-        React.createElement('div',{className:'menu-row',onClick:exportData},
-          React.createElement('div',{className:'menu-icon',style:{background:'var(--blue-l)'}},React.createElement('i',{className:'ti ti-download',style:{color:'var(--blue)',fontSize:18}})),
-          React.createElement('div',{className:'menu-text'},t('export_data')),
-          React.createElement('i',{className:'ti ti-chevron-right',style:{color:'var(--text3)',fontSize:15}})
         )
       ),
       React.createElement('div',{className:'section-label'},t('language')),
@@ -1853,6 +1840,57 @@ function ProfileScreen(){
 }
 
 /* PROFILE SUB-MODALS */
+function MemberProfileModal({onClose,member,onUpdated}){
+  const {showToast}=useApp();
+  const [avatarUrl,setAvatarUrl]=useState(member?.avatar_url||null);
+  const [uploading,setUploading]=useState(false);
+  const fileRef=useRef(null);
+
+  async function handleFile(e){
+    const file=e.target.files?.[0];
+    if(!file)return;
+    if(!file.type.startsWith('image/'))return showToast(t('only_images'),'error');
+    setUploading(true);
+    try{
+      const dataUrl=await resizeImage(file,400,0.8);
+      const r=await api(`/family/members/${member.id}/avatar`,{method:'PATCH',body:{avatar_url:dataUrl}});
+      if(!r.ok){showToast(r.error,'error');setUploading(false);return;}
+      setAvatarUrl(dataUrl);
+      showToast(t('avatar_updated_toast'),'success');
+      onUpdated?.();
+    }catch(err){ showToast(t('image_upload_error'),'error'); }
+    setUploading(false);
+  }
+
+  const age=member?.birth_date?(new Date().getFullYear()-parseInt(member.birth_date)):null;
+  const roleLabels={parent:t('parent_role'),child:t('child_role'),grandparent:t('grandparent_role')};
+
+  return React.createElement(Modal,{title:member?.name||'',onClose},
+    React.createElement('div',{style:{textAlign:'center',marginBottom:18}},
+      React.createElement('input',{ref:fileRef,type:'file',accept:'image/*',style:{display:'none'},onChange:handleFile}),
+      React.createElement('div',{onClick:()=>fileRef.current?.click(),style:{position:'relative',width:84,height:84,margin:'0 auto 12px',cursor:'pointer'}},
+        avatarUrl
+          ?React.createElement('img',{src:avatarUrl,style:{width:84,height:84,borderRadius:'50%',objectFit:'cover',display:'block'}})
+          :React.createElement('div',{style:{width:84,height:84,borderRadius:'50%',background:'var(--blue-l)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,fontWeight:800,color:'var(--blue)'}},getInitials(member?.name||'')),
+        React.createElement('div',{style:{position:'absolute',bottom:0,right:0,width:30,height:30,borderRadius:'50%',background:'var(--blue)',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid #fff'}},
+          uploading?React.createElement('span',{className:'spinner',style:{width:13,height:13,borderWidth:2}}):React.createElement('i',{className:'ti ti-camera',style:{color:'#fff',fontSize:14}})
+        )
+      ),
+      React.createElement('div',{style:{fontSize:17,fontWeight:800}},member?.name),
+      React.createElement('div',{style:{fontSize:12,color:'var(--text2)',marginTop:2}},roleLabels[member?.role]||member?.role)
+    ),
+    React.createElement('div',{className:'menu-card',style:{margin:0}},
+      [[t('date_lbl'),member?.birth_date||'—'],[age!=null?t('years_old'):'',age!=null?age+'':'']]
+      .filter(([k,v])=>k&&v)
+      .map(([k,v])=>React.createElement('div',{key:k,className:'menu-row',style:{cursor:'default'}},
+        React.createElement('div',{className:'menu-text',style:{color:'var(--text2)',fontWeight:500}},k),
+        React.createElement('div',{style:{fontSize:13,fontWeight:700,color:'var(--text)'}},v)
+      ))
+    ),
+    React.createElement('div',{style:{fontSize:11,color:'var(--text3)',textAlign:'center',marginTop:14}},t('tap_avatar_hint'))
+  );
+}
+
 function ProfileDetailModal({onClose,fam,me,onUpdated}){
   const {showToast}=useApp();
   const [editing,setEditing]=useState(false);
@@ -2689,7 +2727,8 @@ function App(){
 
   function showToast(msg,type=''){setToast({msg,type,key:Date.now()})}
   function showModal(modalType){
-    if(['profileDetail','familyTree','documents','lullaby'].includes(modalType)&&!famCache){
+    const baseType=modalType.split(':')[0];
+    if(['profileDetail','familyTree','documents','lullaby','memberProfile'].includes(baseType)&&!famCache){
       api('/family').then(r=>{if(r.ok)setFamCache(r.data)});
     }
     setModal(modalType);
@@ -2757,6 +2796,10 @@ function App(){
     documents:()=>React.createElement(DocumentsModal,{onClose:closeModal}),
     lullaby:()=>React.createElement(LullabyModal,{onClose:closeModal,members:famCache?.members}),
     createAlbum:()=>React.createElement(CreateAlbumModal,{onClose:closeModal,onDone}),
+    memberProfile:()=>React.createElement(MemberProfileModal,{onClose:closeModal,
+      member:famCache?.members?.find(m=>m.id===modalArg),
+      onUpdated:()=>{api('/family').then(r=>{if(r.ok)setFamCache(r.data)});onDone();}
+    }),
   };
 
   return React.createElement(Ctx.Provider,{value:ctx},

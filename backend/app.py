@@ -76,6 +76,7 @@ def init_db():
         gender      TEXT,
         role        TEXT NOT NULL,
         avatar_color TEXT DEFAULT '#1A56A0',
+        avatar_url  TEXT,
         created_at  TEXT DEFAULT (datetime('now'))
     );
 
@@ -224,6 +225,12 @@ def init_db():
         db.execute("ALTER TABLE messages ADD COLUMN media_url TEXT")
         db.commit()
 
+    # Migration: add avatar_url column to family_members if it doesn't exist
+    fm_cols = [row[1] for row in db.execute("PRAGMA table_info(family_members)").fetchall()]
+    if 'avatar_url' not in fm_cols:
+        db.execute("ALTER TABLE family_members ADD COLUMN avatar_url TEXT")
+        db.commit()
+
     # Seed demo data
     _seed_demo(db)
     db.close()
@@ -259,7 +266,9 @@ def _seed_demo(db):
         (lola_id,           fam_id, None,        'Lola',  '2021-02-08', 'female', 'child',   '#7B2D8B'),
     ]
     for m in members:
-        db.execute("INSERT INTO family_members VALUES (?,?,?,?,?,?,?,?,datetime('now'))", m)
+        db.execute("""INSERT INTO family_members
+            (id,family_id,user_id,name,birth_date,gender,role,avatar_color,created_at)
+            VALUES (?,?,?,?,?,?,?,?,datetime('now'))""", m)
 
     today = datetime.date.today().isoformat()
     in30 = (datetime.date.today() + datetime.timedelta(days=30)).isoformat()
@@ -577,6 +586,28 @@ def add_member():
     db.commit()
     member = db.execute("SELECT * FROM family_members WHERE id=?", (mid,)).fetchone()
     return ok(row_to_dict(member)), 201
+
+MAX_AVATAR_BYTES = 1_500_000  # ~1.1MB after base64 overhead, plenty for a small square photo
+
+@app.route('/api/family/members/<member_id>/avatar', methods=['PATCH'])
+@require_auth
+def update_member_avatar(member_id):
+    body = request.json or {}
+    avatar_url = body.get('avatar_url')
+    if not avatar_url:
+        return err("Rasm topilmadi")
+    if len(avatar_url) > MAX_AVATAR_BYTES:
+        return err("Rasm hajmi juda katta")
+    db = get_db()
+    member = db.execute(
+        "SELECT id FROM family_members WHERE id=? AND family_id=?", (member_id, g.family_id)
+    ).fetchone()
+    if not member:
+        return err("A'zo topilmadi", 404)
+    db.execute("UPDATE family_members SET avatar_url=? WHERE id=?", (avatar_url, member_id))
+    db.commit()
+    row = db.execute("SELECT * FROM family_members WHERE id=?", (member_id,)).fetchone()
+    return ok(row_to_dict(row))
 
 # ─── HEALTH ──────────────────────────────────────────────────────────────────
 
