@@ -361,9 +361,13 @@ const I18N={
     pin_confirm_title:'Kodni tasdiqlang',pin_confirm_sub:'Kodni qayta kiriting',pin_mismatch:"Kodlar mos kelmadi, qaytadan urinib ko'ring",
     pin_lock_label:'4 xonali kod himoyasi',pin_status_toast:"Profilingiz shaxsiy kod bilan himoyalangan",
     avatar_updated_toast:'Rasm yangilandi ✓',tap_avatar_hint:"Rasmni o'zgartirish uchun ustiga bosing",
+    notifications_title:'Bildirishnomalar',notifications_integration_note:"Davlat tizimlari bilan integratsiya ishga tushgandan keyin emlash, maktab va boshqa eslatmalar avtomatik shu yerga tushadi. Hozircha o'zingiz eslatma qo'shishingiz mumkin.",
+    add_reminder_btn:'Eslatma qoshish',reminder_title_placeholder:"Masalan: Shifokorga uchrashish",
+    reminder_title_required:"Sarlavha bo'sh bo'lmasligi kerak",reminder_added_toast:'Eslatma qoshildi ✓',no_notifications:'Bildirishnomalar yoq',
+    just_now:'hozir',hours_ago:' soat oldin',days_ago:' kun oldin',
     anniversary_not_set:'Muhim sanani belgilang',anniversary_not_set_sub:"Nikoh sanangizni qo'shsangiz, har yili eslatib turamiz",
     anniversary_setup_toast:"Tez kunda muhim sanalarni qo'shish funksiyasi ishga tushadi 🗓️",
-    couple_chat_title:'Suhbat',couple_chat_sub:"Sherigingiz bilan xabar almashing",
+    couple_chat_title:'Oilaviy chat',couple_chat_sub:"Barcha oila a'zolari bilan xabar almashing",
     chat_empty_state:"Hali xabar yo'q. Birinchi bo'lib salom ayting! 💬",chat_placeholder:'Xabar yozing...',
   },
   ru:{
@@ -476,9 +480,13 @@ const I18N={
     pin_confirm_title:'Подтвердите код',pin_confirm_sub:'Введите код ещё раз',pin_mismatch:'Коды не совпадают, попробуйте снова',
     pin_lock_label:'Защита 4-значным кодом',pin_status_toast:'Ваш профиль защищён личным кодом',
     avatar_updated_toast:'Фото обновлено ✓',tap_avatar_hint:'Нажмите на фото, чтобы изменить',
+    notifications_title:'Уведомления',notifications_integration_note:'После запуска интеграции с госорганами напоминания о прививках, школе и других делах будут появляться здесь автоматически. А пока вы можете добавлять напоминания сами.',
+    add_reminder_btn:'Добавить напоминание',reminder_title_placeholder:'Например: Визит к врачу',
+    reminder_title_required:'Заголовок не может быть пустым',reminder_added_toast:'Напоминание добавлено ✓',no_notifications:'Нет уведомлений',
+    just_now:'сейчас',hours_ago:' ч назад',days_ago:' дн назад',
     anniversary_not_set:'Укажите важную дату',anniversary_not_set_sub:'Добавьте дату свадьбы — мы будем напоминать каждый год',
     anniversary_setup_toast:'Скоро появится функция добавления важных дат 🗓️',
-    couple_chat_title:'Переписка',couple_chat_sub:'Обменивайтесь сообщениями с партнёром',
+    couple_chat_title:'Семейный чат',couple_chat_sub:'Обменивайтесь сообщениями со всей семьёй',
     chat_empty_state:'Пока нет сообщений. Напишите первыми! 💬',chat_placeholder:'Напишите сообщение...',
   },
   en:{
@@ -591,9 +599,13 @@ const I18N={
     pin_confirm_title:'Confirm PIN',pin_confirm_sub:'Enter the code again',pin_mismatch:"Codes didn't match, try again",
     pin_lock_label:'4-digit PIN protection',pin_status_toast:'Your profile is protected with a personal PIN',
     avatar_updated_toast:'Photo updated ✓',tap_avatar_hint:'Tap the photo to change it',
+    notifications_title:'Notifications',notifications_integration_note:'Once government integrations launch, vaccine, school, and other reminders will appear here automatically. For now, you can add reminders yourself.',
+    add_reminder_btn:'Add reminder',reminder_title_placeholder:'E.g. Doctor appointment',
+    reminder_title_required:'Title cannot be empty',reminder_added_toast:'Reminder added ✓',no_notifications:'No notifications',
+    just_now:'just now',hours_ago:'h ago',days_ago:'d ago',
     anniversary_not_set:'Set an important date',anniversary_not_set_sub:"Add your anniversary and we'll remind you every year",
     anniversary_setup_toast:'The feature to add important dates is coming soon 🗓️',
-    couple_chat_title:'Chat',couple_chat_sub:'Exchange messages with your partner',
+    couple_chat_title:'Family chat',couple_chat_sub:'Exchange messages with the whole family',
     chat_empty_state:'No messages yet. Say hi first! 💬',chat_placeholder:'Type a message...',
   }
 };
@@ -1522,7 +1534,7 @@ function ChatModal({onClose}){
     React.createElement('div',{className:'chat-header'},
       React.createElement('div',{className:'chat-back',onClick:onClose},React.createElement('i',{className:'ti ti-arrow-left'})),
       React.createElement('div',{className:'chat-title'},t('couple_chat_title')),
-      React.createElement('i',{className:'ti ti-heart',style:{color:'var(--rose)',fontSize:20}})
+      React.createElement('i',{className:'ti ti-users',style:{color:'var(--rose)',fontSize:20}})
     ),
     React.createElement('div',{className:'chat-body',ref:bodyRef},
       messages===null&&React.createElement('div',{className:'chat-empty'},React.createElement('span',{className:'spinner',style:{borderTopColor:'var(--rose)',borderColor:'rgba(194,24,91,.2)'}})),
@@ -1531,6 +1543,7 @@ function ChatModal({onClose}){
         React.createElement('div',null,t('chat_empty_state'))
       ),
       messages&&messages.map(m=>React.createElement('div',{key:m.id,className:`chat-bubble ${m.sender_id===myId?'mine':'theirs'}`},
+        m.sender_id!==myId&&React.createElement('div',{style:{fontSize:11,fontWeight:700,color:'var(--rose)',marginBottom:3}},m.sender_name),
         renderBubbleContent(m),
         React.createElement('span',{className:'chat-time'},formatTime(m.created_at))
       ))
@@ -2694,6 +2707,109 @@ function PinSetupModal({onDone,onSkip}){
   );
 }
 
+/* NOTIFICATION / REMINDER CENTER */
+function AlertsCenterModal({onClose}){
+  const {showToast}=useApp();
+  const [alerts,setAlerts]=useState(null);
+  const [showAdd,setShowAdd]=useState(false);
+  const [title,setTitle]=useState('');
+  const [body,setBody]=useState('');
+  const [date,setDate]=useState('');
+  const [saving,setSaving]=useState(false);
+
+  function load(){
+    api('/alerts').then(r=>{if(r.ok)setAlerts(r.data.alerts);});
+  }
+  useEffect(()=>{ load(); },[]);
+
+  async function markRead(id){
+    await api(`/alerts/${id}/read`,{method:'PATCH'});
+    setAlerts(a=>a.map(x=>x.id===id?{...x,is_read:1}:x));
+  }
+
+  async function removeAlert(id){
+    await api(`/alerts/${id}`,{method:'DELETE'});
+    setAlerts(a=>a.filter(x=>x.id!==id));
+  }
+
+  async function addReminder(){
+    if(!title.trim())return showToast(t('reminder_title_required'),'error');
+    setSaving(true);
+    const r=await api('/alerts',{method:'POST',body:{title:title.trim(),body:body.trim(),reminder_date:date}});
+    setSaving(false);
+    if(!r.ok)return showToast(r.error,'error');
+    showToast(t('reminder_added_toast'),'success');
+    setTitle('');setBody('');setDate('');setShowAdd(false);
+    load();
+  }
+
+  const severityIcon={info:'ti-info-circle',warning:'ti-alert-triangle',danger:'ti-alert-circle'};
+  const severityColor={info:'var(--blue)',warning:'var(--amber)',danger:'var(--red)'};
+  const severityBg={info:'var(--blue-l)',warning:'var(--amber-l)',danger:'var(--red-l)'};
+
+  function timeAgo(iso){
+    try{
+      const d=new Date(iso+(iso.includes('Z')?'':'Z'));
+      const diffH=Math.floor((Date.now()-d.getTime())/3600000);
+      if(diffH<1)return t('just_now');
+      if(diffH<24)return diffH+t('hours_ago');
+      return Math.floor(diffH/24)+t('days_ago');
+    }catch(e){return '';}
+  }
+
+  return React.createElement(Modal,{title:t('notifications_title'),onClose},
+    React.createElement('div',{style:{fontSize:11,color:'var(--text3)',marginBottom:14,lineHeight:1.5,textAlign:'center'}},
+      t('notifications_integration_note')
+    ),
+
+    !showAdd&&React.createElement('button',{className:'btn btn-primary btn-full',style:{marginBottom:16},onClick:()=>setShowAdd(true)},
+      React.createElement('i',{className:'ti ti-plus',style:{fontSize:16}}),t('add_reminder_btn')
+    ),
+
+    showAdd&&React.createElement('div',{style:{background:'var(--bg2)',borderRadius:'var(--r2)',padding:14,marginBottom:16}},
+      React.createElement('div',{className:'input-group'},
+        React.createElement('label',null,t('title_lbl')),
+        React.createElement('input',{className:'input-field',placeholder:t('reminder_title_placeholder'),value:title,onChange:e=>setTitle(e.target.value)})
+      ),
+      React.createElement('div',{className:'input-group'},
+        React.createElement('label',null,t('description_lbl')),
+        React.createElement('textarea',{className:'input-field',rows:2,style:{resize:'none'},value:body,onChange:e=>setBody(e.target.value)})
+      ),
+      React.createElement('div',{className:'input-group'},
+        React.createElement('label',null,t('date_lbl')),
+        React.createElement('input',{className:'input-field',type:'date',value:date,onChange:e=>setDate(e.target.value)})
+      ),
+      React.createElement('div',{style:{display:'flex',gap:8}},
+        React.createElement('button',{className:'btn btn-primary',style:{flex:1},onClick:addReminder,disabled:saving},
+          saving?React.createElement('span',{className:'spinner'}):t('save')),
+        React.createElement('button',{className:'btn btn-outline',style:{flex:1},onClick:()=>setShowAdd(false)},t('cancel'))
+      )
+    ),
+
+    alerts===null&&React.createElement('div',{style:{textAlign:'center',padding:20}},React.createElement('span',{className:'spinner',style:{borderTopColor:'var(--blue)',borderColor:'rgba(26,86,160,.2)'}})),
+    alerts&&alerts.length===0&&React.createElement('div',{className:'empty'},
+      React.createElement('i',{className:'ti ti-bell-off'}),
+      React.createElement('p',null,t('no_notifications'))
+    ),
+    alerts&&alerts.map(a=>React.createElement('div',{key:a.id,className:'menu-row',style:{cursor:'default',opacity:a.is_read?0.6:1}},
+      React.createElement('div',{className:'menu-icon',style:{background:severityBg[a.severity]||'var(--blue-l)'}},
+        React.createElement('i',{className:`ti ${severityIcon[a.severity]||'ti-info-circle'}`,style:{color:severityColor[a.severity]||'var(--blue)',fontSize:18}})
+      ),
+      React.createElement('div',{style:{flex:1,minWidth:0}},
+        React.createElement('div',{className:'menu-text',style:{fontWeight:700}},a.title),
+        React.createElement('div',{style:{fontSize:12,color:'var(--text2)',marginTop:1}},a.body),
+        React.createElement('div',{style:{fontSize:10,color:'var(--text3)',marginTop:3}},
+          a.reminder_date?a.reminder_date+' · ':'',timeAgo(a.created_at)
+        )
+      ),
+      React.createElement('div',{style:{display:'flex',gap:4,flexShrink:0}},
+        !a.is_read&&React.createElement('button',{onClick:()=>markRead(a.id),style:{background:'none',border:'none',color:'var(--text3)',cursor:'pointer',padding:4}},React.createElement('i',{className:'ti ti-check',style:{fontSize:16}})),
+        React.createElement('button',{onClick:()=>removeAlert(a.id),style:{background:'none',border:'none',color:'var(--text3)',cursor:'pointer',padding:4}},React.createElement('i',{className:'ti ti-trash',style:{fontSize:16}}))
+      )
+    ))
+  );
+}
+
 function App(){
   const [token,setToken]=useState(localStorage.getItem('meros_token'));
   const [page,setPage]=useState('home');
@@ -2704,6 +2820,8 @@ function App(){
   const [lang,setLang]=useState(getLang());
   const [pinUnlocked,setPinUnlocked]=useState(false);
   const [pinSetupNeeded,setPinSetupNeeded]=useState(false);
+  const [showAlerts,setShowAlerts]=useState(false);
+  const [alertsUnread,setAlertsUnread]=useState(0);
 
   function getPinKey(){
     const uid=localStorage.getItem('meros_user_id');
@@ -2724,6 +2842,11 @@ function App(){
       setPinSetupNeeded(true);
     }
   },[token]);
+
+  useEffect(()=>{
+    if(!token||!pinUnlocked)return;
+    api('/alerts').then(r=>{if(r.ok)setAlertsUnread(r.data.unread)});
+  },[token,pinUnlocked,refresh,showAlerts]);
 
   function showToast(msg,type=''){setToast({msg,type,key:Date.now()})}
   function showModal(modalType){
@@ -2804,9 +2927,14 @@ function App(){
 
   return React.createElement(Ctx.Provider,{value:ctx},
     React.createElement('div',{className:'app'},
-      React.createElement('div',{className:'status-bar'},
+      React.createElement('div',{className:'status-bar',style:{position:'relative'}},
         React.createElement('span',{className:'brand'},
           React.createElement('span',{style:{color:'var(--gold)'}},'❋'),' MEROS AI'
+        ),
+        React.createElement('button',{onClick:()=>setShowAlerts(true),
+          style:{position:'absolute',right:14,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',padding:6}},
+          React.createElement('i',{className:'ti ti-bell',style:{color:'#fff',fontSize:20}}),
+          alertsUnread>0&&React.createElement('span',{style:{position:'absolute',top:2,right:2,width:8,height:8,borderRadius:'50%',background:'var(--amber)',border:'1.5px solid var(--blue)'}})
         )
       ),
       (pages[page]||pages.home)(),
@@ -2818,7 +2946,8 @@ function App(){
     ),
     toast&&React.createElement(Toast,{key:toast.key,...toast,onDone:()=>setToast(null)}),
     modal&&(modals[modalKey]?modals[modalKey]():null),
-    pinSetupNeeded&&React.createElement(PinSetupModal,{onDone:savePin,onSkip:skipPinSetup})
+    pinSetupNeeded&&React.createElement(PinSetupModal,{onDone:savePin,onSkip:skipPinSetup}),
+    showAlerts&&React.createElement(AlertsCenterModal,{onClose:()=>setShowAlerts(false)})
   );
 }
 

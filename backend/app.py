@@ -161,9 +161,11 @@ def init_db():
     CREATE TABLE IF NOT EXISTS alerts (
         id          TEXT PRIMARY KEY,
         family_id   TEXT NOT NULL,
+        creator_id  TEXT,
         type        TEXT NOT NULL,
         title       TEXT NOT NULL,
         body        TEXT NOT NULL,
+        reminder_date TEXT,
         severity    TEXT DEFAULT 'info',
         is_read     INTEGER DEFAULT 0,
         created_at  TEXT DEFAULT (datetime('now'))
@@ -229,6 +231,15 @@ def init_db():
     fm_cols = [row[1] for row in db.execute("PRAGMA table_info(family_members)").fetchall()]
     if 'avatar_url' not in fm_cols:
         db.execute("ALTER TABLE family_members ADD COLUMN avatar_url TEXT")
+        db.commit()
+
+    # Migration: add creator_id and reminder_date columns to alerts if missing
+    alert_cols = [row[1] for row in db.execute("PRAGMA table_info(alerts)").fetchall()]
+    if 'creator_id' not in alert_cols:
+        db.execute("ALTER TABLE alerts ADD COLUMN creator_id TEXT")
+        db.commit()
+    if 'reminder_date' not in alert_cols:
+        db.execute("ALTER TABLE alerts ADD COLUMN reminder_date TEXT")
         db.commit()
 
     # Seed demo data
@@ -334,7 +345,9 @@ def _seed_demo(db):
         (str(uuid.uuid4()), fam_id, 'screen',   "Oila vaqti", "Bugun 3 soatdan beri hamma telefonda", 'info', 0),
     ]
     for a in alerts_data:
-        db.execute("INSERT INTO alerts VALUES (?,?,?,?,?,?,?,datetime('now'))", a)
+        db.execute("""INSERT INTO alerts
+            (id,family_id,type,title,body,severity,is_read,created_at)
+            VALUES (?,?,?,?,?,?,?,datetime('now'))""", a)
 
     db.commit()
 
@@ -924,12 +937,40 @@ def log_warmth():
 def get_alerts():
     db = get_db()
     rows = db.execute(
-        "SELECT * FROM alerts WHERE family_id=? ORDER BY created_at DESC LIMIT 20",
+        "SELECT * FROM alerts WHERE family_id=? ORDER BY created_at DESC LIMIT 50",
         (g.family_id,)).fetchall()
     unread = db.execute(
         "SELECT COUNT(*) as cnt FROM alerts WHERE family_id=? AND is_read=0",
         (g.family_id,)).fetchone()['cnt']
     return ok({'alerts': rows_to_list(rows), 'unread': unread})
+
+@app.route('/api/alerts', methods=['POST'])
+@require_auth
+def create_alert():
+    body = request.json or {}
+    title = (body.get('title') or '').strip()
+    alert_body = (body.get('body') or '').strip()
+    reminder_date = body.get('reminder_date', '')
+    if not title:
+        return err("Sarlavha bo'sh bo'lmasligi kerak")
+    aid = str(uuid.uuid4())
+    db = get_db()
+    db.execute(
+        "INSERT INTO alerts(id,family_id,creator_id,type,title,body,reminder_date,severity) "
+        "VALUES(?,?,?,?,?,?,?,?)",
+        (aid, g.family_id, g.user_id, 'manual', title, alert_body, reminder_date, body.get('severity', 'info'))
+    )
+    db.commit()
+    row = db.execute("SELECT * FROM alerts WHERE id=?", (aid,)).fetchone()
+    return ok(row_to_dict(row)), 201
+
+@app.route('/api/alerts/<aid>', methods=['DELETE'])
+@require_auth
+def delete_alert(aid):
+    db = get_db()
+    db.execute("DELETE FROM alerts WHERE id=? AND family_id=?", (aid, g.family_id))
+    db.commit()
+    return ok({'message': "O'chirildi"})
 
 @app.route('/api/alerts/<aid>/read', methods=['PATCH'])
 @require_auth
