@@ -368,6 +368,7 @@ const I18N={
     anniversary_not_set:'Muhim sanani belgilang',anniversary_not_set_sub:"Nikoh sanangizni qo'shsangiz, har yili eslatib turamiz",
     anniversary_setup_toast:"Tez kunda muhim sanalarni qo'shish funksiyasi ishga tushadi 🗓️",
     couple_chat_title:'Oilaviy chat',couple_chat_sub:"Barcha oila a'zolari bilan xabar almashing",
+    couple_only_chat_title:'Er-xotin chat',couple_only_chat_sub:'Faqat ikkalangiz orasida',
     chat_empty_state:"Hali xabar yo'q. Birinchi bo'lib salom ayting! 💬",chat_placeholder:'Xabar yozing...',
   },
   ru:{
@@ -487,6 +488,7 @@ const I18N={
     anniversary_not_set:'Укажите важную дату',anniversary_not_set_sub:'Добавьте дату свадьбы — мы будем напоминать каждый год',
     anniversary_setup_toast:'Скоро появится функция добавления важных дат 🗓️',
     couple_chat_title:'Семейный чат',couple_chat_sub:'Обменивайтесь сообщениями со всей семьёй',
+    couple_only_chat_title:'Чат для двоих',couple_only_chat_sub:'Только между вами',
     chat_empty_state:'Пока нет сообщений. Напишите первыми! 💬',chat_placeholder:'Напишите сообщение...',
   },
   en:{
@@ -606,6 +608,7 @@ const I18N={
     anniversary_not_set:'Set an important date',anniversary_not_set_sub:"Add your anniversary and we'll remind you every year",
     anniversary_setup_toast:'The feature to add important dates is coming soon 🗓️',
     couple_chat_title:'Family chat',couple_chat_sub:'Exchange messages with the whole family',
+    couple_only_chat_title:'Just us',couple_only_chat_sub:'Only between the two of you',
     chat_empty_state:'No messages yet. Say hi first! 💬',chat_placeholder:'Type a message...',
   }
 };
@@ -1269,14 +1272,19 @@ function RelationshipScreen(){
   const [saving,setSaving]=useState(false);const [saved,setSaved]=useState(false);
   const [showIntervention,setShowIntervention]=useState(false);
   const [showCompatTest,setShowCompatTest]=useState(false);
-  const [showChat,setShowChat]=useState(false);
-  const [unread,setUnread]=useState(0);
+  const [showFamilyChat,setShowFamilyChat]=useState(false);
+  const [showCoupleChat,setShowCoupleChat]=useState(false);
+  const [unreadFamily,setUnreadFamily]=useState(0);
+  const [unreadCouple,setUnreadCouple]=useState(0);
   useEffect(()=>{api('/warmth').then(r=>{if(r.ok)setData(r.data)});},[]);
   useEffect(()=>{
-    api('/messages/unread-count').then(r=>{if(r.ok)setUnread(r.data.unread)});
-    const iv=setInterval(()=>{
-      api('/messages/unread-count').then(r=>{if(r.ok)setUnread(r.data.unread)});
-    },15000);
+    function refreshUnread(){
+      api('/messages/unread-count').then(r=>{
+        if(r.ok){setUnreadFamily(r.data.family||0);setUnreadCouple(r.data.couple||0);}
+      });
+    }
+    refreshUnread();
+    const iv=setInterval(refreshUnread,15000);
     return()=>clearInterval(iv);
   },[]);
 
@@ -1297,18 +1305,22 @@ function RelationshipScreen(){
       React.createElement('div',{className:'page-sub'},t('relationship_sub'))
     ),
     React.createElement('div',{className:'scrollable'},
-      React.createElement('div',{style:{padding:'12px 16px 0'}},
-        React.createElement('div',{className:'card',style:{cursor:'pointer',position:'relative'},onClick:()=>{setShowChat(true);setUnread(0);}},
-          React.createElement('div',{className:'card-row'},
-            React.createElement('div',{className:'icon-box',style:{background:'var(--rose-l)'}},React.createElement('i',{className:'ti ti-messages',style:{color:'var(--rose)',fontSize:22}})),
-            React.createElement('div',{className:'card-info'},
-              React.createElement('div',{className:'card-title'},t('couple_chat_title')),
-              React.createElement('div',{className:'card-sub'},t('couple_chat_sub'))
-            ),
-            unread>0
-              ?React.createElement('span',{style:{background:'var(--rose)',color:'#fff',fontSize:11,fontWeight:800,borderRadius:20,minWidth:22,height:22,display:'flex',alignItems:'center',justifyContent:'center',padding:'0 6px'}},unread)
-              :React.createElement('i',{className:'ti ti-chevron-right',style:{color:'var(--text3)',fontSize:18}})
-          )
+      React.createElement('div',{style:{padding:'12px 16px 0',display:'flex',gap:10}},
+        React.createElement('div',{className:'card',style:{cursor:'pointer',position:'relative',flex:1,margin:0},onClick:()=>{setShowCoupleChat(true);setUnreadCouple(0);}},
+          React.createElement('div',{style:{textAlign:'center'}},
+            React.createElement('div',{className:'icon-box',style:{background:'var(--rose-l)',margin:'0 auto 8px'}},React.createElement('i',{className:'ti ti-heart',style:{color:'var(--rose)',fontSize:22}})),
+            React.createElement('div',{style:{fontSize:13,fontWeight:700,color:'var(--text)'}},t('couple_only_chat_title')),
+            React.createElement('div',{style:{fontSize:11,color:'var(--text2)',marginTop:2}},t('couple_only_chat_sub'))
+          ),
+          unreadCouple>0&&React.createElement('span',{style:{position:'absolute',top:8,right:8,background:'var(--rose)',color:'#fff',fontSize:10,fontWeight:800,borderRadius:20,minWidth:18,height:18,display:'flex',alignItems:'center',justifyContent:'center',padding:'0 4px'}},unreadCouple)
+        ),
+        React.createElement('div',{className:'card',style:{cursor:'pointer',position:'relative',flex:1,margin:0},onClick:()=>{setShowFamilyChat(true);setUnreadFamily(0);}},
+          React.createElement('div',{style:{textAlign:'center'}},
+            React.createElement('div',{className:'icon-box',style:{background:'var(--blue-l)',margin:'0 auto 8px'}},React.createElement('i',{className:'ti ti-users',style:{color:'var(--blue)',fontSize:22}})),
+            React.createElement('div',{style:{fontSize:13,fontWeight:700,color:'var(--text)'}},t('couple_chat_title')),
+            React.createElement('div',{style:{fontSize:11,color:'var(--text2)',marginTop:2}},t('couple_chat_sub'))
+          ),
+          unreadFamily>0&&React.createElement('span',{style:{position:'absolute',top:8,right:8,background:'var(--blue)',color:'#fff',fontSize:10,fontWeight:800,borderRadius:20,minWidth:18,height:18,display:'flex',alignItems:'center',justifyContent:'center',padding:'0 4px'}},unreadFamily)
         )
       ),
       React.createElement('div',{style:{padding:'12px 16px 0'}},
@@ -1391,7 +1403,8 @@ function RelationshipScreen(){
     ),
     showIntervention&&React.createElement(InterventionModal,{onClose:()=>setShowIntervention(false)}),
     showCompatTest&&React.createElement(CompatTestModal,{onClose:()=>setShowCompatTest(false)}),
-    showChat&&React.createElement(ChatModal,{onClose:()=>setShowChat(false)})
+    showCoupleChat&&React.createElement(ChatModal,{onClose:()=>setShowCoupleChat(false),channel:'couple'}),
+    showFamilyChat&&React.createElement(ChatModal,{onClose:()=>setShowFamilyChat(false),channel:'family'})
   );
 }
 
@@ -1447,7 +1460,7 @@ function ChatAudioRecorder({onCancel,onSend}){
   );
 }
 
-function ChatModal({onClose}){
+function ChatModal({onClose,channel}){
   const {showToast}=useApp();
   const [messages,setMessages]=useState(null);
   const [text,setText]=useState('');
@@ -1459,7 +1472,7 @@ function ChatModal({onClose}){
   const myId=localStorage.getItem('meros_user_id');
 
   function loadMessages(scrollToBottom){
-    api('/messages').then(r=>{
+    api('/messages?channel='+channel).then(r=>{
       if(r.ok){
         setMessages(r.data);
         if(scrollToBottom)setTimeout(()=>{
@@ -1473,12 +1486,12 @@ function ChatModal({onClose}){
     loadMessages(true);
     const iv=setInterval(()=>loadMessages(false),8000);
     return()=>clearInterval(iv);
-  },[]);
+  },[channel]);
 
   async function send(){
     if(attachPreview){
       setSending(true);
-      const r=await api('/messages',{method:'POST',body:{kind:attachPreview.kind,media_url:attachPreview.data,body:text.trim()}});
+      const r=await api('/messages',{method:'POST',body:{kind:attachPreview.kind,media_url:attachPreview.data,body:text.trim(),channel}});
       setSending(false);
       if(!r.ok){showToast(r.error,'error');return;}
       setAttachPreview(null);setText('');
@@ -1489,7 +1502,7 @@ function ChatModal({onClose}){
     if(!body||sending)return;
     setSending(true);
     setText('');
-    const r=await api('/messages',{method:'POST',body:{body,kind:'text'}});
+    const r=await api('/messages',{method:'POST',body:{body,kind:'text',channel}});
     setSending(false);
     if(!r.ok){showToast(r.error,'error');setText(body);return;}
     loadMessages(true);
@@ -1533,7 +1546,7 @@ function ChatModal({onClose}){
   return React.createElement('div',{className:'chat-overlay'},
     React.createElement('div',{className:'chat-header'},
       React.createElement('div',{className:'chat-back',onClick:onClose},React.createElement('i',{className:'ti ti-arrow-left'})),
-      React.createElement('div',{className:'chat-title'},t('couple_chat_title')),
+      React.createElement('div',{className:'chat-title'},channel==='couple'?t('couple_only_chat_title'):t('couple_chat_title')),
       React.createElement('i',{className:'ti ti-users',style:{color:'var(--rose)',fontSize:20}})
     ),
     React.createElement('div',{className:'chat-body',ref:bodyRef},
@@ -1564,7 +1577,7 @@ function ChatModal({onClose}){
       onSend:async(data)=>{
         setShowRecorder(false);
         setSending(true);
-        const r=await api('/messages',{method:'POST',body:{kind:'audio',media_url:data,body:''}});
+        const r=await api('/messages',{method:'POST',body:{kind:'audio',media_url:data,body:'',channel}});
         setSending(false);
         if(!r.ok){showToast(r.error,'error');return;}
         loadMessages(true);

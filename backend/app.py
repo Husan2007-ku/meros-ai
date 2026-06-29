@@ -192,6 +192,7 @@ def init_db():
         id          TEXT PRIMARY KEY,
         family_id   TEXT NOT NULL,
         sender_id   TEXT NOT NULL,
+        channel     TEXT DEFAULT 'family',
         body        TEXT NOT NULL,
         kind        TEXT DEFAULT 'text',
         media_url   TEXT,
@@ -240,6 +241,13 @@ def init_db():
         db.commit()
     if 'reminder_date' not in alert_cols:
         db.execute("ALTER TABLE alerts ADD COLUMN reminder_date TEXT")
+        db.commit()
+
+    # Migration: add channel column to messages if it doesn't exist (default existing rows to 'family')
+    msg_cols2 = [row[1] for row in db.execute("PRAGMA table_info(messages)").fetchall()]
+    if 'channel' not in msg_cols2:
+        db.execute("ALTER TABLE messages ADD COLUMN channel TEXT DEFAULT 'family'")
+        db.execute("UPDATE messages SET channel='family' WHERE channel IS NULL")
         db.commit()
 
     # Seed demo data
@@ -1191,20 +1199,23 @@ def get_compat_history():
         result.append(d)
     return ok(result)
 
-# ─── MESSAGES (COUPLE CHAT) ─────────────────────────────────────────────────
+# ─── MESSAGES (COUPLE CHAT + FAMILY CHAT) ───────────────────────────────────
 
 @app.route('/api/messages', methods=['GET'])
 @require_auth
 def get_messages():
+    channel = request.args.get('channel', 'family')
+    if channel not in ('family', 'couple'):
+        channel = 'family'
     db = get_db()
     rows = db.execute(
         "SELECT m.*, u.full_name as sender_name FROM messages m "
         "JOIN users u ON m.sender_id = u.id "
-        "WHERE m.family_id=? ORDER BY m.created_at ASC LIMIT 100",
-        (g.family_id,)).fetchall()
-    # Mark messages from others as read
-    db.execute("UPDATE messages SET is_read=1 WHERE family_id=? AND sender_id!=?",
-               (g.family_id, g.user_id))
+        "WHERE m.family_id=? AND m.channel=? ORDER BY m.created_at ASC LIMIT 100",
+        (g.family_id, channel)).fetchall()
+    # Mark messages from others as read (only within this channel)
+    db.execute("UPDATE messages SET is_read=1 WHERE family_id=? AND channel=? AND sender_id!=?",
+               (g.family_id, channel, g.user_id))
     db.commit()
     return ok(rows_to_list(rows))
 
@@ -1221,6 +1232,9 @@ def send_message():
     text = (body.get('body') or '').strip()
     kind = body.get('kind', 'text')
     media_url = body.get('media_url')
+    channel = body.get('channel', 'family')
+    if channel not in ('family', 'couple'):
+        channel = 'family'
 
     if kind == 'text' and not text:
         return err('Xabar matni bo\'sh bo\'lmasligi kerak')
@@ -1236,8 +1250,8 @@ def send_message():
 
     mid = str(uuid.uuid4())
     db = get_db()
-    db.execute("INSERT INTO messages(id,family_id,sender_id,body,kind,media_url) VALUES(?,?,?,?,?,?)",
-               (mid, g.family_id, g.user_id, text, kind, media_url))
+    db.execute("INSERT INTO messages(id,family_id,sender_id,channel,body,kind,media_url) VALUES(?,?,?,?,?,?,?)",
+               (mid, g.family_id, g.user_id, channel, text, kind, media_url))
     db.commit()
     row = db.execute(
         "SELECT m.*, u.full_name as sender_name FROM messages m "
@@ -1248,10 +1262,13 @@ def send_message():
 @require_auth
 def unread_message_count():
     db = get_db()
-    cnt = db.execute(
-        "SELECT COUNT(*) as cnt FROM messages WHERE family_id=? AND sender_id!=? AND is_read=0",
+    family_cnt = db.execute(
+        "SELECT COUNT(*) as cnt FROM messages WHERE family_id=? AND channel='family' AND sender_id!=? AND is_read=0",
         (g.family_id, g.user_id)).fetchone()['cnt']
-    return ok({'unread': cnt})
+    couple_cnt = db.execute(
+        "SELECT COUNT(*) as cnt FROM messages WHERE family_id=? AND channel='couple' AND sender_id!=? AND is_read=0",
+        (g.family_id, g.user_id)).fetchone()['cnt']
+    return ok({'unread': family_cnt + couple_cnt, 'family': family_cnt, 'couple': couple_cnt})
 
 # ─── MISC ────────────────────────────────────────────────────────────────────
 
