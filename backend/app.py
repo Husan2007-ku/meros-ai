@@ -390,6 +390,25 @@ def require_auth(f):
             g.family_id = data['fam']
         except Exception:
             return jsonify({'error': 'Token yaroqsiz'}), 401
+        # Determine if this account belongs to a minor (under 16) for guardian-mode restrictions
+        db = get_db()
+        user_row = db.execute("SELECT birth_date FROM users WHERE id=?", (g.user_id,)).fetchone()
+        g.is_minor = False
+        if user_row and user_row['birth_date']:
+            try:
+                age = datetime.date.today().year - int(user_row['birth_date'][:4])
+                g.is_minor = age < 16
+            except Exception:
+                g.is_minor = False
+        return f(*args, **kwargs)
+    return decorated
+
+def require_adult(f):
+    """Blocks an endpoint entirely for accounts belonging to a minor (<16). Use after @require_auth."""
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if getattr(g, 'is_minor', False):
+            return jsonify({'ok': False, 'error': 'Bu bolim faqat kattalar uchun', 'restricted': True}), 403
         return f(*args, **kwargs)
     return decorated
 
@@ -454,13 +473,25 @@ def register():
     gender    = body.get('gender', 'male')
     invite_code = body.get('invite_code', '').strip().upper()
 
-    if not all([phone, full_name, password]):
-        return err('Telefon, ism va parol majburiy')
+    if not all([phone, full_name, password, birth_date]):
+        return err("Telefon, ism, parol va tug'ilgan sana majburiy")
 
     db = get_db()
     existing = db.execute("SELECT id FROM users WHERE phone=?", (phone,)).fetchone()
     if existing:
         return err('Bu raqam allaqachon ro\'yxatdan o\'tgan')
+
+    # Determine age-based role automatically — minors get a restricted 'child' member role
+    try:
+        age = datetime.date.today().year - int(birth_date[:4])
+    except Exception:
+        return err("Tug'ilgan sana noto'g'ri formatda")
+    is_minor = age < 16
+    member_role = 'child' if is_minor else 'parent'
+
+    # Minors must join an existing family via invite code — they cannot start a new family
+    if is_minor and not invite_code:
+        return err("16 yoshdan kichik foydalanuvchilar faqat taklif kodi orqali oilaga qo'shilishi mumkin")
 
     user_id = str(uuid.uuid4())
     pw_hash = hashlib.sha256(password.encode()).hexdigest()
@@ -479,17 +510,19 @@ def register():
                    (fam_id, f"{full_name} oilasi", user_id, new_invite_code))
 
     db.execute("""INSERT INTO users(id,phone,full_name,birth_date,gender,password_hash,family_id,role)
-                  VALUES(?,?,?,?,?,?,?,'adult')""",
-               (user_id, phone, full_name, birth_date, gender, pw_hash, fam_id))
+                  VALUES(?,?,?,?,?,?,?,?)""",
+               (user_id, phone, full_name, birth_date, gender, pw_hash, fam_id,
+                'minor' if is_minor else 'adult'))
 
     db.execute("""INSERT INTO family_members(id,family_id,user_id,name,birth_date,gender,role,avatar_color)
-                  VALUES(?,?,?,?,?,?,'parent',?)""",
-               (str(uuid.uuid4()), fam_id, user_id, full_name, birth_date, gender,
+                  VALUES(?,?,?,?,?,?,?,?)""",
+               (str(uuid.uuid4()), fam_id, user_id, full_name, birth_date, gender, member_role,
                 '#C2185B' if gender == 'female' else '#1A78C2'))
     db.commit()
 
     token = make_token(user_id, fam_id)
-    return ok({'token': token, 'user_id': user_id, 'family_id': fam_id}, message="Muvaffaqiyatli ro'yxatdan o'tdingiz"), 201
+    return ok({'token': token, 'user_id': user_id, 'family_id': fam_id, 'is_minor': is_minor},
+               message="Muvaffaqiyatli ro'yxatdan o'tdingiz"), 201
 
 @app.route('/api/auth/login', methods=['POST'])
 def login():
@@ -886,6 +919,7 @@ def open_capsule(cid):
 
 @app.route('/api/warmth', methods=['GET'])
 @require_auth
+@require_adult
 def get_warmth():
     db = get_db()
     rows = db.execute("""
@@ -908,6 +942,7 @@ def get_warmth():
 
 @app.route('/api/warmth', methods=['POST'])
 @require_auth
+@require_adult
 def log_warmth():
     body = request.json or {}
     happiness = body.get('happiness')
@@ -1134,6 +1169,7 @@ BLOCK_LABELS = {
 
 @app.route('/api/compatibility/questions', methods=['GET'])
 @require_auth
+@require_adult
 def get_compat_questions():
     lang = request.args.get('lang', 'uz')
     if lang not in COMPAT_QUESTIONS:
@@ -1142,6 +1178,7 @@ def get_compat_questions():
 
 @app.route('/api/compatibility/submit', methods=['POST'])
 @require_auth
+@require_adult
 def submit_compat_test():
     body = request.json or {}
     answers = body.get('answers')  # {question_id: 1-5}
@@ -1207,6 +1244,8 @@ def get_messages():
     channel = request.args.get('channel', 'family')
     if channel not in ('family', 'couple'):
         channel = 'family'
+    if channel == 'couple' and g.is_minor:
+        return err("Bu bo'lim faqat kattalar uchun", 403)
     db = get_db()
     rows = db.execute(
         "SELECT m.*, u.full_name as sender_name FROM messages m "
@@ -1235,6 +1274,8 @@ def send_message():
     channel = body.get('channel', 'family')
     if channel not in ('family', 'couple'):
         channel = 'family'
+    if channel == 'couple' and g.is_minor:
+        return err("Bu bo'lim faqat kattalar uchun", 403)
 
     if kind == 'text' and not text:
         return err('Xabar matni bo\'sh bo\'lmasligi kerak')

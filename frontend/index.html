@@ -323,6 +323,7 @@ const I18N={
     done:'Tayyor',
     invite_code_lbl:'Taklif kodi (ixtiyoriy)',invite_code_placeholder:'Masalan: K7M3A9',
     invite_code_hint:"Agar sherigingiz oila yaratgan bo'lsa, undan kodni so'rang",
+    birth_date_required:"Tug'ilgan sana majburiy",birth_date_hint:"16 yoshdan kichiklar uchun bo'lim avtomatik cheklanadi",
     joined_family_toast:'Oilaga muvaffaqiyatli qo\'shildingiz! 🎉',new_family_toast:"Xush kelibsiz! Oila profilingiz yaratildi",
     invite_card_title:'Sherigingizni taklif qiling',invite_card_sub:'Bu kodni eringiz/xotiningizga yuboring — u shu kod orqali ro\'yxatdan o\'tib, sizning oilangizga qo\'shiladi',
     copy:'Nusxa',code_copied:'Kod nusxalandi ✓',
@@ -443,6 +444,7 @@ const I18N={
     done:'Готово',
     invite_code_lbl:'Код приглашения (необязательно)',invite_code_placeholder:'Например: K7M3A9',
     invite_code_hint:'Если ваш партнёр уже создал семью, спросите у него код',
+    birth_date_required:'Дата рождения обязательна',birth_date_hint:'Для младше 16 лет раздел автоматически ограничивается',
     joined_family_toast:'Вы успешно присоединились к семье! 🎉',new_family_toast:'Добро пожаловать! Ваш семейный профиль создан',
     invite_card_title:'Пригласите партнёра',invite_card_sub:'Отправьте этот код мужу/жене — он/она зарегистрируется по коду и присоединится к вашей семье',
     copy:'Копировать',code_copied:'Код скопирован ✓',
@@ -563,6 +565,7 @@ const I18N={
     done:'Done',
     invite_code_lbl:'Invite code (optional)',invite_code_placeholder:'E.g. K7M3A9',
     invite_code_hint:'If your partner already created a family, ask them for the code',
+    birth_date_required:'Birth date is required',birth_date_hint:'For under 16, the section is automatically restricted',
     joined_family_toast:'You joined the family! 🎉',new_family_toast:'Welcome! Your family profile has been created',
     invite_card_title:'Invite your partner',invite_card_sub:"Send this code to your spouse — they'll sign up with it and join your family",
     copy:'Copy',code_copied:'Code copied ✓',
@@ -659,22 +662,26 @@ function AuthScreen(){
   const [name,setName]=useState('');
   const [pw,setPw]=useState('');
   const [gender,setGender]=useState('male');
+  const [birthDate,setBirthDate]=useState('');
   const [inviteCode,setInviteCode]=useState('');
   const [loading,setLoading]=useState(false);
 
   async function submit(e){
     e.preventDefault();
     if(!phone||!pw)return showToast('Telefon va parol kiriting','error');
+    if(tab==='register'&&!birthDate)return showToast(t('birth_date_required'),'error');
     setLoading(true);
     const body=tab==='login'
       ?{phone,password:pw}
-      :{phone,full_name:name,password:pw,gender,invite_code:inviteCode.trim()};
+      :{phone,full_name:name,password:pw,gender,birth_date:birthDate,invite_code:inviteCode.trim()};
     const r=await api(tab==='login'?'/auth/login':'/auth/register',{method:'POST',body});
     setLoading(false);
     if(!r.ok)return showToast(r.error||'Xatolik yuz berdi','error');
     localStorage.setItem('meros_token',r.data.token);
     const uid=r.data.user?.id||r.data.user_id;
     if(uid)localStorage.setItem('meros_user_id',uid);
+    const isMinor=r.data.user?(r.data.user.role==='minor'):!!r.data.is_minor;
+    localStorage.setItem('meros_is_minor',isMinor?'1':'0');
     setToken(r.data.token);
     if(tab==='register')showToast(inviteCode?t('joined_family_toast'):t('new_family_toast'),'success');
   }
@@ -722,6 +729,11 @@ function AuthScreen(){
           React.createElement('input',{className:'input-field',type:'password',placeholder:'••••••••',value:pw,onChange:e=>setPw(e.target.value)})
         ),
         tab==='register'&&React.createElement('div',{className:'input-group'},
+          React.createElement('label',null,t('date_lbl')),
+          React.createElement('input',{className:'input-field',type:'date',value:birthDate,onChange:e=>setBirthDate(e.target.value)}),
+          React.createElement('div',{style:{fontSize:11,color:'var(--text3)',marginTop:4}},t('birth_date_hint'))
+        ),
+        tab==='register'&&React.createElement('div',{className:'input-group'},
           React.createElement('label',null,t('invite_code_lbl')),
           React.createElement('input',{className:'input-field',placeholder:t('invite_code_placeholder'),value:inviteCode,
             onChange:e=>setInviteCode(e.target.value.toUpperCase()),style:{textTransform:'uppercase',letterSpacing:1}}),
@@ -745,6 +757,7 @@ function HomeScreen({onRefresh,onNavigate}){
   const [oila,setOila]=useState(true);
   const [emPick,setEmPick]=useState(null);
   const [saved,setSaved]=useState(false);
+  const isMinor=localStorage.getItem('meros_is_minor')==='1';
   const avColors=['#1A78C2','#C2185B','#2D7A4F','#7B2D8B','#D97706','#0891B2'];
   const emojis=['😔','😕','😐','😊','😄'];
   const msgs={1:'Qiyin kun... Yaxshi bo\'lasiz 💙',2:'Biroz og\'irroq. Sherigingiz bilan gaplashing',3:'Normal kun. Ertaga yaxshiroq 🙂',4:'Yaxshi kun! Shunday davom eting 😊',5:'Ajoyib! Baxtingiz oilaga yuqsin 🌟'};
@@ -805,11 +818,11 @@ function HomeScreen({onRefresh,onNavigate}){
       React.createElement('div',{className:'section-label'},t('today_stats')),
       React.createElement('div',{style:{padding:'0 16px'}},
         React.createElement('div',{className:'card',style:{cursor:'default'}},
-          React.createElement('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:8}},
+          React.createElement('div',{style:{display:'grid',gridTemplateColumns:isMinor?'1fr 1fr':'1fr 1fr 1fr',gap:8}},
             [{lbl:t('members_lbl'),val:members.length,ic:'ti-users',c:'var(--blue)',bg:'var(--blue-l)'},
              {lbl:t('memories_lbl'),val:dash.memory_count||0,ic:'ti-photo',c:'var(--purple)',bg:'var(--purple-l)'},
-             {lbl:t('relationship_lbl'),val:(dash.warmth_avg_7days||0)+'/5',ic:'ti-heart',c:'var(--rose)',bg:'var(--rose-l)'}
-            ].map(x=>React.createElement('div',{key:x.lbl,style:{textAlign:'center',padding:10,background:x.bg,borderRadius:10}},
+             !isMinor&&{lbl:t('relationship_lbl'),val:(dash.warmth_avg_7days||0)+'/5',ic:'ti-heart',c:'var(--rose)',bg:'var(--rose-l)'}
+            ].filter(Boolean).map(x=>React.createElement('div',{key:x.lbl,style:{textAlign:'center',padding:10,background:x.bg,borderRadius:10}},
               React.createElement('i',{className:`ti ${x.ic}`,style:{fontSize:20,color:x.c,display:'block',marginBottom:4}}),
               React.createElement('div',{style:{fontSize:17,fontWeight:900,color:x.c}},x.val),
               React.createElement('div',{style:{fontSize:10,color:'var(--text2)',marginTop:2}},x.lbl)
@@ -822,8 +835,8 @@ function HomeScreen({onRefresh,onNavigate}){
         [{title:t('health_card_title'),sub:t('health_card_sub'),ic:'ti-heart-rate',c:'#2D7A4F',bg:'#E8F5EE',page:'health',
           bdg:dash.overdue_vaccines>0?{t:dash.overdue_vaccines+' !',cls:'badge-amber'}:{t:t('good'),cls:'badge-green'}},
          {title:t('memories_card_title'),sub:`${dash.memory_count} ${t('memories_card_sub_prefix')}`,ic:'ti-photo',c:'var(--purple)',bg:'var(--purple-l)',page:'memories',bdg:{t:dash.memory_count,cls:'badge-purple'}},
-         {title:t('relationship_card_title'),sub:t('relationship_card_sub'),ic:'ti-heart',c:'var(--rose)',bg:'var(--rose-l)',page:'relationship',bdg:{t:dash.warmth_avg_7days+'/5',cls:'badge-blue'}},
-        ].map(x=>React.createElement('div',{key:x.title,className:'card',onClick:()=>onNavigate&&onNavigate(x.page)},
+         !isMinor&&{title:t('relationship_card_title'),sub:t('relationship_card_sub'),ic:'ti-heart',c:'var(--rose)',bg:'var(--rose-l)',page:'relationship',bdg:{t:dash.warmth_avg_7days+'/5',cls:'badge-blue'}},
+        ].filter(Boolean).map(x=>React.createElement('div',{key:x.title,className:'card',onClick:()=>onNavigate&&onNavigate(x.page)},
           React.createElement('div',{className:'card-row'},
             React.createElement('div',{className:'icon-box',style:{background:x.bg}},React.createElement('i',{className:`ti ${x.ic}`,style:{color:x.c,fontSize:22}})),
             React.createElement('div',{className:'card-info'},React.createElement('div',{className:'card-title'},x.title),React.createElement('div',{className:'card-sub'},x.sub)),
@@ -831,14 +844,14 @@ function HomeScreen({onRefresh,onNavigate}){
           )
         ))
       ),
-      !saved&&!dash.warmth_logged_today&&React.createElement('div',{style:{padding:'0 16px'}},
+      !isMinor&&!saved&&!dash.warmth_logged_today&&React.createElement('div',{style:{padding:'0 16px'}},
         React.createElement('div',{className:'warmth-widget'},
           React.createElement('div',{className:'warmth-head'},React.createElement('i',{className:'ti ti-thermometer'}),t('warmth_today')),
           React.createElement('div',{className:'em-row'},emojis.map((em,i)=>React.createElement('div',{key:i,className:`em-btn${emPick===i+1?' picked':''}`,onClick:()=>pickEm(i+1)},em))),
           React.createElement('div',{className:'warmth-hint'},emPick?msgs[emPick]:t('pick_score'))
         )
       ),
-      saved&&React.createElement('div',{style:{padding:'0 16px'}},
+      !isMinor&&saved&&React.createElement('div',{style:{padding:'0 16px'}},
         React.createElement('div',{className:'warmth-widget',style:{textAlign:'center',padding:20}},
           React.createElement('div',{style:{fontSize:32,marginBottom:8}},emojis[(emPick||3)-1]),
           React.createElement('div',{style:{fontWeight:800,color:'var(--green)'}},t('score_saved')),
@@ -1768,11 +1781,12 @@ function CompatTestModal({onClose}){
 /* PROFILE */
 function ProfileScreen(){
   const {logout,showToast,showModal,lang,changeLang}=useApp();
+  const isMinor=localStorage.getItem('meros_is_minor')==='1';
   const [fam,setFam]=useState(null);
   const [inviteCode,setInviteCode]=useState(null);
   const [togs,setTogs]=useState({axbror:false,ssv:false,kundalik:false,mehnat:false});
   useEffect(()=>{api('/family').then(r=>{if(r.ok)setFam(r.data)});},[]);
-  useEffect(()=>{api('/family/invite-code').then(r=>{if(r.ok)setInviteCode(r.data.invite_code)});},[]);
+  useEffect(()=>{if(!isMinor)api('/family/invite-code').then(r=>{if(r.ok)setInviteCode(r.data.invite_code)});},[]);
 
   function copyInviteCode(){
     if(!inviteCode)return;
@@ -1794,10 +1808,10 @@ function ProfileScreen(){
 
   const menuItems=[
     {ic:'ti-user',bg:'var(--blue-l)',c:'var(--blue)',label:t('personal_profile'),action:()=>showModal('profileDetail')},
-    {ic:'ti-users',bg:'var(--green-l)',c:'var(--green)',label:t('family_tree'),action:()=>showModal('familyTree')},
-    {ic:'ti-id-badge',bg:'var(--amber-l)',c:'var(--amber)',label:t('documents_archive'),action:()=>showModal('documents')},
-    {ic:'ti-music',bg:'var(--purple-l)',c:'var(--purple)',label:t('lullaby_tales'),action:()=>showModal('lullaby')},
-  ];
+    !isMinor&&{ic:'ti-users',bg:'var(--green-l)',c:'var(--green)',label:t('family_tree'),action:()=>showModal('familyTree')},
+    !isMinor&&{ic:'ti-id-badge',bg:'var(--amber-l)',c:'var(--amber)',label:t('documents_archive'),action:()=>showModal('documents')},
+    !isMinor&&{ic:'ti-music',bg:'var(--purple-l)',c:'var(--purple)',label:t('lullaby_tales'),action:()=>showModal('lullaby')},
+  ].filter(Boolean);
 
   return React.createElement('div',{className:'screen'},
     React.createElement('div',{className:'prof-hero'},
@@ -1806,7 +1820,7 @@ function ProfileScreen(){
       React.createElement('div',{className:'prof-sub2'},`${fam?.members?.length||0} ${t('family_members_count')} · Toshkent`)
     ),
     React.createElement('div',{className:'scrollable'},
-      React.createElement('div',{style:{padding:'12px 16px 0'}},
+      !isMinor&&React.createElement('div',{style:{padding:'12px 16px 0'}},
         React.createElement('div',{className:'card',style:{background:'linear-gradient(135deg,#0A3A5A,#0F5C8A)',border:'none'}},
           React.createElement('div',{style:{display:'flex',alignItems:'center',gap:10,marginBottom:10}},
             React.createElement('i',{className:'ti ti-users-group',style:{color:'#fff',fontSize:20}}),
@@ -1831,8 +1845,8 @@ function ProfileScreen(){
           React.createElement('i',{className:'ti ti-chevron-right',style:{color:'var(--text3)',fontSize:15}})
         ))
       ),
-      React.createElement('div',{className:'section-label'},t('govt_int')),
-      React.createElement('div',{className:'menu-card'},
+      !isMinor&&React.createElement('div',{className:'section-label'},t('govt_int')),
+      !isMinor&&React.createElement('div',{className:'menu-card'},
         ints.map(x=>React.createElement('div',{key:x.k,className:'int-row'},
           React.createElement('div',{className:'int-ic',style:{background:x.bg}},React.createElement('i',{className:`ti ${x.ic}`,style:{color:x.c,fontSize:17}})),
           React.createElement('div',{style:{flex:1}},React.createElement('div',{className:'int-name'},x.name),React.createElement('div',{className:'int-st'},x.st)),
@@ -2873,6 +2887,7 @@ function App(){
   function logout(){
     localStorage.removeItem('meros_token');
     localStorage.removeItem('meros_user_id');
+    localStorage.removeItem('meros_is_minor');
     setToken(null);setPage('home');setPinUnlocked(false);
   }
   function onDone(){setRefresh(r=>r+1)}
@@ -2902,19 +2917,21 @@ function App(){
     );
   }
 
+  const isMinor=localStorage.getItem('meros_is_minor')==='1';
+
   const nav=[
     {k:'home',ic:'ti-home',lbl:t('nav_home')},
     {k:'health',ic:'ti-heart-rate',lbl:t('nav_health')},
     {k:'memories',ic:'ti-photo',lbl:t('nav_memories')},
-    {k:'relationship',ic:'ti-heart',lbl:t('nav_relationship')},
+    !isMinor&&{k:'relationship',ic:'ti-heart',lbl:t('nav_relationship')},
     {k:'profile',ic:'ti-user',lbl:t('nav_profile')},
-  ];
+  ].filter(Boolean);
 
   const pages={
     home:()=>React.createElement(HomeScreen,{key:'home'+refresh,onRefresh:refresh,onNavigate:setPage}),
     health:()=>React.createElement(HealthScreen,{key:'health'+refresh}),
     memories:()=>React.createElement(MemoriesScreen,{key:'mem'+refresh,refresh}),
-    relationship:()=>React.createElement(RelationshipScreen,{key:'rel'}),
+    relationship:()=>isMinor?React.createElement(HomeScreen,{key:'home'+refresh,onRefresh:refresh,onNavigate:setPage}):React.createElement(RelationshipScreen,{key:'rel'}),
     profile:()=>React.createElement(ProfileScreen,{key:'prof'}),
   };
 
