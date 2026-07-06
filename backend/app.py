@@ -250,6 +250,16 @@ def init_db():
         db.execute("UPDATE messages SET channel='family' WHERE channel IS NULL")
         db.commit()
 
+    # Migration: add role and birth_date columns to users if missing
+    user_cols = [row[1] for row in db.execute("PRAGMA table_info(users)").fetchall()]
+    if 'role' not in user_cols:
+        db.execute("ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'adult'")
+        db.execute("UPDATE users SET role='adult' WHERE role IS NULL")
+        db.commit()
+    if 'birth_date' not in user_cols:
+        db.execute("ALTER TABLE users ADD COLUMN birth_date TEXT")
+        db.commit()
+
     # Seed demo data
     _seed_demo(db)
     db.close()
@@ -534,8 +544,17 @@ def login():
     pw_hash = hashlib.sha256(password.encode()).hexdigest()
     if not user or user['password_hash'] != pw_hash:
         return err("Telefon yoki parol noto'g'ri", 401)
+    try:
+        age = datetime.date.today().year - int((user['birth_date'] or '2000')[:4])
+        is_minor = age < 16
+    except Exception:
+        is_minor = False
+    # Update role if not set correctly (migration safety)
+    if is_minor and user['role'] != 'minor':
+        db.execute("UPDATE users SET role='minor' WHERE id=?", (user['id'],))
+        db.commit()
     token = make_token(user['id'], user['family_id'])
-    return ok({'token': token, 'user': row_to_dict(user)})
+    return ok({'token': token, 'user': row_to_dict(user), 'is_minor': is_minor})
 
 @app.route('/api/family/invite-code', methods=['GET'])
 @require_auth

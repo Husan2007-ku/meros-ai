@@ -680,7 +680,8 @@ function AuthScreen(){
     localStorage.setItem('meros_token',r.data.token);
     const uid=r.data.user?.id||r.data.user_id;
     if(uid)localStorage.setItem('meros_user_id',uid);
-    const isMinor=r.data.user?(r.data.user.role==='minor'):!!r.data.is_minor;
+    // is_minor comes directly from both login and register responses
+    const isMinor=!!r.data.is_minor;
     localStorage.setItem('meros_is_minor',isMinor?'1':'0');
     setToken(r.data.token);
     if(tab==='register')showToast(inviteCode?t('joined_family_toast'):t('new_family_toast'),'success');
