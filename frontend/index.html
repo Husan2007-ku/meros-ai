@@ -366,6 +366,7 @@ const I18N={
     add_reminder_btn:'Eslatma qoshish',reminder_title_placeholder:"Masalan: Shifokorga uchrashish",
     reminder_title_required:"Sarlavha bo'sh bo'lmasligi kerak",reminder_added_toast:'Eslatma qoshildi ✓',no_notifications:'Bildirishnomalar yoq',
     just_now:'hozir',hours_ago:' soat oldin',days_ago:' kun oldin',
+    access_restricted:'Kirish cheklangan',parent_profile_restricted:'Bu profil faqat kattalar uchun',parent_profile_restricted_sub:"Ota-ona yoki kattalarga tegishli profil ma'lumotlari bolalar uchun yashiriladi",
     anniversary_not_set:'Muhim sanani belgilang',anniversary_not_set_sub:"Nikoh sanangizni qo'shsangiz, har yili eslatib turamiz",
     anniversary_setup_toast:"Tez kunda muhim sanalarni qo'shish funksiyasi ishga tushadi 🗓️",
     couple_chat_title:'Oilaviy chat',couple_chat_sub:"Barcha oila a'zolari bilan xabar almashing",
@@ -487,6 +488,8 @@ const I18N={
     add_reminder_btn:'Добавить напоминание',reminder_title_placeholder:'Например: Визит к врачу',
     reminder_title_required:'Заголовок не может быть пустым',reminder_added_toast:'Напоминание добавлено ✓',no_notifications:'Нет уведомлений',
     just_now:'сейчас',hours_ago:' ч назад',days_ago:' дн назад',
+    access_restricted:'Доступ ограничен',parent_profile_restricted:'Этот профиль только для взрослых',parent_profile_restricted_sub:'Профили родителей скрыты от детей',
+    access_restricted:'Доступ ограничен',parent_profile_restricted:'Этот профиль только для взрослых',parent_profile_restricted_sub:'Данные профиля родителей и взрослых скрыты от детей',
     anniversary_not_set:'Укажите важную дату',anniversary_not_set_sub:'Добавьте дату свадьбы — мы будем напоминать каждый год',
     anniversary_setup_toast:'Скоро появится функция добавления важных дат 🗓️',
     couple_chat_title:'Семейный чат',couple_chat_sub:'Обменивайтесь сообщениями со всей семьёй',
@@ -608,6 +611,7 @@ const I18N={
     add_reminder_btn:'Add reminder',reminder_title_placeholder:'E.g. Doctor appointment',
     reminder_title_required:'Title cannot be empty',reminder_added_toast:'Reminder added ✓',no_notifications:'No notifications',
     just_now:'just now',hours_ago:'h ago',days_ago:'d ago',
+    access_restricted:'Access restricted',parent_profile_restricted:'This profile is for adults only',parent_profile_restricted_sub:'Parent profiles are hidden from children',
     anniversary_not_set:'Set an important date',anniversary_not_set_sub:"Add your anniversary and we'll remind you every year",
     anniversary_setup_toast:'The feature to add important dates is coming soon 🗓️',
     couple_chat_title:'Family chat',couple_chat_sub:'Exchange messages with the whole family',
@@ -758,6 +762,7 @@ function HomeScreen({onRefresh,onNavigate}){
   const [oila,setOila]=useState(true);
   const [emPick,setEmPick]=useState(null);
   const [saved,setSaved]=useState(false);
+  const [showFamilyChat,setShowFamilyChat]=useState(false);
   const isMinor=localStorage.getItem('meros_is_minor')==='1';
   const avColors=['#1A78C2','#C2185B','#2D7A4F','#7B2D8B','#D97706','#0891B2'];
   const emojis=['😔','😕','😐','😊','😄'];
@@ -845,6 +850,18 @@ function HomeScreen({onRefresh,onNavigate}){
           )
         ))
       ),
+      isMinor&&React.createElement('div',{style:{padding:'0 16px'}},
+        React.createElement('div',{className:'card',style:{cursor:'pointer'},onClick:()=>setShowFamilyChat(true)},
+          React.createElement('div',{className:'card-row'},
+            React.createElement('div',{className:'icon-box',style:{background:'var(--blue-l)'}},React.createElement('i',{className:'ti ti-users',style:{color:'var(--blue)',fontSize:22}})),
+            React.createElement('div',{className:'card-info'},
+              React.createElement('div',{className:'card-title'},t('couple_chat_title')),
+              React.createElement('div',{className:'card-sub'},t('couple_chat_sub'))
+            ),
+            React.createElement('i',{className:'ti ti-chevron-right',style:{color:'var(--text3)',fontSize:18}})
+          )
+        )
+      ),
       !isMinor&&!saved&&!dash.warmth_logged_today&&React.createElement('div',{style:{padding:'0 16px'}},
         React.createElement('div',{className:'warmth-widget'},
           React.createElement('div',{className:'warmth-head'},React.createElement('i',{className:'ti ti-thermometer'}),t('warmth_today')),
@@ -860,7 +877,8 @@ function HomeScreen({onRefresh,onNavigate}){
         )
       ),
       React.createElement('div',{style:{height:16}})
-    )
+    ),
+    showFamilyChat&&React.createElement(ChatModal,{onClose:()=>setShowFamilyChat(false),channel:'family'})
   );
 }
 
@@ -1883,6 +1901,20 @@ function ProfileScreen(){
 /* PROFILE SUB-MODALS */
 function MemberProfileModal({onClose,member,onUpdated}){
   const {showToast}=useApp();
+  const isMinor=localStorage.getItem('meros_is_minor')==='1';
+  const myId=localStorage.getItem('meros_user_id');
+
+  // Minor cannot view parent/grandparent profiles — only their own
+  if(isMinor&&member?.role!=='child'&&member?.user_id!==myId){
+    return React.createElement(Modal,{title:t('access_restricted'),onClose},
+      React.createElement('div',{style:{textAlign:'center',padding:'20px 12px'}},
+        React.createElement('div',{style:{fontSize:36,marginBottom:12}},'🔒'),
+        React.createElement('div',{style:{fontSize:14,fontWeight:700,color:'var(--text)',marginBottom:8}},t('parent_profile_restricted')),
+        React.createElement('div',{style:{fontSize:13,color:'var(--text2)',lineHeight:1.6}},t('parent_profile_restricted_sub'))
+      )
+    );
+  }
+
   const [avatarUrl,setAvatarUrl]=useState(member?.avatar_url||null);
   const [uploading,setUploading]=useState(false);
   const fileRef=useRef(null);
