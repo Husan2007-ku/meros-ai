@@ -1330,6 +1330,71 @@ def unread_message_count():
         (g.family_id, g.user_id)).fetchone()['cnt']
     return ok({'unread': family_cnt + couple_cnt, 'family': family_cnt, 'couple': couple_cnt})
 
+# ─── BIRTHDAYS ───────────────────────────────────────────────────────────────
+
+@app.route('/api/birthdays/check', methods=['POST'])
+@require_auth
+def check_birthdays():
+    db = get_db()
+    today = datetime.date.today()
+    today_md = f"{today.month:02d}-{today.day:02d}"
+    members = db.execute("SELECT * FROM family_members WHERE family_id=?", (g.family_id,)).fetchall()
+    sent = []
+    for m in members:
+        if not m['birth_date']:
+            continue
+        try:
+            bday_md = m['birth_date'][5:]
+        except Exception:
+            continue
+        if bday_md != today_md:
+            continue
+        existing = db.execute(
+            "SELECT id FROM messages WHERE family_id=? AND channel='family' AND body LIKE ? AND DATE(created_at)=?",
+            (g.family_id, f"%{m['name']}%", str(today))
+        ).fetchone()
+        if existing:
+            continue
+        if m['user_id'] == g.user_id:
+            continue
+        try:
+            age = today.year - int(m['birth_date'][:4])
+        except Exception:
+            age = None
+        age_str = f" {age} yosh" if age else ""
+        msg_body = f"🎂 Bugun {m['name']}ning tug'ilgan kuni!{age_str} Tabriklaymiz! 🎉"
+        mid = str(uuid.uuid4())
+        db.execute("INSERT INTO messages(id,family_id,sender_id,channel,body,kind) VALUES(?,?,?,?,?,?)",
+                   (mid, g.family_id, g.user_id, 'family', msg_body, 'birthday'))
+        sent.append({'name': m['name'], 'age': age})
+    if sent:
+        db.commit()
+    return ok({'sent': sent, 'today': str(today)})
+
+@app.route('/api/birthdays/upcoming', methods=['GET'])
+@require_auth
+def upcoming_birthdays():
+    db = get_db()
+    members = db.execute(
+        "SELECT name, birth_date, role FROM family_members WHERE family_id=? AND birth_date IS NOT NULL",
+        (g.family_id,)).fetchall()
+    today = datetime.date.today()
+    upcoming = []
+    for m in members:
+        try:
+            bday = datetime.date(today.year, int(m['birth_date'][5:7]), int(m['birth_date'][8:10]))
+            if bday < today:
+                bday = datetime.date(today.year + 1, bday.month, bday.day)
+            days_left = (bday - today).days
+            if days_left <= 30:
+                age = today.year - int(m['birth_date'][:4])
+                upcoming.append({'name': m['name'], 'birth_date': m['birth_date'],
+                                 'days_left': days_left, 'age_turning': age, 'is_today': days_left == 0})
+        except Exception:
+            continue
+    upcoming.sort(key=lambda x: x['days_left'])
+    return ok(upcoming)
+
 # ─── MISC ────────────────────────────────────────────────────────────────────
 
 @app.errorhandler(413)

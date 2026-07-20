@@ -324,6 +324,7 @@ const I18N={
     invite_code_lbl:'Taklif kodi (ixtiyoriy)',invite_code_placeholder:'Masalan: K7M3A9',
     invite_code_hint:"Agar sherigingiz oila yaratgan bo'lsa, undan kodni so'rang",
     birth_date_required:"Tug'ilgan sana majburiy",birth_date_hint:"16 yoshdan kichiklar uchun bo'lim avtomatik cheklanadi",
+    upcoming_birthdays:'Yaqin tug\'ilgan kunlar',birthday_today:'Bugun tug\'ilgan kun!',birthday_days_left:'kun qoldi',today_label:'Bugun',
     joined_family_toast:'Oilaga muvaffaqiyatli qo\'shildingiz! 🎉',new_family_toast:"Xush kelibsiz! Oila profilingiz yaratildi",
     invite_card_title:'Sherigingizni taklif qiling',invite_card_sub:'Bu kodni eringiz/xotiningizga yuboring — u shu kod orqali ro\'yxatdan o\'tib, sizning oilangizga qo\'shiladi',
     copy:'Nusxa',code_copied:'Kod nusxalandi ✓',
@@ -446,6 +447,7 @@ const I18N={
     invite_code_lbl:'Код приглашения (необязательно)',invite_code_placeholder:'Например: K7M3A9',
     invite_code_hint:'Если ваш партнёр уже создал семью, спросите у него код',
     birth_date_required:'Дата рождения обязательна',birth_date_hint:'Для младше 16 лет раздел автоматически ограничивается',
+    upcoming_birthdays:'Ближайшие дни рождения',birthday_today:'Сегодня день рождения!',birthday_days_left:'дней осталось',today_label:'Сегодня',
     joined_family_toast:'Вы успешно присоединились к семье! 🎉',new_family_toast:'Добро пожаловать! Ваш семейный профиль создан',
     invite_card_title:'Пригласите партнёра',invite_card_sub:'Отправьте этот код мужу/жене — он/она зарегистрируется по коду и присоединится к вашей семье',
     copy:'Копировать',code_copied:'Код скопирован ✓',
@@ -569,6 +571,7 @@ const I18N={
     invite_code_lbl:'Invite code (optional)',invite_code_placeholder:'E.g. K7M3A9',
     invite_code_hint:'If your partner already created a family, ask them for the code',
     birth_date_required:'Birth date is required',birth_date_hint:'For under 16, the section is automatically restricted',
+    upcoming_birthdays:'Upcoming birthdays',birthday_today:'Birthday today!',birthday_days_left:'days left',today_label:'Today',
     joined_family_toast:'You joined the family! 🎉',new_family_toast:'Welcome! Your family profile has been created',
     invite_card_title:'Invite your partner',invite_card_sub:"Send this code to your spouse — they'll sign up with it and join your family",
     copy:'Copy',code_copied:'Code copied ✓',
@@ -770,7 +773,18 @@ function HomeScreen({onRefresh,onNavigate}){
   const hour=new Date().getHours();
   const showFamilyTimeAlert=hour>=18&&hour<22; // faqat kechqurun — real ekran-vaqt kuzatuvi integratsiyasidan keyin to'liq ishlaydi
 
+  const [upcomingBdays,setUpcomingBdays]=useState([]);
+
   useEffect(()=>{api('/dashboard').then(r=>{if(r.ok)setDash(r.data)});},[onRefresh,lang]);
+  useEffect(()=>{
+    // Check birthdays on app open — send family chat message if someone has birthday today
+    api('/birthdays/check',{method:'POST'}).then(r=>{
+      if(r.ok&&r.data.sent&&r.data.sent.length>0){
+        r.data.sent.forEach(b=>showToast(`🎂 Bugun ${b.name}ning tug'ilgan kuni!`,'success'));
+      }
+    });
+    api('/birthdays/upcoming').then(r=>{if(r.ok)setUpcomingBdays(r.data)});
+  },[onRefresh]);
 
   async function pickEm(val){
     setEmPick(val);
@@ -849,6 +863,25 @@ function HomeScreen({onRefresh,onNavigate}){
             React.createElement('span',{className:`badge ${x.bdg.cls}`},x.bdg.t)
           )
         ))
+      ),
+      upcomingBdays.length>0&&React.createElement('div',{style:{padding:'10px 16px 0'}},
+        React.createElement('div',{className:'section-label'},t('upcoming_birthdays')),
+        React.createElement('div',{className:'menu-card'},
+          upcomingBdays.map(b=>React.createElement('div',{key:b.name,className:'menu-row',style:{cursor:'default'}},
+            React.createElement('div',{className:'menu-icon',style:{background:b.is_today?'var(--amber-l)':'var(--rose-l)'}},
+              React.createElement('span',{style:{fontSize:18}},b.is_today?'🎂':'🎁')
+            ),
+            React.createElement('div',{style:{flex:1}},
+              React.createElement('div',{className:'menu-text',style:{fontWeight:700}},b.name),
+              React.createElement('div',{style:{fontSize:12,color:'var(--text2)',marginTop:1}},
+                b.is_today
+                  ?t('birthday_today')+` (${b.age_turning} ${t('years_old')})`
+                  :`${b.days_left} ${t('birthday_days_left')} · ${b.age_turning} ${t('years_old')}`
+              )
+            ),
+            b.is_today&&React.createElement('span',{style:{fontSize:11,fontWeight:800,padding:'3px 9px',borderRadius:20,background:'var(--amber-l)',color:'var(--amber)'}},t('today_label'))
+          ))
+        )
       ),
       isMinor&&React.createElement('div',{style:{padding:'0 16px'}},
         React.createElement('div',{className:'card',style:{cursor:'pointer'},onClick:()=>setShowFamilyChat(true)},
