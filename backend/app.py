@@ -77,6 +77,7 @@ def init_db():
         role        TEXT NOT NULL,
         avatar_color TEXT DEFAULT '#1A56A0',
         avatar_url  TEXT,
+        status      TEXT DEFAULT 'active',
         created_at  TEXT DEFAULT (datetime('now'))
     );
 
@@ -199,6 +200,16 @@ def init_db():
         is_read     INTEGER DEFAULT 0,
         created_at  TEXT DEFAULT (datetime('now'))
     );
+    CREATE TABLE IF NOT EXISTS important_dates (
+        id          TEXT PRIMARY KEY,
+        family_id   TEXT NOT NULL,
+        creator_id  TEXT NOT NULL,
+        title       TEXT NOT NULL,
+        date        TEXT NOT NULL,
+        type        TEXT DEFAULT 'custom',
+        recurring   INTEGER DEFAULT 1,
+        created_at  TEXT DEFAULT (datetime('now'))
+    );
     """)
     db.commit()
 
@@ -232,6 +243,10 @@ def init_db():
     fm_cols = [row[1] for row in db.execute("PRAGMA table_info(family_members)").fetchall()]
     if 'avatar_url' not in fm_cols:
         db.execute("ALTER TABLE family_members ADD COLUMN avatar_url TEXT")
+        db.commit()
+    if 'status' not in fm_cols:
+        db.execute("ALTER TABLE family_members ADD COLUMN status TEXT DEFAULT 'active'")
+        db.execute("UPDATE family_members SET status='active' WHERE status IS NULL")
         db.commit()
 
     # Migration: add creator_id and reminder_date columns to alerts if missing
@@ -366,6 +381,15 @@ def _seed_demo(db):
         db.execute("""INSERT INTO alerts
             (id,family_id,type,title,body,severity,is_read,created_at)
             VALUES (?,?,?,?,?,?,?,datetime('now'))""", a)
+
+    # Important dates
+    important_dates = [
+        (str(uuid.uuid4()), fam_id, user_id, 'Nikoh kuni', '2019-07-15', 'wedding'),
+        (str(uuid.uuid4()), fam_id, user_id, 'Birinchi uchrashuv', '2017-03-08', 'anniversary'),
+    ]
+    for d in important_dates:
+        db.execute(
+            "INSERT INTO important_dates(id,family_id,creator_id,title,date,type,recurring) VALUES(?,?,?,?,?,?,1)", d)
 
     db.commit()
 
@@ -575,8 +599,10 @@ def get_invite_code():
 def get_family():
     db = get_db()
     family  = db.execute("SELECT * FROM families WHERE id=?", (g.family_id,)).fetchone()
-    members = db.execute("SELECT * FROM family_members WHERE family_id=?", (g.family_id,)).fetchall()
-    me      = db.execute("SELECT id, phone, full_name, birth_date, gender FROM users WHERE id=?", (g.user_id,)).fetchone()
+    members = db.execute(
+        "SELECT * FROM family_members WHERE family_id=? AND status != 'removed' ORDER BY created_at ASC",
+        (g.family_id,)).fetchall()
+    me = db.execute("SELECT id, phone, full_name, birth_date, gender FROM users WHERE id=?", (g.user_id,)).fetchone()
     return ok({'family': row_to_dict(family), 'members': rows_to_list(members), 'me': row_to_dict(me)})
 
 @app.route('/api/profile', methods=['PATCH'])
@@ -682,7 +708,36 @@ def update_member_avatar(member_id):
     row = db.execute("SELECT * FROM family_members WHERE id=?", (member_id,)).fetchone()
     return ok(row_to_dict(row))
 
-# ─── HEALTH ──────────────────────────────────────────────────────────────────
+@app.route('/api/family/members/<member_id>/remove', methods=['PATCH'])
+@require_auth
+def remove_member(member_id):
+    """Remove a member from active family (they won't appear in lists but tree preserves them)."""
+    db = get_db()
+    member = db.execute(
+        "SELECT id, user_id FROM family_members WHERE id=? AND family_id=?",
+        (member_id, g.family_id)).fetchone()
+    if not member:
+        return err("A'zo topilmadi", 404)
+    db.execute("UPDATE family_members SET status='removed' WHERE id=?", (member_id,))
+    db.commit()
+    return ok({'message': "A'zo oiladan chiqarildi"})
+
+@app.route('/api/family/members/<member_id>/deceased', methods=['PATCH'])
+@require_auth
+def mark_deceased(member_id):
+    """Mark member as deceased — shown in family tree with special styling but not in active lists."""
+    body = request.json or {}
+    db = get_db()
+    member = db.execute(
+        "SELECT id FROM family_members WHERE id=? AND family_id=?",
+        (member_id, g.family_id)).fetchone()
+    if not member:
+        return err("A'zo topilmadi", 404)
+    db.execute("UPDATE family_members SET status='deceased' WHERE id=?", (member_id,))
+    db.commit()
+    return ok({'message': "Xotirada saqlanadi"})
+
+
 
 @app.route('/api/health/vaccines', methods=['GET'])
 @require_auth
@@ -1329,6 +1384,61 @@ def unread_message_count():
         "SELECT COUNT(*) as cnt FROM messages WHERE family_id=? AND channel='couple' AND sender_id!=? AND is_read=0",
         (g.family_id, g.user_id)).fetchone()['cnt']
     return ok({'unread': family_cnt + couple_cnt, 'family': family_cnt, 'couple': couple_cnt})
+
+# ─── IMPORTANT DATES ─────────────────────────────────────────────────────────
+
+@app.route('/api/important-dates', methods=['GET'])
+@require_auth
+def get_important_dates():
+    db = get_db()
+    rows = db.execute(
+        "SELECT * FROM important_dates WHERE family_id=? ORDER BY date ASC",
+        (g.family_id,)).fetchall()
+    today = datetime.date.today()
+    result = []
+    for r in rows:
+        d = row_to_dict(r)
+        try:
+            date_parts = r['date'].split('-')
+            event_date = datetime.date(today.year, int(date_parts[1]), int(date_parts[2]))
+            if event_date < today:
+                event_date = datetime.date(today.year + 1, int(date_parts[1]), int(date_parts[2]))
+            d['days_left'] = (event_date - today).days
+            d['is_today'] = d['days_left'] == 0
+            years = today.year - int(date_parts[0])
+            d['years'] = years
+        except Exception:
+            d['days_left'] = None
+            d['is_today'] = False
+            d['years'] = None
+        result.append(d)
+    result.sort(key=lambda x: x['days_left'] if x['days_left'] is not None else 9999)
+    return ok(result)
+
+@app.route('/api/important-dates', methods=['POST'])
+@require_auth
+def add_important_date():
+    body = request.json or {}
+    title = (body.get('title') or '').strip()
+    date = (body.get('date') or '').strip()
+    if not title or not date:
+        return err('Sarlavha va sana majburiy')
+    did = str(uuid.uuid4())
+    db = get_db()
+    db.execute(
+        "INSERT INTO important_dates(id,family_id,creator_id,title,date,type,recurring) VALUES(?,?,?,?,?,?,?)",
+        (did, g.family_id, g.user_id, title, date, body.get('type', 'custom'), 1))
+    db.commit()
+    row = db.execute("SELECT * FROM important_dates WHERE id=?", (did,)).fetchone()
+    return ok(row_to_dict(row)), 201
+
+@app.route('/api/important-dates/<did>', methods=['DELETE'])
+@require_auth
+def delete_important_date(did):
+    db = get_db()
+    db.execute("DELETE FROM important_dates WHERE id=? AND family_id=?", (did, g.family_id))
+    db.commit()
+    return ok({'message': "O'chirildi"})
 
 # ─── BIRTHDAYS ───────────────────────────────────────────────────────────────
 

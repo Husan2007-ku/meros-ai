@@ -325,6 +325,9 @@ const I18N={
     invite_code_hint:"Agar sherigingiz oila yaratgan bo'lsa, undan kodni so'rang",
     birth_date_required:"Tug'ilgan sana majburiy",birth_date_hint:"16 yoshdan kichiklar uchun bo'lim avtomatik cheklanadi",
     upcoming_birthdays:'Yaqin tug\'ilgan kunlar',birthday_today:'Bugun tug\'ilgan kun!',birthday_days_left:'kun qoldi',today_label:'Bugun',
+    tomorrow_label:'Ertaga',add_important_date:'Muhim sana qo\'shish',date_added_toast:'Sana qo\'shildi ✓',
+    date_type_lbl:'Tur',date_type_wedding:'Nikoh kuni',date_type_anniversary:'Muhim kun',date_type_custom:'Boshqa',
+    date_title_placeholder:"Masalan: Birinchi uchrashuv",
     joined_family_toast:'Oilaga muvaffaqiyatli qo\'shildingiz! 🎉',new_family_toast:"Xush kelibsiz! Oila profilingiz yaratildi",
     invite_card_title:'Sherigingizni taklif qiling',invite_card_sub:'Bu kodni eringiz/xotiningizga yuboring — u shu kod orqali ro\'yxatdan o\'tib, sizning oilangizga qo\'shiladi',
     copy:'Nusxa',code_copied:'Kod nusxalandi ✓',
@@ -367,6 +370,12 @@ const I18N={
     add_reminder_btn:'Eslatma qoshish',reminder_title_placeholder:"Masalan: Shifokorga uchrashish",
     reminder_title_required:"Sarlavha bo'sh bo'lmasligi kerak",reminder_added_toast:'Eslatma qoshildi ✓',no_notifications:'Bildirishnomalar yoq',
     just_now:'hozir',hours_ago:' soat oldin',days_ago:' kun oldin',
+    sibling_role:'Aka/Opa/Uka/Singil',other_role:'Boshqa qarindosh',
+    remove_member:'Oiladan chiqarish',mark_deceased:'Vafot etdi',
+    confirm_remove_member:"Rostdan ham bu a'zoni oiladan chiqarmoqchimisiz?",
+    confirm_deceased:'Bu a\'zoni "Vafot etdi" deb belgilamoqchimisiz?',
+    member_removed_toast:"A'zo oiladan chiqarildi",deceased_toast:"Xotirada saqlanadi. Oila daraxtida ko'rinadi",
+    in_memory:'Xotirada',
     access_restricted:'Kirish cheklangan',parent_profile_restricted:'Bu profil faqat kattalar uchun',parent_profile_restricted_sub:"Ota-ona yoki kattalarga tegishli profil ma'lumotlari bolalar uchun yashiriladi",
     anniversary_not_set:'Muhim sanani belgilang',anniversary_not_set_sub:"Nikoh sanangizni qo'shsangiz, har yili eslatib turamiz",
     anniversary_setup_toast:"Tez kunda muhim sanalarni qo'shish funksiyasi ishga tushadi 🗓️",
@@ -448,6 +457,9 @@ const I18N={
     invite_code_hint:'Если ваш партнёр уже создал семью, спросите у него код',
     birth_date_required:'Дата рождения обязательна',birth_date_hint:'Для младше 16 лет раздел автоматически ограничивается',
     upcoming_birthdays:'Ближайшие дни рождения',birthday_today:'Сегодня день рождения!',birthday_days_left:'дней осталось',today_label:'Сегодня',
+    tomorrow_label:'Завтра',add_important_date:'Добавить важную дату',date_added_toast:'Дата добавлена ✓',
+    date_type_lbl:'Тип',date_type_wedding:'Годовщина свадьбы',date_type_anniversary:'Важный день',date_type_custom:'Другое',
+    date_title_placeholder:'Например: Первая встреча',
     joined_family_toast:'Вы успешно присоединились к семье! 🎉',new_family_toast:'Добро пожаловать! Ваш семейный профиль создан',
     invite_card_title:'Пригласите партнёра',invite_card_sub:'Отправьте этот код мужу/жене — он/она зарегистрируется по коду и присоединится к вашей семье',
     copy:'Копировать',code_copied:'Код скопирован ✓',
@@ -491,6 +503,12 @@ const I18N={
     reminder_title_required:'Заголовок не может быть пустым',reminder_added_toast:'Напоминание добавлено ✓',no_notifications:'Нет уведомлений',
     just_now:'сейчас',hours_ago:' ч назад',days_ago:' дн назад',
     access_restricted:'Доступ ограничен',parent_profile_restricted:'Этот профиль только для взрослых',parent_profile_restricted_sub:'Профили родителей скрыты от детей',
+    sibling_role:'Брат/Сестра',other_role:'Другой родственник',
+    remove_member:'Исключить из семьи',mark_deceased:'Отметить как ушедшего',
+    confirm_remove_member:'Вы уверены, что хотите исключить этого члена семьи?',
+    confirm_deceased:'Отметить как ушедшего из жизни?',
+    member_removed_toast:'Член семьи исключён',deceased_toast:'Сохранится в памяти. Будет виден в семейном древе',
+    in_memory:'В памяти',
     access_restricted:'Доступ ограничен',parent_profile_restricted:'Этот профиль только для взрослых',parent_profile_restricted_sub:'Данные профиля родителей и взрослых скрыты от детей',
     anniversary_not_set:'Укажите важную дату',anniversary_not_set_sub:'Добавьте дату свадьбы — мы будем напоминать каждый год',
     anniversary_setup_toast:'Скоро появится функция добавления важных дат 🗓️',
@@ -572,6 +590,9 @@ const I18N={
     invite_code_hint:'If your partner already created a family, ask them for the code',
     birth_date_required:'Birth date is required',birth_date_hint:'For under 16, the section is automatically restricted',
     upcoming_birthdays:'Upcoming birthdays',birthday_today:'Birthday today!',birthday_days_left:'days left',today_label:'Today',
+    tomorrow_label:'Tomorrow',add_important_date:'Add important date',date_added_toast:'Date added ✓',
+    date_type_lbl:'Type',date_type_wedding:'Wedding anniversary',date_type_anniversary:'Special day',date_type_custom:'Other',
+    date_title_placeholder:'E.g. First date',
     joined_family_toast:'You joined the family! 🎉',new_family_toast:'Welcome! Your family profile has been created',
     invite_card_title:'Invite your partner',invite_card_sub:"Send this code to your spouse — they'll sign up with it and join your family",
     copy:'Copy',code_copied:'Code copied ✓',
@@ -615,6 +636,12 @@ const I18N={
     reminder_title_required:'Title cannot be empty',reminder_added_toast:'Reminder added ✓',no_notifications:'No notifications',
     just_now:'just now',hours_ago:'h ago',days_ago:'d ago',
     access_restricted:'Access restricted',parent_profile_restricted:'This profile is for adults only',parent_profile_restricted_sub:'Parent profiles are hidden from children',
+    sibling_role:'Brother/Sister',other_role:'Other relative',
+    remove_member:'Remove from family',mark_deceased:'Mark as deceased',
+    confirm_remove_member:'Are you sure you want to remove this family member?',
+    confirm_deceased:'Mark this person as deceased?',
+    member_removed_toast:'Family member removed',deceased_toast:'Preserved in memory. Will appear in the family tree',
+    in_memory:'In memory',
     anniversary_not_set:'Set an important date',anniversary_not_set_sub:"Add your anniversary and we'll remind you every year",
     anniversary_setup_toast:'The feature to add important dates is coming soon 🗓️',
     couple_chat_title:'Family chat',couple_chat_sub:'Exchange messages with the whole family',
@@ -1341,7 +1368,28 @@ function RelationshipScreen(){
   const [showCoupleChat,setShowCoupleChat]=useState(false);
   const [unreadFamily,setUnreadFamily]=useState(0);
   const [unreadCouple,setUnreadCouple]=useState(0);
+  const [importantDates,setImportantDates]=useState([]);
+  const [showAddDate,setShowAddDate]=useState(false);
+  const [newDateTitle,setNewDateTitle]=useState('');
+  const [newDateVal,setNewDateVal]=useState('');
+  const [newDateType,setNewDateType]=useState('custom');
   useEffect(()=>{api('/warmth').then(r=>{if(r.ok)setData(r.data)});},[]);
+  useEffect(()=>{api('/important-dates').then(r=>{if(r.ok)setImportantDates(r.data)});},[]);
+
+  async function addImportantDate(){
+    if(!newDateTitle.trim()||!newDateVal)return showToast(t('reminder_title_required'),'error');
+    const r=await api('/important-dates',{method:'POST',body:{title:newDateTitle.trim(),date:newDateVal,type:newDateType}});
+    if(!r.ok)return showToast(r.error,'error');
+    setImportantDates(d=>[...d,{...r.data,days_left:0,is_today:false,years:0}]);
+    setNewDateTitle('');setNewDateVal('');setShowAddDate(false);
+    showToast(t('date_added_toast'),'success');
+    api('/important-dates').then(r2=>{if(r2.ok)setImportantDates(r2.data)});
+  }
+
+  async function deleteImportantDate(id){
+    await api(`/important-dates/${id}`,{method:'DELETE'});
+    setImportantDates(d=>d.filter(x=>x.id!==id));
+  }
   useEffect(()=>{
     function refreshUnread(){
       api('/messages/unread-count').then(r=>{
@@ -1433,14 +1481,55 @@ function RelationshipScreen(){
       ),
       React.createElement('div',{className:'section-label'},t('important_dates')),
       React.createElement('div',{style:{padding:'0 16px'}},
-        React.createElement('div',{className:'card',onClick:()=>showToast(t('anniversary_setup_toast'),'')},
-          React.createElement('div',{className:'card-row'},
-            React.createElement('div',{className:'icon-box',style:{background:'var(--rose-l)'}},React.createElement('i',{className:'ti ti-gift',style:{color:'var(--rose)',fontSize:22}})),
-            React.createElement('div',{className:'card-info'},React.createElement('div',{className:'card-title'},t('anniversary_not_set')),React.createElement('div',{className:'card-sub'},t('anniversary_not_set_sub'))),
-            React.createElement('i',{className:'ti ti-chevron-right',style:{color:'var(--text3)',fontSize:18}})
+        importantDates.map(d=>{
+          const typeIcon={wedding:'💍',anniversary:'💑',custom:'📅'}[d.type]||'📅';
+          const typeColor={wedding:'var(--rose)',anniversary:'var(--purple)',custom:'var(--blue)'}[d.type]||'var(--blue)';
+          const typeBg={wedding:'var(--rose-l)',anniversary:'var(--purple-l)',custom:'var(--blue-l)'}[d.type]||'var(--blue-l)';
+          return React.createElement('div',{key:d.id,className:'card'},
+            React.createElement('div',{className:'card-row'},
+              React.createElement('div',{className:'icon-box',style:{background:typeBg,fontSize:20}},typeIcon),
+              React.createElement('div',{className:'card-info'},
+                React.createElement('div',{className:'card-title'},d.title+(d.years>0?` (${d.years} ${t('years_old')})`:'') ),
+                React.createElement('div',{className:'card-sub'},
+                  d.is_today?t('birthday_today'):d.days_left===1?t('tomorrow_label'):`${d.days_left} ${t('birthday_days_left')}`
+                )
+              ),
+              d.is_today
+                ?React.createElement('span',{style:{fontSize:11,fontWeight:800,padding:'3px 9px',borderRadius:20,background:'var(--amber-l)',color:'var(--amber)'}},t('today_label'))
+                :React.createElement('button',{onClick:()=>deleteImportantDate(d.id),style:{background:'none',border:'none',color:'var(--text3)',cursor:'pointer',padding:4}},
+                    React.createElement('i',{className:'ti ti-trash',style:{fontSize:16}}))
+            )
+          );
+        }),
+        !showAddDate&&React.createElement('button',{className:'btn btn-outline btn-full',onClick:()=>setShowAddDate(true)},
+          React.createElement('i',{className:'ti ti-plus',style:{fontSize:16}}),t('add_important_date')
+        ),
+        showAddDate&&React.createElement('div',{style:{background:'var(--bg2)',borderRadius:'var(--r2)',padding:14,marginTop:8}},
+          React.createElement('div',{className:'input-group'},
+            React.createElement('label',null,t('date_type_lbl')),
+            React.createElement('div',{style:{display:'flex',gap:8}},
+              [{k:'wedding',l:'💍 '+t('date_type_wedding')},{k:'anniversary',l:'💑 '+t('date_type_anniversary')},{k:'custom',l:'📅 '+t('date_type_custom')}]
+              .map(x=>React.createElement('button',{key:x.k,onClick:()=>setNewDateType(x.k),
+                style:{flex:1,padding:'8px 4px',borderRadius:'var(--r2)',fontSize:11,fontWeight:600,cursor:'pointer',
+                  border:newDateType===x.k?'2px solid var(--rose)':'1.5px solid var(--border)',
+                  background:newDateType===x.k?'var(--rose-l)':'var(--bg2)',
+                  color:newDateType===x.k?'var(--rose)':'var(--text2)'}},x.l))
+            )
+          ),
+          React.createElement('div',{className:'input-group'},
+            React.createElement('label',null,t('title_lbl')),
+            React.createElement('input',{className:'input-field',placeholder:t('date_title_placeholder'),value:newDateTitle,onChange:e=>setNewDateTitle(e.target.value)})
+          ),
+          React.createElement('div',{className:'input-group'},
+            React.createElement('label',null,t('date_lbl')),
+            React.createElement('input',{className:'input-field',type:'date',value:newDateVal,onChange:e=>setNewDateVal(e.target.value)})
+          ),
+          React.createElement('div',{style:{display:'flex',gap:8}},
+            React.createElement('button',{className:'btn btn-primary',style:{flex:1},onClick:addImportantDate},t('save')),
+            React.createElement('button',{className:'btn btn-outline',style:{flex:1},onClick:()=>setShowAddDate(false)},t('cancel'))
           )
         ),
-        React.createElement('div',{className:'card',onClick:()=>{setShowChat(true);setUnread(0);}},
+        React.createElement('div',{className:'card',onClick:()=>setShowCoupleChat(true)},
           React.createElement('div',{className:'card-row'},
             React.createElement('div',{className:'icon-box',style:{background:'var(--rose-l)'}},React.createElement('i',{className:'ti ti-message-heart',style:{color:'var(--rose)',fontSize:22}})),
             React.createElement('div',{className:'card-info'},React.createElement('div',{className:'card-title'},t('gratitude_today')),React.createElement('div',{className:'card-sub'},t('send_msg'))),
@@ -1993,7 +2082,25 @@ function MemberProfileModal({onClose,member,onUpdated}){
         React.createElement('div',{style:{fontSize:13,fontWeight:700,color:'var(--text)'}},v)
       ))
     ),
-    React.createElement('div',{style:{fontSize:11,color:'var(--text3)',textAlign:'center',marginTop:14}},t('tap_avatar_hint'))
+    React.createElement('div',{style:{fontSize:11,color:'var(--text3)',textAlign:'center',marginTop:14}},t('tap_avatar_hint')),
+    !member?.user_id&&React.createElement('div',{style:{marginTop:14,display:'flex',gap:8}},
+      React.createElement('button',{onClick:async()=>{
+        if(!window.confirm(t('confirm_remove_member')))return;
+        const r=await api(`/family/members/${member.id}/remove`,{method:'PATCH'});
+        if(r.ok){showToast(t('member_removed_toast'),'success');onUpdated?.();onClose();}
+      },style:{flex:1,padding:10,borderRadius:'var(--r2)',background:'var(--red-l)',color:'var(--red)',fontWeight:700,fontSize:13,border:'none',cursor:'pointer'}},
+        React.createElement('i',{className:'ti ti-user-minus',style:{fontSize:16}}),
+        ' '+t('remove_member')
+      ),
+      React.createElement('button',{onClick:async()=>{
+        if(!window.confirm(t('confirm_deceased')))return;
+        const r=await api(`/family/members/${member.id}/deceased`,{method:'PATCH'});
+        if(r.ok){showToast(t('deceased_toast'),'success');onUpdated?.();onClose();}
+      },style:{flex:1,padding:10,borderRadius:'var(--r2)',background:'var(--bg3)',color:'var(--text2)',fontWeight:700,fontSize:13,border:'1px solid var(--border)',cursor:'pointer'}},
+        React.createElement('i',{className:'ti ti-moon',style:{fontSize:16}}),
+        ' '+t('mark_deceased')
+      )
+    )
   );
 }
 
@@ -2110,27 +2217,58 @@ function ProfileDetailModal({onClose,fam,me,onUpdated}){
 }
 
 function FamilyTreeModal({onClose,fam}){
-  const members=fam?.members||[];
-  const parents=members.filter(m=>m.role==='parent');
-  const children=members.filter(m=>m.role==='child');
+  const allMembers=fam?.members||[];
+  // Get members from family endpoint (active+deceased), also need deceased ones — refetch all
+  const [allWithDeceased,setAllWithDeceased]=useState(allMembers);
+  useEffect(()=>{
+    api('/family').then(r=>{if(r.ok)setAllWithDeceased(r.data.members||[]);});
+  },[]);
+
+  const grandparents=allWithDeceased.filter(m=>m.role==='grandparent');
+  const parents=allWithDeceased.filter(m=>m.role==='parent');
+  const children=allWithDeceased.filter(m=>m.role==='child');
+  const siblings=allWithDeceased.filter(m=>m.role==='sibling'||m.role==='other');
+
+  function memberAvatar(m,size=52,i=0){
+    const colors=['#1A78C2','#C2185B','#2D7A4F','#7B2D8B','#D97706','#0891B2'];
+    const isDeceased=m.status==='deceased';
+    return React.createElement('div',{key:m.id,style:{textAlign:'center',opacity:isDeceased?.6:1}},
+      m.avatar_url
+        ?React.createElement('div',{style:{width:size,height:size,borderRadius:'50%',overflow:'hidden',margin:'0 auto 6px',
+            border:isDeceased?'3px dashed #888':'none'}},
+            React.createElement('img',{src:m.avatar_url,style:{width:'100%',height:'100%',objectFit:'cover'}}))
+        :React.createElement('div',{style:{width:size,height:size,borderRadius:'50%',
+            background:isDeceased?'#aaa':colors[i%colors.length],
+            display:'flex',alignItems:'center',justifyContent:'center',
+            color:'#fff',fontWeight:800,fontSize:size>44?15:13,margin:'0 auto 6px',
+            border:isDeceased?'3px dashed #888':'none'}},
+            isDeceased?'✝':getInitials(m.name)),
+      React.createElement('div',{style:{fontSize:11,fontWeight:700,color:isDeceased?'var(--text3)':'var(--text)'}},m.name.split(' ')[0]),
+      isDeceased&&React.createElement('div',{style:{fontSize:9,color:'var(--text3)'}},t('in_memory'))
+    );
+  }
+
   return React.createElement(Modal,{title:t('family_tree'),onClose},
     React.createElement('div',{style:{textAlign:'center',padding:'10px 0 20px'}},
-      parents.length===0&&children.length===0&&React.createElement('div',{style:{fontSize:13,color:'var(--text3)',padding:'20px 0'}},t('tree_empty')),
-      React.createElement('div',{style:{display:'flex',justifyContent:'center',gap:16,marginBottom:24}},
-        parents.map((p,i)=>React.createElement('div',{key:p.id,style:{textAlign:'center'}},
-          React.createElement('div',{style:{width:52,height:52,borderRadius:'50%',background:i===0?'#1A78C2':'#C2185B',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:800,fontSize:15,margin:'0 auto 6px'}},getInitials(p.name)),
-          React.createElement('div',{style:{fontSize:12,fontWeight:700}},p.name.split(' ')[0])
-        ))
+      allWithDeceased.length===0&&React.createElement('div',{style:{fontSize:13,color:'var(--text3)',padding:'20px 0'}},t('tree_empty')),
+      grandparents.length>0&&React.createElement(React.Fragment,null,
+        React.createElement('div',{style:{fontSize:10,color:'var(--text3)',marginBottom:6}},t('grandparent_role')),
+        React.createElement('div',{style:{display:'flex',justifyContent:'center',gap:12,marginBottom:8}},
+          grandparents.map((m,i)=>memberAvatar(m,44,i))
+        ),
+        React.createElement('div',{style:{width:2,height:16,background:'var(--border2)',margin:'0 auto'}})
       ),
-      (parents.length>0||children.length>0)&&React.createElement('div',{style:{width:2,height:24,background:'var(--border2)',margin:'0 auto'}}),
-      React.createElement('div',{style:{display:'flex',justifyContent:'center',gap:14,marginTop:8,flexWrap:'wrap'}},
-        children.map((c,i)=>React.createElement('div',{key:c.id,style:{textAlign:'center'}},
-          React.createElement('div',{style:{width:44,height:44,borderRadius:'50%',background:['#2D7A4F','#7B2D8B','#D97706'][i%3],display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontWeight:800,fontSize:13,margin:'0 auto 6px'}},getInitials(c.name)),
-          React.createElement('div',{style:{fontSize:11,fontWeight:700}},c.name.split(' ')[0])
-        )),
+      parents.length>0&&React.createElement(React.Fragment,null,
+        React.createElement('div',{style:{display:'flex',justifyContent:'center',gap:16,marginBottom:8,marginTop:8}},
+          parents.map((m,i)=>memberAvatar(m,52,i))
+        ),
+        (children.length>0||siblings.length>0)&&React.createElement('div',{style:{width:2,height:20,background:'var(--border2)',margin:'0 auto'}})
+      ),
+      (children.length>0||siblings.length>0)&&React.createElement('div',{style:{display:'flex',justifyContent:'center',gap:12,marginTop:8,flexWrap:'wrap'}},
+        [...children,...siblings].map((m,i)=>memberAvatar(m,40,i+2)),
         React.createElement('div',{style:{textAlign:'center'}},
-          React.createElement('div',{style:{width:44,height:44,borderRadius:'50%',border:'2px dashed var(--border2)',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--text3)',margin:'0 auto 6px'}},React.createElement('i',{className:'ti ti-plus'})),
-          React.createElement('div',{style:{fontSize:11,color:'var(--text3)'}},t('new_generation'))
+          React.createElement('div',{style:{width:40,height:40,borderRadius:'50%',border:'2px dashed var(--border2)',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--text3)',margin:'0 auto 6px'}},React.createElement('i',{className:'ti ti-plus'})),
+          React.createElement('div',{style:{fontSize:10,color:'var(--text3)'}},t('new_generation'))
         )
       )
     ),
@@ -2377,22 +2515,65 @@ function LullabyModal({onClose,members}){
 /* MODALS */
 function AddMemberModal({onClose,onDone}){
   const {showToast}=useApp();
-  const [nm,setNm]=useState('');const [bd,setBd]=useState('');const [gn,setGn]=useState('male');const [rl,setRl]=useState('child');const [ld,setLd]=useState(false);
+  const [nm,setNm]=useState('');
+  const [bd,setBd]=useState('');
+  const [gn,setGn]=useState('male');
+  const [rl,setRl]=useState('child');
+  const [ld,setLd]=useState(false);
+
   async function go(){
     if(!nm||!bd)return showToast("Ism va tug'ilgan sana majburiy",'error');
-    setLd(true);const r=await api('/family/members',{method:'POST',body:{name:nm,birth_date:bd,gender:gn,role:rl}});setLd(false);
+    setLd(true);
+    const r=await api('/family/members',{method:'POST',body:{name:nm,birth_date:bd,gender:gn,role:rl}});
+    setLd(false);
     if(!r.ok)return showToast(r.error,'error');
     showToast(`${nm} oilaga qo'shildi ✓`,'success');onDone();onClose();
   }
+
+  const roles=[
+    {v:'child',l:'👦 '+t('child_role')},
+    {v:'parent',l:'👨 '+t('parent_role')},
+    {v:'grandparent',l:'👴 '+t('grandparent_role')},
+    {v:'sibling',l:'👫 '+t('sibling_role')},
+    {v:'other',l:'👤 '+t('other_role')},
+  ];
+  const genders=[
+    {v:'male',l:'👨 '+t('male')},
+    {v:'female',l:'👩 '+t('female')},
+  ];
+
   return React.createElement(Modal,{title:t('new_member'),onClose},
-    React.createElement('div',{className:'input-group'},React.createElement('label',null,t('full_name')),React.createElement('input',{className:'input-field',placeholder:'Aziz Malikov',value:nm,onChange:e=>setNm(e.target.value)})),
-    React.createElement('div',{className:'input-group'},React.createElement('label',null,t('date_lbl')),React.createElement('input',{className:'input-field',type:'date',value:bd,onChange:e=>setBd(e.target.value)})),
-    React.createElement('div',{style:{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}},
-      React.createElement('div',{className:'input-group',style:{marginBottom:0}},React.createElement('label',null,t('gender_lbl')),React.createElement('select',{className:'input-field',value:gn,onChange:e=>setGn(e.target.value)},React.createElement('option',{value:'male'},t('male')),React.createElement('option',{value:'female'},t('female')))),
-      React.createElement('div',{className:'input-group',style:{marginBottom:0}},React.createElement('label',null,t('role_lbl')),React.createElement('select',{className:'input-field',value:rl,onChange:e=>setRl(e.target.value)},React.createElement('option',{value:'child'},t('child_role')),React.createElement('option',{value:'parent'},t('parent_role')),React.createElement('option',{value:'grandparent'},t('grandparent_role'))))
+    React.createElement('div',{className:'input-group'},
+      React.createElement('label',null,t('full_name')),
+      React.createElement('input',{className:'input-field',placeholder:'Aziz Malikov',value:nm,onChange:e=>setNm(e.target.value)})
+    ),
+    React.createElement('div',{className:'input-group'},
+      React.createElement('label',null,t('date_lbl')),
+      React.createElement('input',{className:'input-field',type:'date',value:bd,onChange:e=>setBd(e.target.value)})
+    ),
+    React.createElement('div',{className:'input-group'},
+      React.createElement('label',null,t('gender_lbl')),
+      React.createElement('div',{style:{display:'flex',gap:8}},
+        genders.map(g=>React.createElement('button',{key:g.v,type:'button',onClick:()=>setGn(g.v),
+          style:{flex:1,padding:'10px',borderRadius:'var(--r2)',cursor:'pointer',fontWeight:600,fontSize:13,
+            border:gn===g.v?'2px solid var(--blue)':'1.5px solid var(--border)',
+            background:gn===g.v?'var(--blue-l)':'var(--bg2)',
+            color:gn===g.v?'var(--blue)':'var(--text2)'}},g.l))
+      )
+    ),
+    React.createElement('div',{className:'input-group'},
+      React.createElement('label',null,t('role_lbl')),
+      React.createElement('div',{style:{display:'flex',gap:6,flexWrap:'wrap'}},
+        roles.map(r=>React.createElement('button',{key:r.v,type:'button',onClick:()=>setRl(r.v),
+          style:{padding:'8px 12px',borderRadius:20,cursor:'pointer',fontWeight:600,fontSize:12,
+            border:rl===r.v?'2px solid var(--blue)':'1.5px solid var(--border)',
+            background:rl===r.v?'var(--blue-l)':'var(--bg2)',
+            color:rl===r.v?'var(--blue)':'var(--text2)'}},r.l))
+      )
     ),
     React.createElement('div',{style:{height:14}}),
-    React.createElement('button',{className:'btn btn-primary btn-full',onClick:go,disabled:ld},ld?React.createElement('span',{className:'spinner'}):t('add_btn'))
+    React.createElement('button',{className:'btn btn-primary btn-full',onClick:go,disabled:ld},
+      ld?React.createElement('span',{className:'spinner'}):t('add_btn'))
   );
 }
 
