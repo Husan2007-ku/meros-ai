@@ -1310,23 +1310,42 @@ def get_compat_history():
         result.append(d)
     return ok(result)
 
-# ─── MESSAGES (COUPLE CHAT + FAMILY CHAT) ───────────────────────────────────
+# ─── MESSAGES (FAMILY, COUPLE, DIRECT) ───────────────────────────────────────
+
+def validate_channel(channel, user_id, family_id, is_minor, db):
+    """Validate and normalize channel. Returns (channel, error_msg)."""
+    if channel in ('family', 'couple'):
+        if channel == 'couple' and is_minor:
+            return None, "Bu bo'lim faqat kattalar uchun"
+        return channel, None
+    if channel and channel.startswith('direct:'):
+        other_id = channel[7:]
+        if not other_id:
+            return None, "Noto'g'ri kanal"
+        # Verify other user is in same family
+        member = db.execute(
+            "SELECT id FROM family_members WHERE family_id=? AND user_id=?",
+            (family_id, other_id)).fetchone()
+        if not member:
+            return None, "Bu foydalanuvchi oilangizda emas"
+        # Normalize so that direct:A→B and direct:B→A use same channel key
+        sorted_ids = sorted([user_id, other_id])
+        return f"direct:{sorted_ids[0]}:{sorted_ids[1]}", None
+    return 'family', None
 
 @app.route('/api/messages', methods=['GET'])
 @require_auth
 def get_messages():
-    channel = request.args.get('channel', 'family')
-    if channel not in ('family', 'couple'):
-        channel = 'family'
-    if channel == 'couple' and g.is_minor:
-        return err("Bu bo'lim faqat kattalar uchun", 403)
+    channel_raw = request.args.get('channel', 'family')
     db = get_db()
+    channel, err_msg = validate_channel(channel_raw, g.user_id, g.family_id, g.is_minor, db)
+    if err_msg:
+        return err(err_msg, 403)
     rows = db.execute(
         "SELECT m.*, u.full_name as sender_name FROM messages m "
         "JOIN users u ON m.sender_id = u.id "
         "WHERE m.family_id=? AND m.channel=? ORDER BY m.created_at ASC LIMIT 100",
         (g.family_id, channel)).fetchall()
-    # Mark messages from others as read (only within this channel)
     db.execute("UPDATE messages SET is_read=1 WHERE family_id=? AND channel=? AND sender_id!=?",
                (g.family_id, channel, g.user_id))
     db.commit()
@@ -1345,12 +1364,11 @@ def send_message():
     text = (body.get('body') or '').strip()
     kind = body.get('kind', 'text')
     media_url = body.get('media_url')
-    channel = body.get('channel', 'family')
-    if channel not in ('family', 'couple'):
-        channel = 'family'
-    if channel == 'couple' and g.is_minor:
-        return err("Bu bo'lim faqat kattalar uchun", 403)
-
+    channel_raw = body.get('channel', 'family')
+    db = get_db()
+    channel, err_msg = validate_channel(channel_raw, g.user_id, g.family_id, g.is_minor, db)
+    if err_msg:
+        return err(err_msg, 403)
     if kind == 'text' and not text:
         return err('Xabar matni bo\'sh bo\'lmasligi kerak')
     if kind != 'text' and not media_url:
@@ -1362,9 +1380,7 @@ def send_message():
         if len(media_url) > max_bytes:
             kind_label = {'photo': 'Rasm', 'video': 'Video', 'audio': 'Ovozli xabar'}.get(kind, 'Fayl')
             return err(f"{kind_label} hajmi juda katta")
-
     mid = str(uuid.uuid4())
-    db = get_db()
     db.execute("INSERT INTO messages(id,family_id,sender_id,channel,body,kind,media_url) VALUES(?,?,?,?,?,?,?)",
                (mid, g.family_id, g.user_id, channel, text, kind, media_url))
     db.commit()
@@ -1383,7 +1399,12 @@ def unread_message_count():
     couple_cnt = db.execute(
         "SELECT COUNT(*) as cnt FROM messages WHERE family_id=? AND channel='couple' AND sender_id!=? AND is_read=0",
         (g.family_id, g.user_id)).fetchone()['cnt']
-    return ok({'unread': family_cnt + couple_cnt, 'family': family_cnt, 'couple': couple_cnt})
+    direct_cnt = db.execute(
+        "SELECT COUNT(*) as cnt FROM messages WHERE family_id=? AND channel LIKE 'direct:%' "
+        "AND (channel LIKE ?||'%' OR channel LIKE '%:'||?) AND sender_id!=? AND is_read=0",
+        (g.family_id, f"direct:{g.user_id}", g.user_id, g.user_id)).fetchone()['cnt']
+    return ok({'unread': family_cnt + couple_cnt + direct_cnt,
+               'family': family_cnt, 'couple': couple_cnt, 'direct': direct_cnt})
 
 # ─── IMPORTANT DATES ─────────────────────────────────────────────────────────
 

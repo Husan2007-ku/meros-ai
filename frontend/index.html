@@ -376,6 +376,14 @@ const I18N={
     confirm_deceased:'Bu a\'zoni "Vafot etdi" deb belgilamoqchimisiz?',
     member_removed_toast:"A'zo oiladan chiqarildi",deceased_toast:"Xotirada saqlanadi. Oila daraxtida ko'rinadi",
     in_memory:'Xotirada',
+    add_member_choose:'Oila a\'zosini qanday qo\'shmoqchisiz?',
+    invite_via_code:'Taklif kodi orqali',invite_via_code_sub:'Ilovadan foydalanuvchi uchun (aka, opa, sherik...)',
+    add_manual_member:'Qo\'lda qo\'shish',add_manual_member_sub:'Ilovaga kirmaydigan a\'zo uchun (bobo, buvi, vafot etgan...)',
+    invite_instructions:"Quyidagi kodni va havolani ulashingiz bilan oila a'zongiz ilovaga kirib, oilangizga qo'shiladi",
+    copy_invite_msg:'Xabar va kodni nusxalash',invite_note:"A'zo ilovaga kirganda taklif kodini kiritadi — avtomatik oilangizga qo'shiladi",
+    name_date_required:"Ism va tug'ilgan sana majburiy",
+    manual_member_note:"Bu a'zo ilovaga kirmaydi — faqat oila daraxtida va tug'ilgan kun eslatmasida ko'rinadi",
+    send_direct_message:'Yozish',
     access_restricted:'Kirish cheklangan',parent_profile_restricted:'Bu profil faqat kattalar uchun',parent_profile_restricted_sub:"Ota-ona yoki kattalarga tegishli profil ma'lumotlari bolalar uchun yashiriladi",
     anniversary_not_set:'Muhim sanani belgilang',anniversary_not_set_sub:"Nikoh sanangizni qo'shsangiz, har yili eslatib turamiz",
     anniversary_setup_toast:"Tez kunda muhim sanalarni qo'shish funksiyasi ishga tushadi 🗓️",
@@ -509,6 +517,14 @@ const I18N={
     confirm_deceased:'Отметить как ушедшего из жизни?',
     member_removed_toast:'Член семьи исключён',deceased_toast:'Сохранится в памяти. Будет виден в семейном древе',
     in_memory:'В памяти',
+    add_member_choose:'Как вы хотите добавить члена семьи?',
+    invite_via_code:'По коду приглашения',invite_via_code_sub:'Для тех, кто будет пользоваться приложением',
+    add_manual_member:'Добавить вручную',add_manual_member_sub:'Для тех, кто не пользуется приложением (дедушка, бабушка...)',
+    invite_instructions:'Поделитесь этим кодом и ссылкой — член семьи войдёт в приложение и присоединится к вашей семье',
+    copy_invite_msg:'Скопировать сообщение и код',invite_note:'Когда член семьи войдёт в приложение, он введёт код и автоматически присоединится',
+    name_date_required:'Имя и дата рождения обязательны',
+    manual_member_note:'Этот член семьи не будет пользоваться приложением — будет виден только в семейном древе и напоминаниях о днях рождения',
+    send_direct_message:'Написать',
     access_restricted:'Доступ ограничен',parent_profile_restricted:'Этот профиль только для взрослых',parent_profile_restricted_sub:'Данные профиля родителей и взрослых скрыты от детей',
     anniversary_not_set:'Укажите важную дату',anniversary_not_set_sub:'Добавьте дату свадьбы — мы будем напоминать каждый год',
     anniversary_setup_toast:'Скоро появится функция добавления важных дат 🗓️',
@@ -642,6 +658,14 @@ const I18N={
     confirm_deceased:'Mark this person as deceased?',
     member_removed_toast:'Family member removed',deceased_toast:'Preserved in memory. Will appear in the family tree',
     in_memory:'In memory',
+    add_member_choose:'How would you like to add a family member?',
+    invite_via_code:'Via invite code',invite_via_code_sub:'For someone who will use the app',
+    add_manual_member:'Add manually',add_manual_member_sub:"For those who won't use the app (grandparent, etc.)",
+    invite_instructions:'Share this code and link — the family member will join your family when they sign up',
+    copy_invite_msg:'Copy message and code',invite_note:"When they sign up, they enter the code and automatically join your family",
+    name_date_required:'Name and date of birth are required',
+    manual_member_note:"This member won't use the app — they'll appear only in the family tree and birthday reminders",
+    send_direct_message:'Message',
     anniversary_not_set:'Set an important date',anniversary_not_set_sub:"Add your anniversary and we'll remind you every year",
     anniversary_setup_toast:'The feature to add important dates is coming soon 🗓️',
     couple_chat_title:'Family chat',couple_chat_sub:'Exchange messages with the whole family',
@@ -1614,7 +1638,7 @@ function ChatAudioRecorder({onCancel,onSend}){
   );
 }
 
-function ChatModal({onClose,channel}){
+function ChatModal({onClose,channel,title}){
   const {showToast}=useApp();
   const [messages,setMessages]=useState(null);
   const [text,setText]=useState('');
@@ -1700,7 +1724,9 @@ function ChatModal({onClose,channel}){
   return React.createElement('div',{className:'chat-overlay'},
     React.createElement('div',{className:'chat-header'},
       React.createElement('div',{className:'chat-back',onClick:onClose},React.createElement('i',{className:'ti ti-arrow-left'})),
-      React.createElement('div',{className:'chat-title'},channel==='couple'?t('couple_only_chat_title'):t('couple_chat_title')),
+      React.createElement('div',{className:'chat-title'},
+        title||( channel==='couple'?t('couple_only_chat_title'):t('couple_chat_title') )
+      ),
       React.createElement('i',{className:'ti ti-users',style:{color:'var(--rose)',fontSize:20}})
     ),
     React.createElement('div',{className:'chat-body',ref:bodyRef},
@@ -2025,6 +2051,7 @@ function MemberProfileModal({onClose,member,onUpdated}){
   const {showToast}=useApp();
   const isMinor=localStorage.getItem('meros_is_minor')==='1';
   const myId=localStorage.getItem('meros_user_id');
+  const [showDirectChat,setShowDirectChat]=useState(false);
 
   // Minor cannot view parent/grandparent profiles — only their own
   if(isMinor&&member?.role!=='child'&&member?.user_id!==myId){
@@ -2035,6 +2062,15 @@ function MemberProfileModal({onClose,member,onUpdated}){
         React.createElement('div',{style:{fontSize:13,color:'var(--text2)',lineHeight:1.6}},t('parent_profile_restricted_sub'))
       )
     );
+  }
+
+  // Show direct chat overlay
+  if(showDirectChat&&member?.user_id){
+    return React.createElement(ChatModal,{
+      onClose:()=>setShowDirectChat(false),
+      channel:`direct:${member.user_id}`,
+      title:member.name.split(' ')[0]
+    });
   }
 
   const [avatarUrl,setAvatarUrl]=useState(member?.avatar_url||null);
@@ -2083,6 +2119,14 @@ function MemberProfileModal({onClose,member,onUpdated}){
       ))
     ),
     React.createElement('div',{style:{fontSize:11,color:'var(--text3)',textAlign:'center',marginTop:14}},t('tap_avatar_hint')),
+    member?.user_id&&member.user_id!==myId&&React.createElement('button',{
+      className:'btn btn-primary btn-full',
+      style:{marginTop:12},
+      onClick:()=>setShowDirectChat(true)
+    },
+      React.createElement('i',{className:'ti ti-message',style:{fontSize:16}}),
+      ' '+t('send_direct_message',{name:member.name.split(' ')[0]})
+    ),
     !member?.user_id&&React.createElement('div',{style:{marginTop:14,display:'flex',gap:8}},
       React.createElement('button',{onClick:async()=>{
         if(!window.confirm(t('confirm_remove_member')))return;
@@ -2515,14 +2559,26 @@ function LullabyModal({onClose,members}){
 /* MODALS */
 function AddMemberModal({onClose,onDone}){
   const {showToast}=useApp();
+  const [mode,setMode]=useState(null); // null=choose, 'invite'=invite link, 'manual'=no app
   const [nm,setNm]=useState('');
   const [bd,setBd]=useState('');
   const [gn,setGn]=useState('male');
   const [rl,setRl]=useState('child');
   const [ld,setLd]=useState(false);
+  const [inviteCode,setInviteCode]=useState(null);
+
+  useEffect(()=>{
+    api('/family/invite-code').then(r=>{if(r.ok)setInviteCode(r.data.invite_code)});
+  },[]);
+
+  function copyCode(){
+    const msg=`MEROS AI ilovasiga taklif qilinasiz! 🎉\nRo'yxatdan o'ting: https://meros-ai.onrender.com\nTaklif kodingiz: ${inviteCode}`;
+    navigator.clipboard?.writeText(msg).then(()=>showToast(t('code_copied'),'success'))
+      .catch(()=>showToast(inviteCode));
+  }
 
   async function go(){
-    if(!nm||!bd)return showToast("Ism va tug'ilgan sana majburiy",'error');
+    if(!nm||!bd)return showToast(t('name_date_required'),'error');
     setLd(true);
     const r=await api('/family/members',{method:'POST',body:{name:nm,birth_date:bd,gender:gn,role:rl}});
     setLd(false);
@@ -2537,12 +2593,54 @@ function AddMemberModal({onClose,onDone}){
     {v:'sibling',l:'👫 '+t('sibling_role')},
     {v:'other',l:'👤 '+t('other_role')},
   ];
-  const genders=[
-    {v:'male',l:'👨 '+t('male')},
-    {v:'female',l:'👩 '+t('female')},
-  ];
 
-  return React.createElement(Modal,{title:t('new_member'),onClose},
+  // Mode selection screen
+  if(!mode){
+    return React.createElement(Modal,{title:t('new_member'),onClose},
+      React.createElement('div',{style:{fontSize:13,color:'var(--text2)',marginBottom:16,textAlign:'center'}},t('add_member_choose')),
+      React.createElement('div',{className:'menu-card'},
+        React.createElement('div',{className:'menu-row',onClick:()=>setMode('invite'),style:{cursor:'pointer'}},
+          React.createElement('div',{className:'menu-icon',style:{background:'var(--blue-l)'}},React.createElement('i',{className:'ti ti-link',style:{color:'var(--blue)',fontSize:20}})),
+          React.createElement('div',{style:{flex:1}},
+            React.createElement('div',{className:'menu-text',style:{fontWeight:700}},t('invite_via_code')),
+            React.createElement('div',{style:{fontSize:12,color:'var(--text2)',marginTop:2}},t('invite_via_code_sub'))
+          ),
+          React.createElement('i',{className:'ti ti-chevron-right',style:{color:'var(--text3)',fontSize:15}})
+        ),
+        React.createElement('div',{className:'menu-row',onClick:()=>setMode('manual'),style:{cursor:'pointer'}},
+          React.createElement('div',{className:'menu-icon',style:{background:'var(--green-l)'}},React.createElement('i',{className:'ti ti-user-plus',style:{color:'var(--green)',fontSize:20}})),
+          React.createElement('div',{style:{flex:1}},
+            React.createElement('div',{className:'menu-text',style:{fontWeight:700}},t('add_manual_member')),
+            React.createElement('div',{style:{fontSize:12,color:'var(--text2)',marginTop:2}},t('add_manual_member_sub'))
+          ),
+          React.createElement('i',{className:'ti ti-chevron-right',style:{color:'var(--text3)',fontSize:15}})
+        )
+      )
+    );
+  }
+
+  // Invite via code screen
+  if(mode==='invite'){
+    return React.createElement(Modal,{title:t('invite_via_code'),onClose},
+      React.createElement('div',{style:{textAlign:'center',marginBottom:16}},
+        React.createElement('div',{style:{fontSize:13,color:'var(--text2)',marginBottom:16,lineHeight:1.6}},t('invite_instructions')),
+        React.createElement('div',{style:{background:'var(--blue)',borderRadius:'var(--r2)',padding:'16px',marginBottom:14}},
+          React.createElement('div',{style:{color:'rgba(255,255,255,.7)',fontSize:12,marginBottom:6}},t('invite_code_lbl')),
+          React.createElement('div',{style:{fontSize:28,fontWeight:900,color:'#fff',letterSpacing:4}},inviteCode||'······')
+        ),
+        React.createElement('button',{className:'btn btn-primary btn-full',onClick:copyCode},
+          React.createElement('i',{className:'ti ti-copy',style:{fontSize:16}}),t('copy_invite_msg')
+        ),
+        React.createElement('div',{style:{fontSize:11,color:'var(--text3)',marginTop:12,lineHeight:1.5}},t('invite_note'))
+      )
+    );
+  }
+
+  // Manual entry screen
+  return React.createElement(Modal,{title:t('add_manual_member'),onClose},
+    React.createElement('div',{style:{fontSize:12,color:'var(--text3)',marginBottom:12,padding:'8px 12px',background:'var(--blue-xl)',borderRadius:'var(--r2)',lineHeight:1.5}},
+      t('manual_member_note')
+    ),
     React.createElement('div',{className:'input-group'},
       React.createElement('label',null,t('full_name')),
       React.createElement('input',{className:'input-field',placeholder:'Aziz Malikov',value:nm,onChange:e=>setNm(e.target.value)})
@@ -2554,7 +2652,8 @@ function AddMemberModal({onClose,onDone}){
     React.createElement('div',{className:'input-group'},
       React.createElement('label',null,t('gender_lbl')),
       React.createElement('div',{style:{display:'flex',gap:8}},
-        genders.map(g=>React.createElement('button',{key:g.v,type:'button',onClick:()=>setGn(g.v),
+        [{v:'male',l:'👨 '+t('male')},{v:'female',l:'👩 '+t('female')}]
+        .map(g=>React.createElement('button',{key:g.v,type:'button',onClick:()=>setGn(g.v),
           style:{flex:1,padding:'10px',borderRadius:'var(--r2)',cursor:'pointer',fontWeight:600,fontSize:13,
             border:gn===g.v?'2px solid var(--blue)':'1.5px solid var(--border)',
             background:gn===g.v?'var(--blue-l)':'var(--bg2)',
