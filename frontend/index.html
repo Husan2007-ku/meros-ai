@@ -382,8 +382,14 @@ const I18N={
     invite_instructions:"Quyidagi kodni va havolani ulashingiz bilan oila a'zongiz ilovaga kirib, oilangizga qo'shiladi",
     copy_invite_msg:'Xabar va kodni nusxalash',invite_note:"A'zo ilovaga kirganda taklif kodini kiritadi — avtomatik oilangizga qo'shiladi",
     name_date_required:"Ism va tug'ilgan sana majburiy",
+    member_added_toast:"oilaga qo'shildi ✓",
     manual_member_note:"Bu a'zo ilovaga kirmaydi — faqat oila daraxtida va tug'ilgan kun eslatmasida ko'rinadi",
     send_direct_message:'Yozish',
+    passport_integration_note:"Bu bo'lim vaqtinchalik. AXBROR integratsiyasi amalga oshirilgandan so'ng pasport ma'lumotlari avtomatik yuklanadi va bu bo'lim olib tashlanadi.",
+    passport_saved:"Pasport ma'lumotlari saqlandi ✓",
+    passport_full_name:'To\'liq ism (pasportdagi)',passport_series:'Seriya',passport_number:'Raqam',
+    passport_birth_place:'Tug\'ilgan joy',passport_issued_by:'Kim tomonidan berilgan',
+    passport_issued_date:'Berilgan sana',passport_expiry:'Amal qilish muddati',
     access_restricted:'Kirish cheklangan',parent_profile_restricted:'Bu profil faqat kattalar uchun',parent_profile_restricted_sub:"Ota-ona yoki kattalarga tegishli profil ma'lumotlari bolalar uchun yashiriladi",
     anniversary_not_set:'Muhim sanani belgilang',anniversary_not_set_sub:"Nikoh sanangizni qo'shsangiz, har yili eslatib turamiz",
     anniversary_setup_toast:"Tez kunda muhim sanalarni qo'shish funksiyasi ishga tushadi 🗓️",
@@ -523,8 +529,14 @@ const I18N={
     invite_instructions:'Поделитесь этим кодом и ссылкой — член семьи войдёт в приложение и присоединится к вашей семье',
     copy_invite_msg:'Скопировать сообщение и код',invite_note:'Когда член семьи войдёт в приложение, он введёт код и автоматически присоединится',
     name_date_required:'Имя и дата рождения обязательны',
+    member_added_toast:'добавлен в семью ✓',
     manual_member_note:'Этот член семьи не будет пользоваться приложением — будет виден только в семейном древе и напоминаниях о днях рождения',
     send_direct_message:'Написать',
+    passport_integration_note:'Этот раздел временный. После интеграции с АХБОР паспортные данные будут загружаться автоматически, и этот раздел будет удалён.',
+    passport_saved:'Данные паспорта сохранены ✓',
+    passport_full_name:'Полное имя (по паспорту)',passport_series:'Серия',passport_number:'Номер',
+    passport_birth_place:'Место рождения',passport_issued_by:'Кем выдан',
+    passport_issued_date:'Дата выдачи',passport_expiry:'Срок действия',
     access_restricted:'Доступ ограничен',parent_profile_restricted:'Этот профиль только для взрослых',parent_profile_restricted_sub:'Данные профиля родителей и взрослых скрыты от детей',
     anniversary_not_set:'Укажите важную дату',anniversary_not_set_sub:'Добавьте дату свадьбы — мы будем напоминать каждый год',
     anniversary_setup_toast:'Скоро появится функция добавления важных дат 🗓️',
@@ -664,8 +676,15 @@ const I18N={
     invite_instructions:'Share this code and link — the family member will join your family when they sign up',
     copy_invite_msg:'Copy message and code',invite_note:"When they sign up, they enter the code and automatically join your family",
     name_date_required:'Name and date of birth are required',
+    member_added_toast:'added to family ✓',
+    member_added_toast:'added to family ✓',
     manual_member_note:"This member won't use the app — they'll appear only in the family tree and birthday reminders",
     send_direct_message:'Message',
+    passport_integration_note:'This section is temporary. Once AXBROR integration is active, passport data will load automatically and this section will be removed.',
+    passport_saved:'Passport data saved ✓',
+    passport_full_name:'Full name (as in passport)',passport_series:'Series',passport_number:'Number',
+    passport_birth_place:'Place of birth',passport_issued_by:'Issued by',
+    passport_issued_date:'Issue date',passport_expiry:'Expiry date',
     anniversary_not_set:'Set an important date',anniversary_not_set_sub:"Add your anniversary and we'll remind you every year",
     anniversary_setup_toast:'The feature to add important dates is coming soon 🗓️',
     couple_chat_title:'Family chat',couple_chat_sub:'Exchange messages with the whole family',
@@ -1860,9 +1879,6 @@ function CompatTestModal({onClose}){
     setStep(s=>s+1);
   }
 
-  const scaleLabels=lang_scale();
-  function lang_scale(){return [t('scale_disagree'),'','',t('scale_agree'),''];}
-
   // INTRO
   if(step===0){
     return React.createElement(Modal,{title:t('compat_test_title'),onClose},
@@ -2322,16 +2338,82 @@ function FamilyTreeModal({onClose,fam}){
   );
 }
 
-function DocumentsModal({onClose}){
+function DocumentsModal({onClose,fam}){
   const {showToast}=useApp();
+  const members=(fam?.members||[]).filter(m=>m.status!=='deceased');
+  const [selMember,setSelMember]=useState(members[0]||null);
+  const [passport,setPassport]=useState(null);
+  const [editing,setEditing]=useState(false);
+  const [form,setForm]=useState({});
+  const [saving,setSaving]=useState(false);
+
+  useEffect(()=>{
+    if(!selMember)return;
+    setPassport(null);setEditing(false);
+    api(`/passport/${selMember.id}`).then(r=>{
+      if(r.ok){setPassport(r.data||{});setForm(r.data||{});}
+    });
+  },[selMember?.id]);
+
+  async function save(){
+    setSaving(true);
+    const r=await api(`/passport/${selMember.id}`,{method:'PUT',body:form});
+    setSaving(false);
+    if(!r.ok)return showToast(r.error,'error');
+    setPassport(r.data);setEditing(false);
+    showToast(t('passport_saved'),'success');
+  }
+
+  const fields=[
+    {k:'full_name',l:t('passport_full_name'),ph:'Malikov Husan Akbarovich'},
+    {k:'passport_series',l:t('passport_series'),ph:'AA'},
+    {k:'passport_number',l:t('passport_number'),ph:'1234567'},
+    {k:'pinfl',l:'PINFL',ph:'12345678901234'},
+    {k:'birth_date',l:t('date_lbl'),ph:'1990-03-15',type:'date'},
+    {k:'birth_place',l:t('passport_birth_place'),ph:"Toshkent sh."},
+    {k:'issued_by',l:t('passport_issued_by'),ph:'IIB'},
+    {k:'issued_date',l:t('passport_issued_date'),ph:'2020-01-01',type:'date'},
+    {k:'expiry_date',l:t('passport_expiry'),ph:'2030-01-01',type:'date'},
+  ];
+
   return React.createElement(Modal,{title:t('documents_archive'),onClose},
-    React.createElement('div',{style:{textAlign:'center',padding:'24px 12px'}},
-      React.createElement('div',{style:{width:60,height:60,borderRadius:'50%',background:'var(--amber-l)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:26,margin:'0 auto 14px'}},'📂'),
-      React.createElement('div',{style:{fontSize:14,fontWeight:700,color:'var(--text)',marginBottom:8}},t('docs_empty_title')),
-      React.createElement('div',{style:{fontSize:13,color:'var(--text2)',lineHeight:1.6}},t('docs_empty_sub'))
+    React.createElement('div',{style:{background:'var(--amber-l)',border:'1px solid #F0C060',borderRadius:'var(--r2)',padding:'10px 14px',fontSize:12,color:'var(--amber)',marginBottom:14,lineHeight:1.5}},
+      '⚠️ '+t('passport_integration_note')
     ),
-    React.createElement('button',{className:'btn btn-primary btn-full',onClick:()=>showToast(t('docs_connect_toast'),'')},
-      React.createElement('i',{className:'ti ti-cloud-download',style:{fontSize:18}}),t('docs_connect_btn')
+    members.length>1&&React.createElement('div',{className:'tab-row',style:{marginBottom:12}},
+      members.map(m=>React.createElement('div',{key:m.id,className:`tab-item${selMember?.id===m.id?' active':''}`,onClick:()=>setSelMember(m)},
+        m.name.split(' ')[0]
+      ))
+    ),
+    passport===null&&React.createElement('div',{style:{textAlign:'center',padding:20}},
+      React.createElement('span',{className:'spinner',style:{borderTopColor:'var(--amber)',borderColor:'rgba(184,117,15,.2)'}})
+    ),
+    passport!==null&&!editing&&React.createElement(React.Fragment,null,
+      React.createElement('div',{className:'menu-card',style:{margin:'0 0 14px'}},
+        fields.map(f=>React.createElement('div',{key:f.k,className:'menu-row',style:{cursor:'default'}},
+          React.createElement('div',{className:'menu-text',style:{color:'var(--text2)',fontWeight:500,minWidth:100}},f.l),
+          React.createElement('div',{style:{fontSize:13,fontWeight:700,color:form[f.k]?'var(--text)':'var(--text3)'}},
+            form[f.k]||'—'
+          )
+        ))
+      ),
+      React.createElement('button',{className:'btn btn-primary btn-full',onClick:()=>setEditing(true)},
+        React.createElement('i',{className:'ti ti-edit',style:{fontSize:16}}),
+        ' '+t('edit_profile')
+      )
+    ),
+    passport!==null&&editing&&React.createElement(React.Fragment,null,
+      fields.map(f=>React.createElement('div',{key:f.k,className:'input-group'},
+        React.createElement('label',null,f.l),
+        React.createElement('input',{className:'input-field',type:f.type||'text',
+          placeholder:f.ph,value:form[f.k]||'',
+          onChange:e=>setForm(fm=>({...fm,[f.k]:e.target.value}))})
+      )),
+      React.createElement('div',{style:{display:'flex',gap:8}},
+        React.createElement('button',{className:'btn btn-primary',style:{flex:1},onClick:save,disabled:saving},
+          saving?React.createElement('span',{className:'spinner'}):t('save')),
+        React.createElement('button',{className:'btn btn-outline',style:{flex:1},onClick:()=>setEditing(false)},t('cancel'))
+      )
     )
   );
 }
@@ -2583,7 +2665,7 @@ function AddMemberModal({onClose,onDone}){
     const r=await api('/family/members',{method:'POST',body:{name:nm,birth_date:bd,gender:gn,role:rl}});
     setLd(false);
     if(!r.ok)return showToast(r.error,'error');
-    showToast(`${nm} oilaga qo'shildi ✓`,'success');onDone();onClose();
+    showToast(nm+' '+t('member_added_toast'),'success');onDone();onClose();
   }
 
   const roles=[
@@ -3292,7 +3374,7 @@ function App(){
       onDone();
     }}),
     familyTree:()=>React.createElement(FamilyTreeModal,{onClose:closeModal,fam:famCache}),
-    documents:()=>React.createElement(DocumentsModal,{onClose:closeModal}),
+    documents:()=>React.createElement(DocumentsModal,{onClose:closeModal,fam:famCache}),
     lullaby:()=>React.createElement(LullabyModal,{onClose:closeModal,members:famCache?.members}),
     createAlbum:()=>React.createElement(CreateAlbumModal,{onClose:closeModal,onDone}),
     memberProfile:()=>React.createElement(MemberProfileModal,{onClose:closeModal,

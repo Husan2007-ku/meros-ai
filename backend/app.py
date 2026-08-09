@@ -200,6 +200,23 @@ def init_db():
         is_read     INTEGER DEFAULT 0,
         created_at  TEXT DEFAULT (datetime('now'))
     );
+    CREATE TABLE IF NOT EXISTS passport_data (
+        id          TEXT PRIMARY KEY,
+        family_id   TEXT NOT NULL,
+        member_id   TEXT NOT NULL,
+        full_name   TEXT,
+        passport_series TEXT,
+        passport_number TEXT,
+        birth_date  TEXT,
+        birth_place TEXT,
+        issued_by   TEXT,
+        issued_date TEXT,
+        expiry_date TEXT,
+        pinfl       TEXT,
+        created_at  TEXT DEFAULT (datetime('now')),
+        updated_at  TEXT DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS important_dates (
         id          TEXT PRIMARY KEY,
         family_id   TEXT NOT NULL,
@@ -1405,6 +1422,53 @@ def unread_message_count():
         (g.family_id, f"direct:{g.user_id}", g.user_id, g.user_id)).fetchone()['cnt']
     return ok({'unread': family_cnt + couple_cnt + direct_cnt,
                'family': family_cnt, 'couple': couple_cnt, 'direct': direct_cnt})
+
+# ─── PASSPORT DATA ───────────────────────────────────────────────────────────
+
+@app.route('/api/passport/<member_id>', methods=['GET'])
+@require_auth
+@require_adult
+def get_passport(member_id):
+    db = get_db()
+    row = db.execute(
+        "SELECT * FROM passport_data WHERE family_id=? AND member_id=?",
+        (g.family_id, member_id)).fetchone()
+    return ok(row_to_dict(row) if row else None)
+
+@app.route('/api/passport/<member_id>', methods=['PUT'])
+@require_auth
+@require_adult
+def save_passport(member_id):
+    body = request.json or {}
+    db = get_db()
+    # Verify member belongs to this family
+    member = db.execute(
+        "SELECT id FROM family_members WHERE id=? AND family_id=?",
+        (member_id, g.family_id)).fetchone()
+    if not member:
+        return err("A'zo topilmadi", 404)
+    existing = db.execute(
+        "SELECT id FROM passport_data WHERE family_id=? AND member_id=?",
+        (g.family_id, member_id)).fetchone()
+    fields = ['full_name', 'passport_series', 'passport_number', 'birth_date',
+              'birth_place', 'issued_by', 'issued_date', 'expiry_date', 'pinfl']
+    if existing:
+        set_clause = ', '.join(f"{f}=?" for f in fields) + ", updated_at=datetime('now')"
+        values = [body.get(f, '') for f in fields] + [existing['id']]
+        db.execute(f"UPDATE passport_data SET {set_clause} WHERE id=?", values)
+    else:
+        pid = str(uuid.uuid4())
+        cols = ', '.join(fields)
+        placeholders = ', '.join('?' for _ in fields)
+        values = [pid, g.family_id, member_id] + [body.get(f, '') for f in fields]
+        db.execute(
+            f"INSERT INTO passport_data(id,family_id,member_id,{cols}) VALUES(?,?,?,{placeholders})",
+            values)
+    db.commit()
+    row = db.execute(
+        "SELECT * FROM passport_data WHERE family_id=? AND member_id=?",
+        (g.family_id, member_id)).fetchone()
+    return ok(row_to_dict(row))
 
 # ─── IMPORTANT DATES ─────────────────────────────────────────────────────────
 
