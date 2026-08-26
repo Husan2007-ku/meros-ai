@@ -320,6 +320,12 @@ const I18N={
     compat_mid:"Yaxshi moslik — ba'zi mavzularda ochiq gaplashish foydali bo'ladi",
     compat_low:"Bir-biringizni yaxshiroq tushunish uchun muhim mavzularda suhbatlashing",
     compat_disclaimer:"Bu test ilmiy tashxis emas — faqat o'z-o'zini bilish va suhbat boshlash uchun vosita. Natijalar maslahat sifatida qabul qilinishi kerak.",
+    assessment_title:'Oila Baholash',assessment_sub:"Muloqot, nizo, yaqinlik, tarbiya, moliya bo'yicha holatingizni bilib oling",
+    assessment_intro:"5 yo'nalish bo'yicha qisqa savolnoma — natija tashxis emas, faqat qaysi yo'nalishga ko'proq e'tibor kerakligini ko'rsatadi.",
+    start_assessment:'Boshlash',assessment_privacy:'Natija faqat sizga ko\'rinadi',
+    assessment_result_title:'Baholash natijasi',assessment_by_category:"Yo'nalishlar bo'yicha",
+    assessment_focus_label:"Ko'proq e'tibor talab qiladigan yo'nalish",
+    assessment_disclaimer:"Bu natija diagnoz emas — shunchaki qaysi yo'nalishda suhbatlashish foydali ekanini ko'rsatadi.",
     done:'Tayyor',
     invite_code_lbl:'Taklif kodi (ixtiyoriy)',invite_code_placeholder:'Masalan: K7M3A9',
     invite_code_hint:"Agar sherigingiz oila yaratgan bo'lsa, undan kodni so'rang",
@@ -466,6 +472,12 @@ const I18N={
     compat_mid:'Хорошая совместимость — по некоторым темам полезно открыто поговорить',
     compat_low:'Поговорите на важные темы, чтобы лучше понять друг друга',
     compat_disclaimer:'Этот тест не является научным диагнозом — это инструмент для самопознания и начала разговора. Результаты следует воспринимать как совет.',
+    assessment_title:'Оценка семьи',assessment_sub:'Узнайте своё состояние по общению, конфликтам, близости, воспитанию, финансам',
+    assessment_intro:'Короткая анкета по 5 направлениям — результат не диагноз, а лишь показывает, какому направлению нужно больше внимания.',
+    start_assessment:'Начать',assessment_privacy:'Результат виден только вам',
+    assessment_result_title:'Результат оценки',assessment_by_category:'По направлениям',
+    assessment_focus_label:'Направление, требующее больше внимания',
+    assessment_disclaimer:'Этот результат не диагноз — он лишь показывает, о чём полезно поговорить.',
     done:'Готово',
     invite_code_lbl:'Код приглашения (необязательно)',invite_code_placeholder:'Например: K7M3A9',
     invite_code_hint:'Если ваш партнёр уже создал семью, спросите у него код',
@@ -613,6 +625,12 @@ const I18N={
     compat_mid:"Good compatibility — it'll help to talk openly about some topics",
     compat_low:'Talk about important topics to understand each other better',
     compat_disclaimer:'This test is not a scientific diagnosis — it is a tool for self-awareness and starting a conversation. Results should be taken as advice.',
+    assessment_title:'Family Assessment',assessment_sub:'Check in on communication, conflict, connection, parenting, and finance',
+    assessment_intro:"A short questionnaire across 5 areas — the result isn't a diagnosis, it just shows which area deserves more attention.",
+    start_assessment:'Start',assessment_privacy:'The result is visible only to you',
+    assessment_result_title:'Assessment result',assessment_by_category:'By category',
+    assessment_focus_label:'Area that needs more attention',
+    assessment_disclaimer:"This result is not a diagnosis -- it just shows what's worth talking about.",
     done:'Done',
     invite_code_lbl:'Invite code (optional)',invite_code_placeholder:'E.g. K7M3A9',
     invite_code_hint:'If your partner already created a family, ask them for the code',
@@ -1407,6 +1425,7 @@ function RelationshipScreen(){
   const [saving,setSaving]=useState(false);const [saved,setSaved]=useState(false);
   const [showIntervention,setShowIntervention]=useState(false);
   const [showCompatTest,setShowCompatTest]=useState(false);
+  const [showAssessment,setShowAssessment]=useState(false);
   const [showFamilyChat,setShowFamilyChat]=useState(false);
   const [showCoupleChat,setShowCoupleChat]=useState(false);
   const [unreadFamily,setUnreadFamily]=useState(0);
@@ -1486,6 +1505,18 @@ function RelationshipScreen(){
             React.createElement('div',{className:'card-info'},
               React.createElement('div',{className:'card-title',style:{color:'#fff'}},t('compat_test_title')),
               React.createElement('div',{className:'card-sub',style:{color:'rgba(255,255,255,.8)'}},t('compat_test_sub'))
+            ),
+            React.createElement('i',{className:'ti ti-chevron-right',style:{color:'#fff',fontSize:18}})
+          )
+        )
+      ),
+      React.createElement('div',{style:{padding:'12px 16px 0'}},
+        React.createElement('div',{className:'card',style:{cursor:'pointer',background:'linear-gradient(135deg,#0D3B66,#1A78C2)',border:'none'},onClick:()=>setShowAssessment(true)},
+          React.createElement('div',{className:'card-row'},
+            React.createElement('div',{className:'icon-box',style:{background:'rgba(255,255,255,.2)'}},React.createElement('i',{className:'ti ti-report-analytics',style:{color:'#fff',fontSize:22}})),
+            React.createElement('div',{className:'card-info'},
+              React.createElement('div',{className:'card-title',style:{color:'#fff'}},t('assessment_title')),
+              React.createElement('div',{className:'card-sub',style:{color:'rgba(255,255,255,.8)'}},t('assessment_sub'))
             ),
             React.createElement('i',{className:'ti ti-chevron-right',style:{color:'#fff',fontSize:18}})
           )
@@ -1600,6 +1631,7 @@ function RelationshipScreen(){
     ),
     showIntervention&&React.createElement(InterventionModal,{onClose:()=>setShowIntervention(false)}),
     showCompatTest&&React.createElement(CompatTestModal,{onClose:()=>setShowCompatTest(false)}),
+    showAssessment&&React.createElement(AssessmentModal,{onClose:()=>setShowAssessment(false)}),
     showCoupleChat&&React.createElement(ChatModal,{onClose:()=>setShowCoupleChat(false),channel:'couple'}),
     showFamilyChat&&React.createElement(ChatModal,{onClose:()=>setShowFamilyChat(false),channel:'family'})
   );
@@ -1956,6 +1988,120 @@ function CompatTestModal({onClose}){
       )
     )),
     React.createElement('button',{className:'btn btn-full',style:{background:'var(--rose)',color:'#fff'},onClick:next,disabled:!blockComplete()||submitting},
+      submitting?React.createElement('span',{className:'spinner'}):(step===totalSteps?t('see_result'):t('next_step'))
+    )
+  );
+}
+
+function AssessmentModal({onClose}){
+  const {showToast}=useApp();
+  const [categories,setCategories]=useState(null);
+  const [labels,setLabels]=useState({});
+  const [step,setStep]=useState(0); // 0 = intro, 1..5 = categories, 6 = result
+  const [answers,setAnswers]=useState({});
+  const [result,setResult]=useState(null);
+  const [submitting,setSubmitting]=useState(false);
+
+  useEffect(()=>{
+    api('/assessments/questions?lang='+getLang()).then(r=>{if(r.ok){setCategories(r.data.categories);setLabels(r.data.labels);}});
+  },[]);
+
+  const catKeys=categories?Object.keys(categories):[];
+  const totalSteps=catKeys.length;
+  const currentCatKey=step>=1&&step<=totalSteps?catKeys[step-1]:null;
+  const currentQuestions=currentCatKey?categories[currentCatKey]:[];
+
+  function pick(qid,val){
+    setAnswers(a=>({...a,[qid]:val}));
+  }
+
+  function stepComplete(){
+    if(!currentQuestions.length)return false;
+    return currentQuestions.every(q=>answers[q.id]!=null);
+  }
+
+  async function finish(){
+    setSubmitting(true);
+    const r=await api('/assessments',{method:'POST',body:{answers,lang:getLang()}});
+    setSubmitting(false);
+    if(!r.ok)return showToast(r.error,'error');
+    setResult(r.data);
+    setStep(totalSteps+1);
+  }
+
+  function next(){
+    if(step===totalSteps){finish();return;}
+    setStep(s=>s+1);
+  }
+
+  // INTRO
+  if(step===0){
+    return React.createElement(Modal,{title:t('assessment_title'),onClose},
+      React.createElement('div',{style:{textAlign:'center',marginBottom:16}},
+        React.createElement('div',{style:{fontSize:40,marginBottom:10}},'🧭'),
+        React.createElement('div',{style:{fontSize:14,color:'var(--text2)',lineHeight:1.6}},t('assessment_intro'))
+      ),
+      React.createElement('div',{className:'menu-card',style:{margin:'14px 0'}},
+        catKeys.map(k=>React.createElement('div',{key:k,className:'menu-row',style:{cursor:'default'}},
+          React.createElement('div',{className:'menu-icon',style:{background:'var(--blue-l)'}},React.createElement('i',{className:'ti ti-circle-check',style:{color:'var(--blue)',fontSize:16}})),
+          React.createElement('div',{className:'menu-text'},labels[k]||k)
+        ))
+      ),
+      React.createElement('button',{className:'btn btn-full',style:{background:'var(--blue)',color:'#fff'},onClick:()=>setStep(1),disabled:!categories},
+        categories?t('start_assessment'):React.createElement('span',{className:'spinner'})
+      ),
+      React.createElement('div',{style:{fontSize:11,color:'var(--text3)',textAlign:'center',marginTop:10}},t('assessment_privacy'))
+    );
+  }
+
+  // RESULT
+  if(step===totalSteps+1&&result){
+    return React.createElement(Modal,{title:t('assessment_result_title'),onClose},
+      React.createElement('div',{style:{background:'var(--blue-xl)',border:'1px solid var(--blue-l)',borderRadius:'var(--r2)',padding:'14px',textAlign:'center',marginBottom:16}},
+        React.createElement('div',{style:{fontSize:12,color:'var(--text2)',marginBottom:4}},t('assessment_focus_label')),
+        React.createElement('div',{style:{fontSize:16,fontWeight:800,color:'var(--blue)'}},result.labels?.[result.focus_area]||result.focus_area)
+      ),
+      React.createElement('div',{className:'section-label',style:{padding:'0 0 8px'}},t('assessment_by_category')),
+      React.createElement('div',{className:'menu-card',style:{margin:'0 0 16px'}},
+        Object.entries(result.category_scores).map(([k,v])=>React.createElement('div',{key:k,className:'menu-row',style:{cursor:'default'}},
+          React.createElement('div',{style:{flex:1}},
+            React.createElement('div',{className:'menu-text'},result.labels?.[k]||k),
+            React.createElement('div',{style:{height:6,background:'var(--bg3)',borderRadius:3,marginTop:6,overflow:'hidden'}},
+              React.createElement('div',{style:{height:'100%',width:v+'%',background:k===result.focus_area?'var(--rose)':(v>=75?'var(--green)':v>=55?'var(--amber)':'var(--rose)'),borderRadius:3}})
+            )
+          ),
+          React.createElement('div',{style:{fontSize:13,fontWeight:800,color:'var(--text)',marginLeft:10}},v+'%')
+        ))
+      ),
+      React.createElement('div',{style:{background:'var(--blue-xl)',border:'1px solid var(--blue-l)',borderRadius:'var(--r2)',padding:'12px 14px',fontSize:12,color:'var(--blue)',textAlign:'center',fontWeight:600,lineHeight:1.6,marginBottom:14}},
+        t('assessment_disclaimer')
+      ),
+      React.createElement('button',{className:'btn btn-full',style:{background:'var(--blue)',color:'#fff'},onClick:onClose},t('done'))
+    );
+  }
+
+  // QUESTION STEP
+  return React.createElement(Modal,{title:`${labels[currentCatKey]||''} (${step}/${totalSteps})`,onClose},
+    React.createElement('div',{style:{display:'flex',gap:4,marginBottom:18}},
+      catKeys.map((k,i)=>React.createElement('div',{key:k,style:{flex:1,height:4,borderRadius:2,background:i<step?'var(--blue)':'var(--border)'}}))
+    ),
+    currentQuestions.map(q=>React.createElement('div',{key:q.id,style:{marginBottom:18}},
+      React.createElement('div',{style:{fontSize:14,fontWeight:600,color:'var(--text)',marginBottom:10,lineHeight:1.5}},q.text),
+      React.createElement('div',{style:{display:'flex',gap:5}},
+        [1,2,3,4,5].map(n=>React.createElement('div',{key:n,
+          onClick:()=>pick(q.id,n),
+          style:{flex:1,padding:'10px 0',borderRadius:8,textAlign:'center',cursor:'pointer',fontWeight:700,fontSize:14,
+            border:answers[q.id]===n?'2px solid var(--blue)':'1.5px solid var(--border)',
+            background:answers[q.id]===n?'var(--blue-l)':'var(--bg2)',
+            color:answers[q.id]===n?'var(--blue)':'var(--text2)'}
+        },n))
+      ),
+      React.createElement('div',{style:{display:'flex',justifyContent:'space-between',fontSize:10,color:'var(--text3)',marginTop:4}},
+        React.createElement('span',null,t('scale_disagree')),
+        React.createElement('span',null,t('scale_agree'))
+      )
+    )),
+    React.createElement('button',{className:'btn btn-full',style:{background:'var(--blue)',color:'#fff'},onClick:next,disabled:!stepComplete()||submitting},
       submitting?React.createElement('span',{className:'spinner'}):(step===totalSteps?t('see_result'):t('next_step'))
     )
   );
