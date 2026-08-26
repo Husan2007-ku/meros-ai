@@ -236,6 +236,16 @@ def init_db():
         recurring   INTEGER DEFAULT 1,
         created_at  TEXT DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS family_assessments (
+        id          TEXT PRIMARY KEY,
+        family_id   TEXT NOT NULL,
+        user_id     TEXT NOT NULL,
+        answers     TEXT NOT NULL,
+        category_scores TEXT NOT NULL,
+        focus_area  TEXT,
+        created_at  TEXT DEFAULT (datetime('now'))
+    );
     """)
     db.commit()
 
@@ -1265,6 +1275,97 @@ BLOCK_LABELS = {
     'en': {'values':'Values','expectations':'Expectations','communication':'Communication style','parenting':'Parenting','finance':'Financial approach'},
 }
 
+# --- FAMILY ASSESSMENT QUESTION BANK ---
+ASSESSMENT_QUESTIONS = {
+    'uz': {
+        'communication': [
+            {'id': 'co1', 'text': "Fikringizni oila a'zolaringizga ochiq aytasizmi, yoki ko'pincha ichingizda saqlaysizmi?"},
+            {'id': 'co2', 'text': "Muhim mavzularni muhokama qilish uchun yetarli vaqt topa olasizmi?"},
+            {'id': 'co3', 'text': "Suhbat paytida bir-biringizni tinglaysizmi, yoki ko'proq gapirasizmi?"},
+        ],
+        'conflict': [
+            {'id': 'cf1', 'text': "Nizo chiqqanda, muammoni hal qilishga harakat qilasizmi, yoki tortishuv uzoq davom etadimi?"},
+            {'id': 'cf2', 'text': "Kelishmovchilikdan keyin yarashish qanchalik tez sodir bo'ladi?"},
+            {'id': 'cf3', 'text': "Nizo paytida ovozingizni ko'tarasizmi, yoki bosiqlikni saqlaysizmi?"},
+        ],
+        'connection': [
+            {'id': 'cn1', 'text': "Oila bilan birga o'tkazadigan sifatli vaqtingiz yetarlimi?"},
+            {'id': 'cn2', 'text': "Bir-biringizga qadrlanayotganingizni his qildirasizmi?"},
+            {'id': 'cn3', 'text': "Kunlik hayotda bir-biringiz bilan qanchalik yaqinsiz?"},
+        ],
+        'parenting': [
+            {'id': 'pr1', 'text': "Bola tarbiyasi bo'yicha qarorlarni birgalikda qabul qilasizmi?"},
+            {'id': 'pr2', 'text': "Farzandingiz bilan kuniga qancha sifatli vaqt o'tkazasiz?"},
+            {'id': 'pr3', 'text': "Tarbiya usullari borasida farzandingiz oldida kelishmovchilik ko'rsatasizmi?"},
+        ],
+        'finance': [
+            {'id': 'fn1', 'text': "Oilaviy xarajatlar rejasi bormi va unga amal qilinadimi?"},
+            {'id': 'fn2', 'text': "Moliyaviy qarorlarni birgalikda muhokama qilasizmi?"},
+            {'id': 'fn3', 'text': "Kutilmagan xarajatlar uchun jamg'arma bormi?"},
+        ],
+    },
+    'ru': {
+        'communication': [
+            {'id': 'co1', 'text': 'Открыто ли вы делитесь мнением с членами семьи, или чаще держите в себе?'},
+            {'id': 'co2', 'text': 'Хватает ли времени на обсуждение важных тем?'},
+            {'id': 'co3', 'text': 'Слушаете ли вы друг друга во время разговора, или больше говорите сами?'},
+        ],
+        'conflict': [
+            {'id': 'cf1', 'text': 'Когда возникает спор, пытаетесь ли вы решить проблему, или спор затягивается надолго?'},
+            {'id': 'cf2', 'text': 'Как быстро происходит примирение после разногласия?'},
+            {'id': 'cf3', 'text': 'Повышаете ли вы голос во время конфликта, или сохраняете спокойствие?'},
+        ],
+        'connection': [
+            {'id': 'cn1', 'text': 'Достаточно ли качественного времени вы проводите с семьёй?'},
+            {'id': 'cn2', 'text': 'Чувствуете ли вы, что цените друг друга?'},
+            {'id': 'cn3', 'text': 'Насколько вы близки друг с другом в повседневной жизни?'},
+        ],
+        'parenting': [
+            {'id': 'pr1', 'text': 'Принимаете ли вы решения о воспитании детей совместно?'},
+            {'id': 'pr2', 'text': 'Сколько качественного времени в день вы проводите с ребёнком?'},
+            {'id': 'pr3', 'text': 'Бывают ли разногласия по методам воспитания при ребёнке?'},
+        ],
+        'finance': [
+            {'id': 'fn1', 'text': 'Есть ли план семейных расходов и соблюдается ли он?'},
+            {'id': 'fn2', 'text': 'Обсуждаете ли вы финансовые решения совместно?'},
+            {'id': 'fn3', 'text': 'Есть ли накопления на непредвиденные расходы?'},
+        ],
+    },
+    'en': {
+        'communication': [
+            {'id': 'co1', 'text': 'Do you share your thoughts openly with family, or keep them to yourself?'},
+            {'id': 'co2', 'text': 'Do you find enough time to discuss important topics?'},
+            {'id': 'co3', 'text': 'Do you listen to each other during conversations, or mostly talk?'},
+        ],
+        'conflict': [
+            {'id': 'cf1', 'text': 'When a conflict arises, do you try to resolve it, or does the argument drag on?'},
+            {'id': 'cf2', 'text': 'How quickly do you reconcile after a disagreement?'},
+            {'id': 'cf3', 'text': 'Do you raise your voice during conflict, or stay calm?'},
+        ],
+        'connection': [
+            {'id': 'cn1', 'text': 'Do you get enough quality time together as a family?'},
+            {'id': 'cn2', 'text': 'Do you feel appreciated by each other?'},
+            {'id': 'cn3', 'text': 'How close do you feel to each other in daily life?'},
+        ],
+        'parenting': [
+            {'id': 'pr1', 'text': 'Do you make parenting decisions together?'},
+            {'id': 'pr2', 'text': 'How much quality time do you spend with your child daily?'},
+            {'id': 'pr3', 'text': 'Do you disagree on parenting methods in front of your child?'},
+        ],
+        'finance': [
+            {'id': 'fn1', 'text': 'Do you have a family spending plan, and do you follow it?'},
+            {'id': 'fn2', 'text': 'Do you discuss financial decisions together?'},
+            {'id': 'fn3', 'text': 'Do you have savings for unexpected expenses?'},
+        ],
+    },
+}
+
+ASSESSMENT_LABELS = {
+    'uz': {'communication': 'Muloqot', 'conflict': 'Nizo boshqaruvi', 'connection': "Yaqinlik/bog'lanish", 'parenting': 'Bola tarbiyasi', 'finance': 'Moliya'},
+    'ru': {'communication': 'Общение', 'conflict': 'Управление конфликтом', 'connection': 'Близость/связь', 'parenting': 'Воспитание детей', 'finance': 'Финансы'},
+    'en': {'communication': 'Communication', 'conflict': 'Conflict handling', 'connection': 'Connection', 'parenting': 'Parenting', 'finance': 'Finance'},
+}
+
 @app.route('/api/compatibility/questions', methods=['GET'])
 @require_auth
 @require_adult
@@ -1333,6 +1434,80 @@ def get_compat_history():
             d['scores'] = {}
         result.append(d)
     return ok(result)
+
+# --- FAMILY ASSESSMENT ---
+
+@app.route('/api/assessments/questions', methods=['GET'])
+@require_auth
+@require_adult
+def get_assessment_questions():
+    lang = request.args.get('lang', 'uz')
+    if lang not in ASSESSMENT_QUESTIONS:
+        lang = 'uz'
+    return ok({'categories': ASSESSMENT_QUESTIONS[lang], 'labels': ASSESSMENT_LABELS[lang]})
+
+@app.route('/api/assessments', methods=['POST'])
+@require_auth
+@require_adult
+def submit_assessment():
+    body = request.json or {}
+    answers = body.get('answers')  # {question_id: 1-5}
+    lang = body.get('lang', 'uz')
+    if lang not in ASSESSMENT_QUESTIONS:
+        lang = 'uz'
+    if not answers or not isinstance(answers, dict):
+        return err('answers majburiy')
+
+    # Score each category 0-100 (avg of 1-5 answers / 5 * 100). This is NOT a diagnosis --
+    # it only flags which category deserves attention (lowest score = focus_area).
+    category_scores = {}
+    for category, questions in ASSESSMENT_QUESTIONS[lang].items():
+        vals = [answers.get(q['id']) for q in questions if answers.get(q['id']) is not None]
+        if not vals:
+            category_scores[category] = None
+            continue
+        vals = [int(v) for v in vals]
+        avg = sum(vals) / len(vals)
+        category_scores[category] = round(avg / 5 * 100)
+
+    scored = {k: v for k, v in category_scores.items() if v is not None}
+    if not scored:
+        return err('kamida bitta savolga javob bering')
+    focus_area = min(scored, key=scored.get)
+
+    aid = str(uuid.uuid4())
+    db = get_db()
+    db.execute(
+        "INSERT INTO family_assessments(id,family_id,user_id,answers,category_scores,focus_area) VALUES(?,?,?,?,?,?)",
+        (aid, g.family_id, g.user_id, json.dumps(answers), json.dumps(category_scores), focus_area)
+    )
+    db.commit()
+
+    return ok({
+        'id': aid,
+        'category_scores': category_scores,
+        'focus_area': focus_area,
+        'labels': ASSESSMENT_LABELS[lang],
+    }), 201
+
+@app.route('/api/assessments/history', methods=['GET'])
+@require_auth
+def get_assessment_history():
+    db = get_db()
+    rows = db.execute(
+        "SELECT id,category_scores,focus_area,created_at FROM family_assessments WHERE family_id=? ORDER BY created_at DESC",
+        (g.family_id,)).fetchall()
+    result = []
+    for r in rows:
+        d = dict(r)
+        try:
+            d['category_scores'] = json.loads(d['category_scores'])
+        except Exception:
+            d['category_scores'] = {}
+        result.append(d)
+    return ok(result)
+
+# --- FAMILY ASSESSMENT END ---
 
 # ─── MESSAGES (FAMILY, COUPLE, DIRECT) ───────────────────────────────────────
 
