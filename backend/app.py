@@ -8,6 +8,7 @@ from functools import wraps
 import sqlite3
 import hashlib
 import hmac
+from werkzeug.security import generate_password_hash, check_password_hash
 import json
 import uuid
 import datetime
@@ -15,12 +16,20 @@ import jwt
 import os
 import re
 
+def verify_password(stored_hash, plain_password):
+    """Backward-compatible check: new/updated accounts use salted pbkdf2
+    hashes (werkzeug), legacy accounts still have unsalted sha256 hashes
+    from before this fix -- both are verified so no one is locked out."""
+    if stored_hash and (stored_hash.startswith('pbkdf2:') or stored_hash.startswith('scrypt:')):
+        return check_password_hash(stored_hash, plain_password)
+    return stored_hash == hashlib.sha256(plain_password.encode()).hexdigest()
+
+
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'frontend')
 
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'meros-ai-secret-2026-dev')
 app.config['MAX_CONTENT_LENGTH'] = 12 * 1024 * 1024  # 12MB hard cap (covers our largest media type + headers)
-app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024  # 4MB max request size
 DATA_DIR = os.environ.get('DATA_DIR', '/data' if os.path.exists('/data') else os.path.dirname(__file__))
 DB_PATH = os.path.join(DATA_DIR, 'meros.db')
 
@@ -305,7 +314,7 @@ def _seed_demo(db):
     user_id = str(uuid.uuid4())
     spouse_id = str(uuid.uuid4())
 
-    pw = hashlib.sha256("demo123".encode()).hexdigest()
+    pw = generate_password_hash("demo123")
 
     db.execute("INSERT INTO families(id,name,created_by,invite_code) VALUES (?,?,?,?)",
                (fam_id, "Malikov oilasi", user_id, "MEROS01"))
@@ -545,7 +554,7 @@ def register():
         return err("16 yoshdan kichik foydalanuvchilar faqat taklif kodi orqali oilaga qo'shilishi mumkin")
 
     user_id = str(uuid.uuid4())
-    pw_hash = hashlib.sha256(password.encode()).hexdigest()
+    pw_hash = generate_password_hash(password)
 
     # If an invite code is provided, join that existing family instead of creating a new one
     fam_id = None
@@ -582,8 +591,7 @@ def login():
     password = body.get('password', '').strip()
     db = get_db()
     user = db.execute("SELECT * FROM users WHERE phone=?", (phone,)).fetchone()
-    pw_hash = hashlib.sha256(password.encode()).hexdigest()
-    if not user or user['password_hash'] != pw_hash:
+    if not user or not verify_password(user['password_hash'], password):
         return err("Telefon yoki parol noto'g'ri", 401)
     try:
         age = datetime.date.today().year - int((user['birth_date'] or '2000')[:4])
@@ -676,11 +684,10 @@ def change_password():
 
     db = get_db()
     user = db.execute("SELECT password_hash FROM users WHERE id=?", (g.user_id,)).fetchone()
-    current_hash = hashlib.sha256(current_pw.encode()).hexdigest()
-    if user['password_hash'] != current_hash:
+    if not user or not verify_password(user['password_hash'], current_pw):
         return err("Joriy parol noto'g'ri")
 
-    new_hash = hashlib.sha256(new_pw.encode()).hexdigest()
+    new_hash = generate_password_hash(new_pw)
     db.execute("UPDATE users SET password_hash=? WHERE id=?", (new_hash, g.user_id))
     db.commit()
     return ok({'message': "Parol muvaffaqiyatli o'zgartirildi"})
