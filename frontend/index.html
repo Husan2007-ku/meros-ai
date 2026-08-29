@@ -326,6 +326,8 @@ const I18N={
     assessment_result_title:'Baholash natijasi',assessment_by_category:"Yo'nalishlar bo'yicha",
     assessment_focus_label:"Ko'proq e'tibor talab qiladigan yo'nalish",
     assessment_disclaimer:"Bu natija diagnoz emas — shunchaki qaysi yo'nalishda suhbatlashish foydali ekanini ko'rsatadi.",
+    ai_insight_btn:'AI maslahatini olish',ai_insight_loading:'AI fikr yuritmoqda...',
+    ai_insight_title:'AI maslahati',ai_insight_error:"AI hozircha javob bera olmadi, birozdan keyin urinib ko'ring",
     done:'Tayyor',
     invite_code_lbl:'Taklif kodi (ixtiyoriy)',invite_code_placeholder:'Masalan: K7M3A9',
     invite_code_hint:"Agar sherigingiz oila yaratgan bo'lsa, undan kodni so'rang",
@@ -478,6 +480,8 @@ const I18N={
     assessment_result_title:'Результат оценки',assessment_by_category:'По направлениям',
     assessment_focus_label:'Направление, требующее больше внимания',
     assessment_disclaimer:'Этот результат не диагноз — он лишь показывает, о чём полезно поговорить.',
+    ai_insight_btn:'Получить совет от AI',ai_insight_loading:'AI обдумывает...',
+    ai_insight_title:'Совет AI',ai_insight_error:'AI сейчас не может ответить, попробуйте позже',
     done:'Готово',
     invite_code_lbl:'Код приглашения (необязательно)',invite_code_placeholder:'Например: K7M3A9',
     invite_code_hint:'Если ваш партнёр уже создал семью, спросите у него код',
@@ -631,6 +635,8 @@ const I18N={
     assessment_result_title:'Assessment result',assessment_by_category:'By category',
     assessment_focus_label:'Area that needs more attention',
     assessment_disclaimer:"This result is not a diagnosis -- it just shows what's worth talking about.",
+    ai_insight_btn:'Get AI advice',ai_insight_loading:'AI is thinking...',
+    ai_insight_title:'AI advice',ai_insight_error:'AI is unavailable right now, please try again later',
     done:'Done',
     invite_code_lbl:'Invite code (optional)',invite_code_placeholder:'E.g. K7M3A9',
     invite_code_hint:'If your partner already created a family, ask them for the code',
@@ -836,11 +842,7 @@ function AuthScreen(){
           React.createElement('div',{style:{fontSize:11,color:'var(--text3)',marginTop:4}},t('invite_code_hint'))
         ),
         React.createElement('button',{className:'btn btn-primary btn-full',type:'submit',disabled:loading},
-          loading?React.createElement('span',{className:'spinner'}):tab==='login'?t('login'):t('register_title')),
-        React.createElement('div',{className:'demo-box'},
-          React.createElement('strong',null,t('demo_account')+':'),' +998901234567 / demo123',React.createElement('br'),
-          React.createElement('span',{style:{textDecoration:'underline',cursor:'pointer'},onClick:()=>{setPhone('+998901234567');setPw('demo123')}},'Avtomatik to\'ldirish →')
-        )
+          loading?React.createElement('span',{className:'spinner'}):tab==='login'?t('login'):t('register_title'))
       )
     )
   );
@@ -2001,10 +2003,21 @@ function AssessmentModal({onClose}){
   const [answers,setAnswers]=useState({});
   const [result,setResult]=useState(null);
   const [submitting,setSubmitting]=useState(false);
+  const [insight,setInsight]=useState(null);
+  const [insightLoading,setInsightLoading]=useState(false);
+  const [insightError,setInsightError]=useState(null);
 
   useEffect(()=>{
     api('/assessments/questions?lang='+getLang()).then(r=>{if(r.ok){setCategories(r.data.categories);setLabels(r.data.labels);}});
   },[]);
+
+  async function getInsight(){
+    setInsightLoading(true);setInsightError(null);
+    const r=await api(`/assessments/${result.id}/insight`,{method:'POST',body:{lang:getLang()}});
+    setInsightLoading(false);
+    if(!r.ok)return setInsightError(r.error||t('ai_insight_error'));
+    setInsight(r.data.insight);
+  }
 
   const catKeys=categories?Object.keys(categories):[];
   const totalSteps=catKeys.length;
@@ -2075,6 +2088,14 @@ function AssessmentModal({onClose}){
       ),
       React.createElement('div',{style:{background:'var(--blue-xl)',border:'1px solid var(--blue-l)',borderRadius:'var(--r2)',padding:'12px 14px',fontSize:12,color:'var(--blue)',textAlign:'center',fontWeight:600,lineHeight:1.6,marginBottom:14}},
         t('assessment_disclaimer')
+      ),
+      insight&&React.createElement('div',{style:{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--r2)',padding:'14px',marginBottom:14}},
+        React.createElement('div',{style:{fontSize:11,fontWeight:800,color:'var(--blue)',textTransform:'uppercase',marginBottom:6}},t('ai_insight_title')),
+        React.createElement('div',{style:{fontSize:13,color:'var(--text)',lineHeight:1.6}},insight)
+      ),
+      insightError&&React.createElement('div',{style:{fontSize:12,color:'var(--rose)',textAlign:'center',marginBottom:14}},insightError),
+      !insight&&React.createElement('button',{className:'btn btn-full',style:{background:'var(--bg2)',color:'var(--blue)',border:'1.5px solid var(--blue)',marginBottom:10},onClick:getInsight,disabled:insightLoading},
+        insightLoading?React.createElement('span',{className:'spinner'}):t('ai_insight_btn')
       ),
       React.createElement('button',{className:'btn btn-full',style:{background:'var(--blue)',color:'#fff'},onClick:onClose},t('done'))
     );

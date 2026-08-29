@@ -25,6 +25,78 @@ def verify_password(stored_hash, plain_password):
     return stored_hash == hashlib.sha256(plain_password.encode()).hexdigest()
 
 
+# --- Field-level encryption for sensitive ID data (passport number, series, PINFL) ---
+from cryptography.fernet import Fernet, InvalidToken
+
+_ENCRYPTION_KEY = os.environ.get('ENCRYPTION_KEY')
+if not _ENCRYPTION_KEY:
+    # Dev-only fallback so the app still boots locally without config -- NOT safe for
+    # production. Render deployment must set ENCRYPTION_KEY (see .env.example / README).
+    _ENCRYPTION_KEY = 'jK71u9y4v0Q6z2A8b3C5d7E9f1G3h5J7k9L1m3N5p7Q='
+    print("WARNING: ENCRYPTION_KEY not set -- using an insecure dev default. "
+          "Set ENCRYPTION_KEY in production (Render env vars).")
+_fernet = Fernet(_ENCRYPTION_KEY.encode() if isinstance(_ENCRYPTION_KEY, str) else _ENCRYPTION_KEY)
+
+def encrypt_field(value):
+    if value is None or value == '':
+        return value
+    return _fernet.encrypt(str(value).encode()).decode()
+
+def decrypt_field(value):
+    """Backward-compatible: rows written before this fix hold plaintext, so a failed
+    decrypt just returns the original value instead of erroring out."""
+    if value is None or value == '':
+        return value
+    try:
+        return _fernet.decrypt(value.encode()).decode()
+    except (InvalidToken, ValueError, Exception):
+        return value
+
+# --- Gemini-powered AI Family Coach (real LLM call, not a rule-based score) ---
+import requests
+
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-2.0-flash')
+
+def generate_ai_coach_insight(focus_area, category_scores, labels, lang):
+    """Calls Gemini for a short, safety-conscious insight on the assessment's weakest
+    category. Returns (text, error) -- error is a user-facing message, never raises."""
+    if not GEMINI_API_KEY:
+        return None, "AI xizmati hozircha sozlanmagan (GEMINI_API_KEY o'rnatilmagan)"
+
+    focus_label = labels.get(focus_area, focus_area)
+    scores_desc = ', '.join(
+        f"{labels.get(k, k)}: {v}%" for k, v in category_scores.items() if v is not None)
+
+    prompt = (
+        "Sen MEROS AI ilovasining oilaviy wellbeing yordamchisisan. "
+        "Foydalanuvchi 5 yo'nalishli o'z-o'zini baholash testini topshirdi.\n"
+        f"Natijalar: {scores_desc}.\n"
+        f"Eng ko'p e'tibor talab qiladigan yo'nalish: {focus_label}.\n\n"
+        "Shu yo'nalish bo'yicha 2-3 jumlali, iliq va amaliy maslahat yoz.\n"
+        "QAT'IY QOIDALAR: tashxis qo'yma; professional psixolog yoki mutaxassis o'rnini "
+        "bosma; manbasiz statistika yoki foiz keltirma; ajrashish yoki alohida yashashni "
+        "tavsiya qilma; agar zo'ravonlik yoki jiddiy xavf alomatlari sezilsa, albatta "
+        "mutaxassisga murojaat qilishni tavsiya qil. Javobni o'zbek tilida yoz."
+    )
+
+    try:
+        resp = requests.post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent",
+            params={'key': GEMINI_API_KEY},
+            json={"contents": [{"parts": [{"text": prompt}]}]},
+            timeout=15
+        )
+        data = resp.json()
+        if resp.status_code != 200:
+            msg = (data.get('error') or {}).get('message', 'AI xizmati xatosi')
+            return None, msg
+        text = data['candidates'][0]['content']['parts'][0]['text']
+        return text.strip(), None
+    except Exception as e:
+        return None, f"AI xizmati vaqtincha ishlamayapti ({e.__class__.__name__})"
+
+
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'frontend')
 
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
@@ -244,6 +316,16 @@ def init_db():
         answers     TEXT NOT NULL,
         category_scores TEXT NOT NULL,
         focus_area  TEXT,
+        created_at  TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS coach_insights (
+        id          TEXT PRIMARY KEY,
+        family_id   TEXT NOT NULL,
+        user_id     TEXT NOT NULL,
+        assessment_id TEXT,
+        focus_area  TEXT,
+        insight_text TEXT NOT NULL,
         created_at  TEXT DEFAULT (datetime('now'))
     );
     """)
@@ -1507,6 +1589,38 @@ def get_assessment_history():
         result.append(d)
     return ok(result)
 
+@app.route('/api/assessments/<aid>/insight', methods=['POST'])
+@require_auth
+@require_adult
+def get_assessment_insight(aid):
+    db = get_db()
+    row = db.execute(
+        "SELECT * FROM family_assessments WHERE id=? AND family_id=?",
+        (aid, g.family_id)).fetchone()
+    if not row:
+        return err("Baholash topilmadi", 404)
+
+    lang = (request.json or {}).get('lang', 'uz')
+    if lang not in ASSESSMENT_LABELS:
+        lang = 'uz'
+    labels = ASSESSMENT_LABELS[lang]
+    try:
+        category_scores = json.loads(row['category_scores'])
+    except Exception:
+        category_scores = {}
+
+    text, error = generate_ai_coach_insight(row['focus_area'], category_scores, labels, lang)
+    if error:
+        return err(error, 503)
+
+    iid = str(uuid.uuid4())
+    db.execute(
+        "INSERT INTO coach_insights(id,family_id,user_id,assessment_id,focus_area,insight_text) VALUES(?,?,?,?,?,?)",
+        (iid, g.family_id, g.user_id, aid, row['focus_area'], text))
+    db.commit()
+
+    return ok({'insight': text})
+
 # --- FAMILY ASSESSMENT END ---
 
 # ─── MESSAGES (FAMILY, COUPLE, DIRECT) ───────────────────────────────────────
@@ -1615,7 +1729,11 @@ def get_passport(member_id):
     row = db.execute(
         "SELECT * FROM passport_data WHERE family_id=? AND member_id=?",
         (g.family_id, member_id)).fetchone()
-    return ok(row_to_dict(row) if row else None)
+    d = row_to_dict(row)
+    if d:
+        for f in ('passport_series', 'passport_number', 'pinfl'):
+            d[f] = decrypt_field(d.get(f))
+    return ok(d)
 
 @app.route('/api/passport/<member_id>', methods=['PUT'])
 @require_auth
@@ -1634,15 +1752,21 @@ def save_passport(member_id):
         (g.family_id, member_id)).fetchone()
     fields = ['full_name', 'passport_series', 'passport_number', 'birth_date',
               'birth_place', 'issued_by', 'issued_date', 'expiry_date', 'pinfl']
+    encrypted_fields = {'passport_series', 'passport_number', 'pinfl'}
+
+    def field_value(f):
+        v = body.get(f, '')
+        return encrypt_field(v) if f in encrypted_fields else v
+
     if existing:
         set_clause = ', '.join(f"{f}=?" for f in fields) + ", updated_at=datetime('now')"
-        values = [body.get(f, '') for f in fields] + [existing['id']]
+        values = [field_value(f) for f in fields] + [existing['id']]
         db.execute(f"UPDATE passport_data SET {set_clause} WHERE id=?", values)
     else:
         pid = str(uuid.uuid4())
         cols = ', '.join(fields)
         placeholders = ', '.join('?' for _ in fields)
-        values = [pid, g.family_id, member_id] + [body.get(f, '') for f in fields]
+        values = [pid, g.family_id, member_id] + [field_value(f) for f in fields]
         db.execute(
             f"INSERT INTO passport_data(id,family_id,member_id,{cols}) VALUES(?,?,?,{placeholders})",
             values)
@@ -1650,7 +1774,10 @@ def save_passport(member_id):
     row = db.execute(
         "SELECT * FROM passport_data WHERE family_id=? AND member_id=?",
         (g.family_id, member_id)).fetchone()
-    return ok(row_to_dict(row))
+    d = row_to_dict(row)
+    for f in ('passport_series', 'passport_number', 'pinfl'):
+        d[f] = decrypt_field(d.get(f))
+    return ok(d)
 
 # ─── IMPORTANT DATES ─────────────────────────────────────────────────────────
 
