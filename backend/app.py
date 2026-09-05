@@ -52,23 +52,19 @@ def decrypt_field(value):
     except (InvalidToken, ValueError, Exception):
         return value
 
-# --- Gemini-powered AI Family Coach (real LLM call, not a rule-based score) ---
+# --- AI Family Coach: Claude (primary) with OpenAI fallback (real LLM calls) ---
 import requests
 
-GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
-GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-2.0-flash')
+ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY')
+ANTHROPIC_MODEL = os.environ.get('ANTHROPIC_MODEL', 'claude-sonnet-4-5')
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-4o-mini')
 
-def generate_ai_coach_insight(focus_area, category_scores, labels, lang):
-    """Calls Gemini for a short, safety-conscious insight on the assessment's weakest
-    category. Returns (text, error) -- error is a user-facing message, never raises."""
-    if not GEMINI_API_KEY:
-        return None, "AI xizmati hozircha sozlanmagan (GEMINI_API_KEY o'rnatilmagan)"
-
+def _build_coach_prompt(focus_area, category_scores, labels, lang):
     focus_label = labels.get(focus_area, focus_area)
     scores_desc = ', '.join(
         f"{labels.get(k, k)}: {v}%" for k, v in category_scores.items() if v is not None)
-
-    prompt = (
+    return (
         "Sen MEROS AI ilovasining oilaviy wellbeing yordamchisisan. "
         "Foydalanuvchi 5 yo'nalishli o'z-o'zini baholash testini topshirdi.\n"
         f"Natijalar: {scores_desc}.\n"
@@ -80,21 +76,71 @@ def generate_ai_coach_insight(focus_area, category_scores, labels, lang):
         "mutaxassisga murojaat qilishni tavsiya qil. Javobni o'zbek tilida yoz."
     )
 
+def _try_claude(prompt):
+    if not ANTHROPIC_API_KEY:
+        return None, "ANTHROPIC_API_KEY o'rnatilmagan"
     try:
         resp = requests.post(
-            f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent",
-            params={'key': GEMINI_API_KEY},
-            json={"contents": [{"parts": [{"text": prompt}]}]},
-            timeout=15
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": ANTHROPIC_API_KEY,
+                "anthropic-version": "2023-06-01",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": ANTHROPIC_MODEL,
+                "max_tokens": 300,
+                "messages": [{"role": "user", "content": prompt}],
+            },
+            timeout=15,
         )
         data = resp.json()
         if resp.status_code != 200:
-            msg = (data.get('error') or {}).get('message', 'AI xizmati xatosi')
-            return None, msg
-        text = data['candidates'][0]['content']['parts'][0]['text']
+            return None, (data.get('error') or {}).get('message', 'Claude xatosi')
+        text = data['content'][0]['text']
         return text.strip(), None
     except Exception as e:
-        return None, f"AI xizmati vaqtincha ishlamayapti ({e.__class__.__name__})"
+        return None, f"Claude vaqtincha ishlamayapti ({e.__class__.__name__})"
+
+def _try_openai(prompt):
+    if not OPENAI_API_KEY:
+        return None, "OPENAI_API_KEY o'rnatilmagan"
+    try:
+        resp = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {OPENAI_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": OPENAI_MODEL,
+                "max_tokens": 300,
+                "messages": [{"role": "user", "content": prompt}],
+            },
+            timeout=15,
+        )
+        data = resp.json()
+        if resp.status_code != 200:
+            return None, (data.get('error') or {}).get('message', 'OpenAI xatosi')
+        text = data['choices'][0]['message']['content']
+        return text.strip(), None
+    except Exception as e:
+        return None, f"OpenAI vaqtincha ishlamayapti ({e.__class__.__name__})"
+
+def generate_ai_coach_insight(focus_area, category_scores, labels, lang):
+    """Claude birinchi urinadi; ishlamasa OpenAI'ga fallback qiladi. Ikkalasi ham
+    muvaffaqiyatsiz bo'lsa, foydalanuvchiga tushunarli xato qaytaradi (crash bermaydi)."""
+    prompt = _build_coach_prompt(focus_area, category_scores, labels, lang)
+
+    text, error1 = _try_claude(prompt)
+    if text:
+        return text, None
+
+    text, error2 = _try_openai(prompt)
+    if text:
+        return text, None
+
+    return None, f"AI xizmatlari hozircha javob bermayapti (Claude: {error1}; OpenAI: {error2})"
 
 
 FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'frontend')
