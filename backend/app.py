@@ -374,6 +374,21 @@ def init_db():
         insight_text TEXT NOT NULL,
         created_at  TEXT DEFAULT (datetime('now'))
     );
+
+    CREATE TABLE IF NOT EXISTS daily_checkins (
+        id          TEXT PRIMARY KEY,
+        family_id   TEXT NOT NULL,
+        user_id     TEXT NOT NULL,
+        checkin_date TEXT NOT NULL,
+        question_id TEXT,
+        question_text TEXT,
+        answer_text TEXT,
+        task_id     TEXT,
+        task_text   TEXT,
+        task_done   INTEGER DEFAULT 0,
+        created_at  TEXT DEFAULT (datetime('now')),
+        UNIQUE(family_id, user_id, checkin_date)
+    );
     """)
     db.commit()
 
@@ -1494,6 +1509,128 @@ ASSESSMENT_LABELS = {
     'en': {'communication': 'Communication', 'conflict': 'Conflict handling', 'connection': 'Connection', 'parenting': 'Parenting', 'finance': 'Finance'},
 }
 
+# --- DAILY 10: kunlik 10 daqiqalik oila/juftlik rasmi (savol + kichik vazifa) ---
+DAILY10_QUESTIONS = {
+    'uz': [
+        {'id': 'dq1', 'text': 'Bugun nimani qadrladingiz?'},
+        {'id': 'dq2', 'text': 'Bugun sherigingizga qanday yordam berdingiz?'},
+        {'id': 'dq3', 'text': 'Bugun oilangizda eng yaxshi lahza qaysi edi?'},
+        {'id': 'dq4', 'text': 'Bugun kimdir sizni kuldirdimi?'},
+        {'id': 'dq5', 'text': 'Bugun nimadan minnatdorsiz?'},
+        {'id': 'dq6', 'text': 'Bugun sherigingiz bilan qanday suhbatlashdingiz?'},
+        {'id': 'dq7', 'text': "Bugun farzandingiz bilan qanday vaqt o'tkazdingiz?"},
+        {'id': 'dq8', 'text': "Bugun o'zingizni qanday his qildingiz?"},
+        {'id': 'dq9', 'text': 'Bugun oilangiz uchun nima qilishga ulgurmadingiz?'},
+        {'id': 'dq10', 'text': 'Bugun kimga rahmat aytishni xohlaysiz?'},
+        {'id': 'dq11', 'text': 'Bugun eng katta qiyinchilik nima edi?'},
+        {'id': 'dq12', 'text': "Bugun o'zingiz haqingizda nimani angladingiz?"},
+        {'id': 'dq13', 'text': 'Bugun oilangiz bilan qanday reja tuzdingiz?'},
+        {'id': 'dq14', 'text': 'Bugun eng yaxshi qaror qanday edi?'},
+    ],
+    'ru': [
+        {'id': 'dq1', 'text': 'Что вы сегодня оценили?'},
+        {'id': 'dq2', 'text': 'Как вы сегодня помогли партнёру?'},
+        {'id': 'dq3', 'text': 'Какой момент сегодня был лучшим в семье?'},
+        {'id': 'dq4', 'text': 'Кто-то сегодня рассмешил вас?'},
+        {'id': 'dq5', 'text': 'За что вы сегодня благодарны?'},
+        {'id': 'dq6', 'text': 'О чём вы говорили с партнёром сегодня?'},
+        {'id': 'dq7', 'text': 'Как вы провели время с ребёнком сегодня?'},
+        {'id': 'dq8', 'text': 'Как вы себя сегодня чувствовали?'},
+        {'id': 'dq9', 'text': 'Что вы не успели сделать для семьи сегодня?'},
+        {'id': 'dq10', 'text': 'Кого вы хотите сегодня поблагодарить?'},
+        {'id': 'dq11', 'text': 'Какая была самая большая трудность сегодня?'},
+        {'id': 'dq12', 'text': 'Что вы поняли о себе сегодня?'},
+        {'id': 'dq13', 'text': 'Какие планы вы построили с семьёй сегодня?'},
+        {'id': 'dq14', 'text': 'Каким было лучшее решение сегодня?'},
+    ],
+    'en': [
+        {'id': 'dq1', 'text': 'What did you appreciate today?'},
+        {'id': 'dq2', 'text': 'How did you help your partner today?'},
+        {'id': 'dq3', 'text': 'What was the best family moment today?'},
+        {'id': 'dq4', 'text': 'Did someone make you laugh today?'},
+        {'id': 'dq5', 'text': 'What are you grateful for today?'},
+        {'id': 'dq6', 'text': 'What did you talk about with your partner today?'},
+        {'id': 'dq7', 'text': 'How did you spend time with your child today?'},
+        {'id': 'dq8', 'text': 'How did you feel today?'},
+        {'id': 'dq9', "text": "What didn't you get to do for your family today?"},
+        {'id': 'dq10', 'text': 'Who do you want to thank today?'},
+        {'id': 'dq11', 'text': 'What was the biggest challenge today?'},
+        {'id': 'dq12', 'text': 'What did you learn about yourself today?'},
+        {'id': 'dq13', 'text': 'What plans did you make with your family today?'},
+        {'id': 'dq14', 'text': 'What was the best decision today?'},
+    ],
+}
+
+DAILY10_TASKS = {
+    'uz': [
+        {'id': 'dt1', 'text': 'Sherigingizga bitta chin dildan iltifot ayting'},
+        {'id': 'dt2', 'text': "Farzandingiz bilan 10 daqiqa telefon qo'ymasdan gaplashing"},
+        {'id': 'dt3', 'text': 'Bugun kechqurun ovqatni birga tayyorlang'},
+        {'id': 'dt4', 'text': 'Sherigingizga "Rahmat" deb ayting — sababini aytib'},
+        {'id': 'dt5', 'text': 'Bugun bir marta quchoqlashib qo\'ying'},
+        {'id': 'dt6', 'text': 'Oila a\'zolaringizdan biriga qadimgi xotirani eslating'},
+        {'id': 'dt7', 'text': "Bugun telefonlarni yig'ib, 15 daqiqa faqat gaplashing"},
+        {'id': 'dt8', 'text': "Sherigingizga kichik sovg'a tayyorlang (kartochka bo'lsa ham)"},
+        {'id': 'dt9', 'text': 'Farzandingizga bugun nimani yaxshi qilganini ayting'},
+        {'id': 'dt10', 'text': 'Bugun kimgadir yordam bering, hech narsa kutmasdan'},
+        {'id': 'dt11', 'text': 'Sherigingiz bilan birga sayr qiling (hatto 10 daqiqa)'},
+        {'id': 'dt12', 'text': 'Bugun kechqurun ekransiz vaqt o\'tkazing'},
+        {'id': 'dt13', 'text': "Oila a'zosiga xat yoki xabar yozing"},
+        {'id': 'dt14', 'text': 'Bugun bir marta "Men seni yaxshi ko\'raman" deb ayting'},
+    ],
+    'ru': [
+        {'id': 'dt1', 'text': 'Сделайте партнёру искренний комплимент'},
+        {'id': 'dt2', 'text': 'Поговорите с ребёнком 10 минут без телефона'},
+        {'id': 'dt3', 'text': 'Приготовьте ужин вместе сегодня вечером'},
+        {'id': 'dt4', 'text': 'Скажите партнёру "Спасибо" — и объясните за что'},
+        {'id': 'dt5', 'text': 'Обнимитесь хотя бы раз сегодня'},
+        {'id': 'dt6', 'text': 'Напомните члену семьи о старом добром воспоминании'},
+        {'id': 'dt7', 'text': 'Уберите телефоны и поговорите 15 минут'},
+        {'id': 'dt8', 'text': 'Приготовьте партнёру небольшой сюрприз'},
+        {'id': 'dt9', 'text': 'Скажите ребёнку, что он сегодня сделал хорошо'},
+        {'id': 'dt10', 'text': 'Помогите кому-то сегодня, не ожидая ничего взамен'},
+        {'id': 'dt11', 'text': 'Прогуляйтесь вместе с партнёром (хотя бы 10 минут)'},
+        {'id': 'dt12', 'text': 'Проведите сегодня вечер без экранов'},
+        {'id': 'dt13', 'text': 'Напишите письмо или сообщение члену семьи'},
+        {'id': 'dt14', 'text': 'Скажите один раз сегодня "Я тебя люблю"'},
+    ],
+    'en': [
+        {'id': 'dt1', 'text': 'Give your partner a genuine compliment'},
+        {'id': 'dt2', 'text': 'Talk to your child for 10 minutes, phone-free'},
+        {'id': 'dt3', 'text': 'Cook dinner together tonight'},
+        {'id': 'dt4', 'text': 'Tell your partner "Thank you" — and say why'},
+        {'id': 'dt5', 'text': 'Hug at least once today'},
+        {'id': 'dt6', 'text': 'Remind a family member of a good old memory'},
+        {'id': 'dt7', 'text': 'Put phones away and talk for 15 minutes'},
+        {'id': 'dt8', 'text': 'Prepare a small surprise for your partner'},
+        {'id': 'dt9', 'text': 'Tell your child what they did well today'},
+        {'id': 'dt10', 'text': 'Help someone today expecting nothing back'},
+        {'id': 'dt11', 'text': 'Take a walk together (even 10 minutes)'},
+        {'id': 'dt12', 'text': 'Have a screen-free evening tonight'},
+        {'id': 'dt13', 'text': 'Write a letter or message to a family member'},
+        {'id': 'dt14', 'text': 'Say "I love you" once today'},
+    ],
+}
+
+def _pick_daily(pool, date_str, salt=0):
+    """Deterministic rotation: same day -> same item for everyone (no randomness, no DB lookup)."""
+    idx = (int(date_str.replace('-', '')) + salt) % len(pool)
+    return pool[idx]
+
+def _daily10_streak(db, family_id):
+    """Consecutive days (up to and including today, if already checked in) with at least
+    one check-in for this family. Mirrors a simple habit-streak counter."""
+    rows = db.execute("SELECT DISTINCT checkin_date FROM daily_checkins WHERE family_id=?", (family_id,)).fetchall()
+    dates = {r['checkin_date'] for r in rows}
+    day = datetime.date.today()
+    if day.isoformat() not in dates:
+        day = day - datetime.timedelta(days=1)
+    streak = 0
+    while day.isoformat() in dates:
+        streak += 1
+        day -= datetime.timedelta(days=1)
+    return streak
+
 @app.route('/api/compatibility/questions', methods=['GET'])
 @require_auth
 @require_adult
@@ -1668,6 +1805,103 @@ def get_assessment_insight(aid):
     return ok({'insight': text})
 
 # --- FAMILY ASSESSMENT END ---
+
+# --- DAILY 10 ---
+
+@app.route('/api/daily10/today', methods=['GET'])
+@require_auth
+@require_adult
+def get_daily10_today():
+    lang = request.args.get('lang', 'uz')
+    if lang not in DAILY10_QUESTIONS:
+        lang = 'uz'
+    today = datetime.date.today().isoformat()
+    question = _pick_daily(DAILY10_QUESTIONS[lang], today, salt=0)
+    task = _pick_daily(DAILY10_TASKS[lang], today, salt=7)
+
+    db = get_db()
+    row = db.execute(
+        "SELECT * FROM daily_checkins WHERE family_id=? AND user_id=? AND checkin_date=?",
+        (g.family_id, g.user_id, today)).fetchone()
+
+    return ok({
+        'date': today,
+        'day_number': _daily10_streak(db, g.family_id),
+        'question': question,
+        'task': task,
+        'answered_today': bool(row and row['answer_text']),
+        'task_done_today': bool(row and row['task_done']),
+        'answer_text': row['answer_text'] if row else None,
+    })
+
+@app.route('/api/daily10/answer', methods=['POST'])
+@require_auth
+@require_adult
+def submit_daily10_answer():
+    body = request.json or {}
+    answer_text = (body.get('answer_text') or '').strip()
+    lang = body.get('lang', 'uz')
+    if lang not in DAILY10_QUESTIONS:
+        lang = 'uz'
+    if not answer_text:
+        return err("Javob bo'sh bo'lmasligi kerak")
+
+    today = datetime.date.today().isoformat()
+    question = _pick_daily(DAILY10_QUESTIONS[lang], today, salt=0)
+    db = get_db()
+    existing = db.execute(
+        "SELECT id FROM daily_checkins WHERE family_id=? AND user_id=? AND checkin_date=?",
+        (g.family_id, g.user_id, today)).fetchone()
+    if existing:
+        db.execute(
+            "UPDATE daily_checkins SET question_id=?, question_text=?, answer_text=? WHERE id=?",
+            (question['id'], question['text'], answer_text, existing['id']))
+    else:
+        db.execute(
+            "INSERT INTO daily_checkins(id,family_id,user_id,checkin_date,question_id,question_text,answer_text) "
+            "VALUES(?,?,?,?,?,?,?)",
+            (str(uuid.uuid4()), g.family_id, g.user_id, today, question['id'], question['text'], answer_text))
+    db.commit()
+    return ok({'day_number': _daily10_streak(db, g.family_id)})
+
+@app.route('/api/daily10/task', methods=['PATCH'])
+@require_auth
+@require_adult
+def toggle_daily10_task():
+    body = request.json or {}
+    done = bool(body.get('done', True))
+    lang = body.get('lang', 'uz')
+    if lang not in DAILY10_TASKS:
+        lang = 'uz'
+
+    today = datetime.date.today().isoformat()
+    task = _pick_daily(DAILY10_TASKS[lang], today, salt=7)
+    db = get_db()
+    existing = db.execute(
+        "SELECT id FROM daily_checkins WHERE family_id=? AND user_id=? AND checkin_date=?",
+        (g.family_id, g.user_id, today)).fetchone()
+    if existing:
+        db.execute("UPDATE daily_checkins SET task_id=?, task_text=?, task_done=? WHERE id=?",
+                   (task['id'], task['text'], int(done), existing['id']))
+    else:
+        db.execute(
+            "INSERT INTO daily_checkins(id,family_id,user_id,checkin_date,task_id,task_text,task_done) "
+            "VALUES(?,?,?,?,?,?,?)",
+            (str(uuid.uuid4()), g.family_id, g.user_id, today, task['id'], task['text'], int(done)))
+    db.commit()
+    return ok({'day_number': _daily10_streak(db, g.family_id)})
+
+@app.route('/api/daily10/history', methods=['GET'])
+@require_auth
+def get_daily10_history():
+    db = get_db()
+    rows = db.execute(
+        "SELECT checkin_date,question_text,answer_text,task_text,task_done FROM daily_checkins "
+        "WHERE family_id=? ORDER BY checkin_date DESC LIMIT 14",
+        (g.family_id,)).fetchall()
+    return ok(rows_to_list(rows))
+
+# --- DAILY 10 END ---
 
 # ─── MESSAGES (FAMILY, COUPLE, DIRECT) ───────────────────────────────────────
 

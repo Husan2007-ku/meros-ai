@@ -329,6 +329,12 @@ const I18N={
     ai_insight_btn:'AI maslahatini olish',ai_insight_loading:'AI fikr yuritmoqda...',
     ai_insight_title:'AI maslahati',ai_insight_error:"AI hozircha javob bera olmadi, birozdan keyin urinib ko'ring",
     done:'Tayyor',
+    daily10_title:'Kundalik 10',daily10_sub:"Har kuni 10 daqiqa — bitta savol, bitta kichik qadam",
+    daily10_streak_label:'kun ketma-ket',daily10_question_label:'Bugungi savol',
+    daily10_answer_placeholder:'Javobingizni yozing...',daily10_answer_btn:'Yuborish',
+    daily10_answered_label:'Bugungi javobingiz',daily10_task_label:'Bugungi vazifa',
+    daily10_task_done:'Bajardim ✓',daily10_task_undone:'Bajarilgan deb belgilash',
+    daily10_saved_toast:'Saqlandi ✓',
     invite_code_lbl:'Taklif kodi (ixtiyoriy)',invite_code_placeholder:'Masalan: K7M3A9',
     invite_code_hint:"Agar sherigingiz oila yaratgan bo'lsa, undan kodni so'rang",
     birth_date_required:"Tug'ilgan sana majburiy",birth_date_hint:"16 yoshdan kichiklar uchun bo'lim avtomatik cheklanadi",
@@ -483,6 +489,12 @@ const I18N={
     ai_insight_btn:'Получить совет от AI',ai_insight_loading:'AI обдумывает...',
     ai_insight_title:'Совет AI',ai_insight_error:'AI сейчас не может ответить, попробуйте позже',
     done:'Готово',
+    daily10_title:'Ежедневная десятка',daily10_sub:'Каждый день 10 минут — один вопрос, один маленький шаг',
+    daily10_streak_label:'дней подряд',daily10_question_label:'Вопрос дня',
+    daily10_answer_placeholder:'Напишите ваш ответ...',daily10_answer_btn:'Отправить',
+    daily10_answered_label:'Ваш ответ сегодня',daily10_task_label:'Задание дня',
+    daily10_task_done:'Сделано ✓',daily10_task_undone:'Отметить как сделано',
+    daily10_saved_toast:'Сохранено ✓',
     invite_code_lbl:'Код приглашения (необязательно)',invite_code_placeholder:'Например: K7M3A9',
     invite_code_hint:'Если ваш партнёр уже создал семью, спросите у него код',
     birth_date_required:'Дата рождения обязательна',birth_date_hint:'Для младше 16 лет раздел автоматически ограничивается',
@@ -638,6 +650,12 @@ const I18N={
     ai_insight_btn:'Get AI advice',ai_insight_loading:'AI is thinking...',
     ai_insight_title:'AI advice',ai_insight_error:'AI is unavailable right now, please try again later',
     done:'Done',
+    daily10_title:'Daily 10',daily10_sub:'10 minutes a day — one question, one small step',
+    daily10_streak_label:'days in a row',daily10_question_label:"Today's question",
+    daily10_answer_placeholder:'Write your answer...',daily10_answer_btn:'Submit',
+    daily10_answered_label:'Your answer today',daily10_task_label:"Today's task",
+    daily10_task_done:'Done ✓',daily10_task_undone:'Mark as done',
+    daily10_saved_toast:'Saved ✓',
     invite_code_lbl:'Invite code (optional)',invite_code_placeholder:'E.g. K7M3A9',
     invite_code_hint:'If your partner already created a family, ask them for the code',
     birth_date_required:'Birth date is required',birth_date_hint:'For under 16, the section is automatically restricted',
@@ -1428,6 +1446,7 @@ function RelationshipScreen(){
   const [showIntervention,setShowIntervention]=useState(false);
   const [showCompatTest,setShowCompatTest]=useState(false);
   const [showAssessment,setShowAssessment]=useState(false);
+  const [showDaily10,setShowDaily10]=useState(false);
   const [showFamilyChat,setShowFamilyChat]=useState(false);
   const [showCoupleChat,setShowCoupleChat]=useState(false);
   const [unreadFamily,setUnreadFamily]=useState(0);
@@ -1507,6 +1526,18 @@ function RelationshipScreen(){
             React.createElement('div',{className:'card-info'},
               React.createElement('div',{className:'card-title',style:{color:'#fff'}},t('compat_test_title')),
               React.createElement('div',{className:'card-sub',style:{color:'rgba(255,255,255,.8)'}},t('compat_test_sub'))
+            ),
+            React.createElement('i',{className:'ti ti-chevron-right',style:{color:'#fff',fontSize:18}})
+          )
+        )
+      ),
+      React.createElement('div',{style:{padding:'12px 16px 0'}},
+        React.createElement('div',{className:'card',style:{cursor:'pointer',background:'linear-gradient(135deg,#0B6E4F,#12A464)',border:'none'},onClick:()=>setShowDaily10(true)},
+          React.createElement('div',{className:'card-row'},
+            React.createElement('div',{className:'icon-box',style:{background:'rgba(255,255,255,.2)'}},React.createElement('i',{className:'ti ti-calendar-check',style:{color:'#fff',fontSize:22}})),
+            React.createElement('div',{className:'card-info'},
+              React.createElement('div',{className:'card-title',style:{color:'#fff'}},t('daily10_title')),
+              React.createElement('div',{className:'card-sub',style:{color:'rgba(255,255,255,.8)'}},t('daily10_sub'))
             ),
             React.createElement('i',{className:'ti ti-chevron-right',style:{color:'#fff',fontSize:18}})
           )
@@ -1634,6 +1665,7 @@ function RelationshipScreen(){
     showIntervention&&React.createElement(InterventionModal,{onClose:()=>setShowIntervention(false)}),
     showCompatTest&&React.createElement(CompatTestModal,{onClose:()=>setShowCompatTest(false)}),
     showAssessment&&React.createElement(AssessmentModal,{onClose:()=>setShowAssessment(false)}),
+    showDaily10&&React.createElement(Daily10Modal,{onClose:()=>setShowDaily10(false)}),
     showCoupleChat&&React.createElement(ChatModal,{onClose:()=>setShowCoupleChat(false),channel:'couple'}),
     showFamilyChat&&React.createElement(ChatModal,{onClose:()=>setShowFamilyChat(false),channel:'family'})
   );
@@ -2125,6 +2157,73 @@ function AssessmentModal({onClose}){
     React.createElement('button',{className:'btn btn-full',style:{background:'var(--blue)',color:'#fff'},onClick:next,disabled:!stepComplete()||submitting},
       submitting?React.createElement('span',{className:'spinner'}):(step===totalSteps?t('see_result'):t('next_step'))
     )
+  );
+}
+
+function Daily10Modal({onClose}){
+  const {showToast}=useApp();
+  const [data,setData]=useState(null);
+  const [answer,setAnswer]=useState('');
+  const [submitting,setSubmitting]=useState(false);
+  const [toggling,setToggling]=useState(false);
+
+  function load(){
+    api('/daily10/today?lang='+getLang()).then(r=>{if(r.ok)setData(r.data);});
+  }
+  useEffect(()=>{load();},[]);
+
+  async function submitAnswer(){
+    if(!answer.trim())return;
+    setSubmitting(true);
+    const r=await api('/daily10/answer',{method:'POST',body:{answer_text:answer.trim(),lang:getLang()}});
+    setSubmitting(false);
+    if(!r.ok)return showToast(r.error,'error');
+    showToast(t('daily10_saved_toast'),'success');
+    setAnswer('');
+    load();
+  }
+
+  async function toggleTask(){
+    setToggling(true);
+    const r=await api('/daily10/task',{method:'PATCH',body:{done:!data.task_done_today,lang:getLang()}});
+    setToggling(false);
+    if(!r.ok)return showToast(r.error,'error');
+    load();
+  }
+
+  if(!data){
+    return React.createElement(Modal,{title:t('daily10_title'),onClose},
+      React.createElement('div',{style:{textAlign:'center',padding:30}},React.createElement('span',{className:'spinner'})));
+  }
+
+  return React.createElement(Modal,{title:t('daily10_title'),onClose},
+    React.createElement('div',{style:{textAlign:'center',marginBottom:16}},
+      React.createElement('div',{style:{fontSize:32,fontWeight:800,color:'var(--green)'}},data.day_number),
+      React.createElement('div',{style:{fontSize:12,color:'var(--text2)'}},t('daily10_streak_label'))
+    ),
+    React.createElement('div',{style:{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--r2)',padding:14,marginBottom:14}},
+      React.createElement('div',{style:{fontSize:11,fontWeight:800,color:'var(--green)',textTransform:'uppercase',marginBottom:8}},t('daily10_question_label')),
+      React.createElement('div',{style:{fontSize:14,fontWeight:600,color:'var(--text)',lineHeight:1.5,marginBottom:12}},data.question.text),
+      data.answered_today
+        ?React.createElement('div',{style:{fontSize:13,color:'var(--text2)',background:'var(--bg)',borderRadius:8,padding:10}},
+            React.createElement('div',{style:{fontSize:11,fontWeight:700,color:'var(--text3)',marginBottom:4}},t('daily10_answered_label')),
+            data.answer_text)
+        :React.createElement(React.Fragment,null,
+            React.createElement('textarea',{className:'input-field',rows:3,style:{resize:'none',width:'100%',boxSizing:'border-box'},
+              placeholder:t('daily10_answer_placeholder'),value:answer,onChange:e=>setAnswer(e.target.value)}),
+            React.createElement('button',{className:'btn btn-full',style:{background:'var(--green)',color:'#fff',marginTop:10},onClick:submitAnswer,disabled:submitting||!answer.trim()},
+              submitting?React.createElement('span',{className:'spinner'}):t('daily10_answer_btn'))
+          )
+    ),
+    React.createElement('div',{style:{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--r2)',padding:14,marginBottom:10}},
+      React.createElement('div',{style:{fontSize:11,fontWeight:800,color:'var(--green)',textTransform:'uppercase',marginBottom:8}},t('daily10_task_label')),
+      React.createElement('div',{style:{fontSize:14,fontWeight:600,color:'var(--text)',lineHeight:1.5,marginBottom:12}},data.task.text),
+      React.createElement('button',{className:'btn btn-full',
+        style:data.task_done_today?{background:'var(--green-l)',color:'var(--green)',border:'1.5px solid var(--green)'}:{background:'var(--bg)',color:'var(--text2)',border:'1.5px solid var(--border)'},
+        onClick:toggleTask,disabled:toggling},
+        toggling?React.createElement('span',{className:'spinner'}):(data.task_done_today?t('daily10_task_done'):t('daily10_task_undone')))
+    ),
+    React.createElement('button',{className:'btn btn-full',style:{background:'var(--bg2)',color:'var(--text2)'},onClick:onClose},t('done'))
   );
 }
 
