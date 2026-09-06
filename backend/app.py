@@ -389,6 +389,16 @@ def init_db():
         created_at  TEXT DEFAULT (datetime('now')),
         UNIQUE(family_id, user_id, checkin_date)
     );
+
+    CREATE TABLE IF NOT EXISTS conflict_topics (
+        id          TEXT PRIMARY KEY,
+        family_id   TEXT NOT NULL,
+        user_id     TEXT NOT NULL,
+        topic_key   TEXT NOT NULL,
+        status      TEXT NOT NULL,
+        updated_at  TEXT DEFAULT (datetime('now')),
+        UNIQUE(family_id, user_id, topic_key)
+    );
     """)
     db.commit()
 
@@ -1612,6 +1622,36 @@ DAILY10_TASKS = {
     ],
 }
 
+# --- CONFLICT MODE: muhim mavzular bo'yicha holat + 3 daqiqalik tinchlanish mashqi ---
+CONFLICT_TOPICS = {
+    'uz': [
+        {'key': 'values', 'label': 'Qadriyatlar'},
+        {'key': 'finance', 'label': 'Moliya'},
+        {'key': 'children', 'label': 'Bolalar'},
+        {'key': 'living', 'label': 'Turmush tarzi'},
+        {'key': 'boundaries', 'label': 'Chegaralar'},
+        {'key': 'conflict_handling', 'label': 'Nizo boshqaruvi'},
+    ],
+    'ru': [
+        {'key': 'values', 'label': 'Ценности'},
+        {'key': 'finance', 'label': 'Финансы'},
+        {'key': 'children', 'label': 'Дети'},
+        {'key': 'living', 'label': 'Образ жизни'},
+        {'key': 'boundaries', 'label': 'Границы'},
+        {'key': 'conflict_handling', 'label': 'Разрешение конфликтов'},
+    ],
+    'en': [
+        {'key': 'values', 'label': 'Values'},
+        {'key': 'finance', 'label': 'Finance'},
+        {'key': 'children', 'label': 'Children'},
+        {'key': 'living', 'label': 'Lifestyle'},
+        {'key': 'boundaries', 'label': 'Boundaries'},
+        {'key': 'conflict_handling', 'label': 'Conflict handling'},
+    ],
+}
+CONFLICT_TOPIC_KEYS = {t['key'] for t in CONFLICT_TOPICS['uz']}
+CONFLICT_STATUSES = {'agreement', 'needs_talk'}
+
 def _pick_daily(pool, date_str, salt=0):
     """Deterministic rotation: same day -> same item for everyone (no randomness, no DB lookup)."""
     idx = (int(date_str.replace('-', '')) + salt) % len(pool)
@@ -1902,6 +1942,51 @@ def get_daily10_history():
     return ok(rows_to_list(rows))
 
 # --- DAILY 10 END ---
+
+# --- CONFLICT MODE ---
+
+@app.route('/api/conflict/topics', methods=['GET'])
+@require_auth
+@require_adult
+def get_conflict_topics():
+    lang = request.args.get('lang', 'uz')
+    if lang not in CONFLICT_TOPICS:
+        lang = 'uz'
+    db = get_db()
+    rows = db.execute(
+        "SELECT topic_key, status FROM conflict_topics WHERE family_id=? AND user_id=?",
+        (g.family_id, g.user_id)).fetchall()
+    statuses = {r['topic_key']: r['status'] for r in rows}
+    topics = [{**topic, 'status': statuses.get(topic['key'])} for topic in CONFLICT_TOPICS[lang]]
+    agreed = sum(1 for t in topics if t['status'] == 'agreement')
+    return ok({'topics': topics, 'agreed_count': agreed, 'total': len(topics)})
+
+@app.route('/api/conflict/topics/<topic_key>', methods=['PATCH'])
+@require_auth
+@require_adult
+def set_conflict_topic(topic_key):
+    if topic_key not in CONFLICT_TOPIC_KEYS:
+        return err("Noma'lum mavzu")
+    body = request.json or {}
+    status = body.get('status')
+    if status not in CONFLICT_STATUSES:
+        return err("status 'agreement' yoki 'needs_talk' bo'lishi kerak")
+
+    db = get_db()
+    existing = db.execute(
+        "SELECT id FROM conflict_topics WHERE family_id=? AND user_id=? AND topic_key=?",
+        (g.family_id, g.user_id, topic_key)).fetchone()
+    if existing:
+        db.execute("UPDATE conflict_topics SET status=?, updated_at=datetime('now') WHERE id=?",
+                   (status, existing['id']))
+    else:
+        db.execute(
+            "INSERT INTO conflict_topics(id,family_id,user_id,topic_key,status) VALUES(?,?,?,?,?)",
+            (str(uuid.uuid4()), g.family_id, g.user_id, topic_key, status))
+    db.commit()
+    return ok({'topic_key': topic_key, 'status': status})
+
+# --- CONFLICT MODE END ---
 
 # ─── MESSAGES (FAMILY, COUPLE, DIRECT) ───────────────────────────────────────
 

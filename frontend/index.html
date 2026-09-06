@@ -335,6 +335,16 @@ const I18N={
     daily10_answered_label:'Bugungi javobingiz',daily10_task_label:'Bugungi vazifa',
     daily10_task_done:'Bajardim ✓',daily10_task_undone:'Bajarilgan deb belgilash',
     daily10_saved_toast:'Saqlandi ✓',
+    conflict_title:'Nizo Rejimi',conflict_sub:'Muhim mavzular va tinchlanish mashqi',
+    conflict_safety_q:'Hozir xavfsizmisiz?',conflict_safety_yes:'Ha, xavfsizman',conflict_safety_no:"Yo'q",
+    conflict_safety_help_title:'Yordam kerakmi?',
+    conflict_safety_help_text:"Agar siz yoki farzandingiz hozir xavfda bo'lsangiz, iltimos, hoziroq ishonchli qarindosh, qo'shni yoki mutaxassisga murojaat qiling. Zarur bo'lsa, favqulodda xizmatlarga qo'ng'iroq qiling. Sizning bu yerdagi javobingizni hech kim — sherigingiz ham — ko'rmaydi.",
+    conflict_calm_title:'3 daqiqalik tinchlanish mashqi',
+    conflict_calm_text:"Uch daqiqa vaqt ajrating. Qulay o'tiring, xohlasangiz ko'zingizni yuming.\n1) 4 soniya burun orqali nafas oling.\n2) 4 soniya nafasingizni tuting.\n3) 6 soniya og'iz orqali sekin nafas chiqaring.\nBuni 6-8 marta takrorlang. Maqsad — vaziyatni his-tuyg'u bilan emas, tinch holatda muhokama qilish.",
+    conflict_calm_continue:'Davom etish',
+    conflict_topics_title:'Muhim mavzular',conflict_topics_sub:"Har bir mavzu bo'yicha holatingizni belgilang — natija faqat sizga ko'rinadi",
+    conflict_agreement:'Kelishuv bor',conflict_needs_talk:'Suhbat kerak',
+    conflict_progress:"mavzu bo'yicha kelishuv bor",
     invite_code_lbl:'Taklif kodi (ixtiyoriy)',invite_code_placeholder:'Masalan: K7M3A9',
     invite_code_hint:"Agar sherigingiz oila yaratgan bo'lsa, undan kodni so'rang",
     birth_date_required:"Tug'ilgan sana majburiy",birth_date_hint:"16 yoshdan kichiklar uchun bo'lim avtomatik cheklanadi",
@@ -495,6 +505,16 @@ const I18N={
     daily10_answered_label:'Ваш ответ сегодня',daily10_task_label:'Задание дня',
     daily10_task_done:'Сделано ✓',daily10_task_undone:'Отметить как сделано',
     daily10_saved_toast:'Сохранено ✓',
+    conflict_title:'Режим конфликта',conflict_sub:'Важные темы и упражнение на успокоение',
+    conflict_safety_q:'Вы сейчас в безопасности?',conflict_safety_yes:'Да, я в безопасности',conflict_safety_no:'Нет',
+    conflict_safety_help_title:'Нужна помощь?',
+    conflict_safety_help_text:'Если вы или ваш ребёнок сейчас в опасности, пожалуйста, немедленно обратитесь к доверенному родственнику, соседу или специалисту. При необходимости позвоните в экстренные службы. Ваш ответ здесь никто — включая партнёра — не увидит.',
+    conflict_calm_title:'3-минутное упражнение на успокоение',
+    conflict_calm_text:'Уделите три минуты. Сядьте удобно, при желании закройте глаза.\n1) Вдохните через нос 4 секунды.\n2) Задержите дыхание на 4 секунды.\n3) Медленно выдохните через рот 6 секунд.\nПовторите 6-8 раз. Цель — обсуждать ситуацию в спокойном состоянии, а не на эмоциях.',
+    conflict_calm_continue:'Продолжить',
+    conflict_topics_title:'Важные темы',conflict_topics_sub:'Отметьте своё состояние по каждой теме — результат виден только вам',
+    conflict_agreement:'Есть согласие',conflict_needs_talk:'Нужен разговор',
+    conflict_progress:'тем есть согласие',
     invite_code_lbl:'Код приглашения (необязательно)',invite_code_placeholder:'Например: K7M3A9',
     invite_code_hint:'Если ваш партнёр уже создал семью, спросите у него код',
     birth_date_required:'Дата рождения обязательна',birth_date_hint:'Для младше 16 лет раздел автоматически ограничивается',
@@ -656,6 +676,16 @@ const I18N={
     daily10_answered_label:'Your answer today',daily10_task_label:"Today's task",
     daily10_task_done:'Done ✓',daily10_task_undone:'Mark as done',
     daily10_saved_toast:'Saved ✓',
+    conflict_title:'Conflict Mode',conflict_sub:'Important topics and a calming exercise',
+    conflict_safety_q:'Are you safe right now?',conflict_safety_yes:"Yes, I'm safe",conflict_safety_no:'No',
+    conflict_safety_help_title:'Need help?',
+    conflict_safety_help_text:"If you or your child are in danger right now, please reach out immediately to a trusted relative, neighbor, or professional. Call emergency services if needed. No one — including your partner — can see your answer here.",
+    conflict_calm_title:'3-minute calming exercise',
+    conflict_calm_text:"Take three minutes. Sit comfortably, close your eyes if you'd like.\n1) Breathe in through your nose for 4 seconds.\n2) Hold your breath for 4 seconds.\n3) Breathe out slowly through your mouth for 6 seconds.\nRepeat 6-8 times. The goal is to discuss the situation calmly, not in the heat of emotion.",
+    conflict_calm_continue:'Continue',
+    conflict_topics_title:'Important topics',conflict_topics_sub:"Mark your status for each topic — the result is visible only to you",
+    conflict_agreement:'Agreement',conflict_needs_talk:'Needs a talk',
+    conflict_progress:'topics have agreement',
     invite_code_lbl:'Invite code (optional)',invite_code_placeholder:'E.g. K7M3A9',
     invite_code_hint:'If your partner already created a family, ask them for the code',
     birth_date_required:'Birth date is required',birth_date_hint:'For under 16, the section is automatically restricted',
@@ -1447,6 +1477,7 @@ function RelationshipScreen(){
   const [showCompatTest,setShowCompatTest]=useState(false);
   const [showAssessment,setShowAssessment]=useState(false);
   const [showDaily10,setShowDaily10]=useState(false);
+  const [showConflict,setShowConflict]=useState(false);
   const [showFamilyChat,setShowFamilyChat]=useState(false);
   const [showCoupleChat,setShowCoupleChat]=useState(false);
   const [unreadFamily,setUnreadFamily]=useState(0);
@@ -1538,6 +1569,18 @@ function RelationshipScreen(){
             React.createElement('div',{className:'card-info'},
               React.createElement('div',{className:'card-title',style:{color:'#fff'}},t('daily10_title')),
               React.createElement('div',{className:'card-sub',style:{color:'rgba(255,255,255,.8)'}},t('daily10_sub'))
+            ),
+            React.createElement('i',{className:'ti ti-chevron-right',style:{color:'#fff',fontSize:18}})
+          )
+        )
+      ),
+      React.createElement('div',{style:{padding:'12px 16px 0'}},
+        React.createElement('div',{className:'card',style:{cursor:'pointer',background:'linear-gradient(135deg,#7A4A0B,#C2790D)',border:'none'},onClick:()=>setShowConflict(true)},
+          React.createElement('div',{className:'card-row'},
+            React.createElement('div',{className:'icon-box',style:{background:'rgba(255,255,255,.2)'}},React.createElement('i',{className:'ti ti-shield-heart',style:{color:'#fff',fontSize:22}})),
+            React.createElement('div',{className:'card-info'},
+              React.createElement('div',{className:'card-title',style:{color:'#fff'}},t('conflict_title')),
+              React.createElement('div',{className:'card-sub',style:{color:'rgba(255,255,255,.8)'}},t('conflict_sub'))
             ),
             React.createElement('i',{className:'ti ti-chevron-right',style:{color:'#fff',fontSize:18}})
           )
@@ -1666,6 +1709,7 @@ function RelationshipScreen(){
     showCompatTest&&React.createElement(CompatTestModal,{onClose:()=>setShowCompatTest(false)}),
     showAssessment&&React.createElement(AssessmentModal,{onClose:()=>setShowAssessment(false)}),
     showDaily10&&React.createElement(Daily10Modal,{onClose:()=>setShowDaily10(false)}),
+    showConflict&&React.createElement(ConflictModeModal,{onClose:()=>setShowConflict(false)}),
     showCoupleChat&&React.createElement(ChatModal,{onClose:()=>setShowCoupleChat(false),channel:'couple'}),
     showFamilyChat&&React.createElement(ChatModal,{onClose:()=>setShowFamilyChat(false),channel:'family'})
   );
@@ -2224,6 +2268,94 @@ function Daily10Modal({onClose}){
         toggling?React.createElement('span',{className:'spinner'}):(data.task_done_today?t('daily10_task_done'):t('daily10_task_undone')))
     ),
     React.createElement('button',{className:'btn btn-full',style:{background:'var(--bg2)',color:'var(--text2)'},onClick:onClose},t('done'))
+  );
+}
+
+function ConflictModeModal({onClose}){
+  const {showToast}=useApp();
+  const [step,setStep]=useState('safety'); // safety -> unsafe | calm -> topics
+  const [topics,setTopics]=useState(null);
+  const [agreedCount,setAgreedCount]=useState(0);
+  const [total,setTotal]=useState(0);
+  const [savingKey,setSavingKey]=useState(null);
+
+  function loadTopics(){
+    api('/conflict/topics?lang='+getLang()).then(r=>{
+      if(r.ok){setTopics(r.data.topics);setAgreedCount(r.data.agreed_count);setTotal(r.data.total);}
+    });
+  }
+  useEffect(()=>{if(step==='topics')loadTopics();},[step]);
+
+  async function setStatus(topicKey,status){
+    setSavingKey(topicKey);
+    const r=await api(`/conflict/topics/${topicKey}`,{method:'PATCH',body:{status}});
+    setSavingKey(null);
+    if(!r.ok)return showToast(r.error,'error');
+    loadTopics();
+  }
+
+  if(step==='safety'){
+    return React.createElement(Modal,{title:t('conflict_title'),onClose},
+      React.createElement('div',{style:{textAlign:'center',marginBottom:20}},
+        React.createElement('div',{style:{fontSize:40,marginBottom:12}},'🛡️'),
+        React.createElement('div',{style:{fontSize:16,fontWeight:700,color:'var(--text)'}},t('conflict_safety_q'))
+      ),
+      React.createElement('button',{className:'btn btn-full',style:{background:'var(--green)',color:'#fff',marginBottom:10},onClick:()=>setStep('calm')},t('conflict_safety_yes')),
+      React.createElement('button',{className:'btn btn-full',style:{background:'var(--bg2)',color:'var(--rose)',border:'1.5px solid var(--rose)'},onClick:()=>setStep('unsafe')},t('conflict_safety_no'))
+    );
+  }
+
+  if(step==='unsafe'){
+    return React.createElement(Modal,{title:t('conflict_safety_help_title'),onClose},
+      React.createElement('div',{style:{textAlign:'center',marginBottom:16}},
+        React.createElement('div',{style:{width:60,height:60,borderRadius:'50%',background:'var(--rose-l)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:26,margin:'0 auto 12px'}},'🤝')
+      ),
+      React.createElement('div',{style:{background:'var(--bg2)',borderRadius:'var(--r2)',padding:14,marginBottom:16,fontSize:13,color:'var(--text)',lineHeight:1.7}},
+        t('conflict_safety_help_text')
+      ),
+      React.createElement('button',{className:'btn btn-full',style:{background:'var(--blue)',color:'#fff'},onClick:onClose},t('done'))
+    );
+  }
+
+  if(step==='calm'){
+    return React.createElement(Modal,{title:t('conflict_calm_title'),onClose},
+      React.createElement('div',{style:{textAlign:'center',marginBottom:14}},React.createElement('div',{style:{fontSize:36}},'🌬️')),
+      React.createElement('div',{style:{background:'var(--bg2)',borderRadius:'var(--r2)',padding:16,marginBottom:16,fontSize:14,color:'var(--text)',lineHeight:1.8,whiteSpace:'pre-line'}},
+        t('conflict_calm_text')
+      ),
+      React.createElement('button',{className:'btn btn-full',style:{background:'var(--amber)',color:'#fff'},onClick:()=>setStep('topics')},t('conflict_calm_continue'))
+    );
+  }
+
+  // step === 'topics'
+  if(!topics){
+    return React.createElement(Modal,{title:t('conflict_topics_title'),onClose},
+      React.createElement('div',{style:{textAlign:'center',padding:30}},React.createElement('span',{className:'spinner'})));
+  }
+  return React.createElement(Modal,{title:t('conflict_topics_title'),onClose},
+    React.createElement('div',{style:{fontSize:12,color:'var(--text2)',marginBottom:14}},t('conflict_topics_sub')),
+    React.createElement('div',{style:{textAlign:'center',marginBottom:16}},
+      React.createElement('div',{style:{fontSize:24,fontWeight:800,color:'var(--amber)'}},`${agreedCount}/${total}`),
+      React.createElement('div',{style:{fontSize:12,color:'var(--text2)'}},t('conflict_progress'))
+    ),
+    React.createElement('div',{className:'menu-card',style:{margin:'0 0 16px'}},
+      topics.map(topic=>React.createElement('div',{key:topic.key,className:'menu-row',style:{cursor:'default',flexDirection:'column',alignItems:'stretch'}},
+        React.createElement('div',{className:'menu-text',style:{marginBottom:8,fontWeight:700}},topic.label),
+        React.createElement('div',{style:{display:'flex',gap:8}},
+          React.createElement('button',{onClick:()=>setStatus(topic.key,'agreement'),disabled:savingKey===topic.key,
+            style:{flex:1,padding:'8px 4px',borderRadius:'var(--r2)',fontSize:12,fontWeight:600,cursor:'pointer',
+              border:topic.status==='agreement'?'2px solid var(--green)':'1.5px solid var(--border)',
+              background:topic.status==='agreement'?'var(--green-l)':'var(--bg2)',
+              color:topic.status==='agreement'?'var(--green)':'var(--text2)'}},t('conflict_agreement')),
+          React.createElement('button',{onClick:()=>setStatus(topic.key,'needs_talk'),disabled:savingKey===topic.key,
+            style:{flex:1,padding:'8px 4px',borderRadius:'var(--r2)',fontSize:12,fontWeight:600,cursor:'pointer',
+              border:topic.status==='needs_talk'?'2px solid var(--amber)':'1.5px solid var(--border)',
+              background:topic.status==='needs_talk'?'var(--amber-l)':'var(--bg2)',
+              color:topic.status==='needs_talk'?'var(--amber)':'var(--text2)'}},t('conflict_needs_talk'))
+        )
+      ))
+    ),
+    React.createElement('button',{className:'btn btn-full',style:{background:'var(--blue)',color:'#fff'},onClick:onClose},t('done'))
   );
 }
 
