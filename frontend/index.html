@@ -345,6 +345,18 @@ const I18N={
     conflict_topics_title:'Muhim mavzular',conflict_topics_sub:"Har bir mavzu bo'yicha holatingizni belgilang — natija faqat sizga ko'rinadi",
     conflict_agreement:'Kelishuv bor',conflict_needs_talk:'Suhbat kerak',
     conflict_progress:"mavzu bo'yicha kelishuv bor",
+    safety_center_title:'Xavfsizlik Markazi',safety_center_menu_label:'Xavfsizlik Markazi',
+    safety_center_intro:"Bu bo'limdagi barcha ma'lumotlar shifrlanadi va faqat sizning hisobingizda saqlanadi. Oila a'zolaringiz, jumladan turmush o'rtog'ingiz, buni hech qachon ko'ra olmaydi.",
+    quick_exit_btn:'Tezkor chiqish',quick_exit_hint:"Bosilganda ilova darhol yopiladi",
+    trusted_contacts_title:'Ishonchli kontaktlar',trusted_contacts_sub:"Zarurat tug'ilganda murojaat qilishingiz mumkin bo'lgan odamlar",
+    contact_name_placeholder:'Ism',contact_phone_placeholder:'Telefon raqami',add_contact_btn:"Qo'shish",
+    no_contacts:"Hali kontakt qo'shilmagan",
+    safety_plan_title:'Xavfsizlik rejasi',safety_plan_sub:'Faqat siz ko\'rasiz',
+    safe_place_lbl:'Xavfsiz joy',safe_place_placeholder:'Masalan: opamning uyi',
+    code_word_lbl:'Maxfiy kod so\'z',code_word_placeholder:"Yordam kerak bo'lsa ishlatiladigan so'z",
+    safety_notes_lbl:"Qo'shimcha eslatmalar",save_plan_btn:'Saqlash',plan_saved_toast:'Reja saqlandi ✓',
+    safety_disclaimer:"Bu reja professional yordam o'rniga emas. Agar hozir xavf ostida bo'lsangiz, darhol ishonchli odam yoki mutaxassisga murojaat qiling.",
+    contact_added_toast:"Kontakt qo'shildi ✓",contact_deleted_toast:"Kontakt o'chirildi",
     invite_code_lbl:'Taklif kodi (ixtiyoriy)',invite_code_placeholder:'Masalan: K7M3A9',
     invite_code_hint:"Agar sherigingiz oila yaratgan bo'lsa, undan kodni so'rang",
     birth_date_required:"Tug'ilgan sana majburiy",birth_date_hint:"16 yoshdan kichiklar uchun bo'lim avtomatik cheklanadi",
@@ -515,6 +527,18 @@ const I18N={
     conflict_topics_title:'Важные темы',conflict_topics_sub:'Отметьте своё состояние по каждой теме — результат виден только вам',
     conflict_agreement:'Есть согласие',conflict_needs_talk:'Нужен разговор',
     conflict_progress:'тем есть согласие',
+    safety_center_title:'Центр безопасности',safety_center_menu_label:'Центр безопасности',
+    safety_center_intro:'Вся информация в этом разделе шифруется и хранится только в вашем аккаунте. Члены семьи, включая партнёра, никогда не увидят это.',
+    quick_exit_btn:'Быстрый выход',quick_exit_hint:'При нажатии приложение сразу закроется',
+    trusted_contacts_title:'Доверенные контакты',trusted_contacts_sub:'Люди, к которым вы можете обратиться в случае необходимости',
+    contact_name_placeholder:'Имя',contact_phone_placeholder:'Номер телефона',add_contact_btn:'Добавить',
+    no_contacts:'Контакты пока не добавлены',
+    safety_plan_title:'План безопасности',safety_plan_sub:'Видите только вы',
+    safe_place_lbl:'Безопасное место',safe_place_placeholder:'Например: дом сестры',
+    code_word_lbl:'Секретное кодовое слово',code_word_placeholder:'Слово для сигнала о помощи',
+    safety_notes_lbl:'Дополнительные заметки',save_plan_btn:'Сохранить',plan_saved_toast:'План сохранён ✓',
+    safety_disclaimer:'Этот план не заменяет профессиональную помощь. Если вы сейчас в опасности, немедленно обратитесь к доверенному человеку или специалисту.',
+    contact_added_toast:'Контакт добавлен ✓',contact_deleted_toast:'Контакт удалён',
     invite_code_lbl:'Код приглашения (необязательно)',invite_code_placeholder:'Например: K7M3A9',
     invite_code_hint:'Если ваш партнёр уже создал семью, спросите у него код',
     birth_date_required:'Дата рождения обязательна',birth_date_hint:'Для младше 16 лет раздел автоматически ограничивается',
@@ -686,6 +710,18 @@ const I18N={
     conflict_topics_title:'Important topics',conflict_topics_sub:"Mark your status for each topic — the result is visible only to you",
     conflict_agreement:'Agreement',conflict_needs_talk:'Needs a talk',
     conflict_progress:'topics have agreement',
+    safety_center_title:'Safety Center',safety_center_menu_label:'Safety Center',
+    safety_center_intro:"Everything in this section is encrypted and stored only in your account. Family members, including your partner, can never see it.",
+    quick_exit_btn:'Quick exit',quick_exit_hint:'The app closes immediately when tapped',
+    trusted_contacts_title:'Trusted contacts',trusted_contacts_sub:"People you can reach out to if you need to",
+    contact_name_placeholder:'Name',contact_phone_placeholder:'Phone number',add_contact_btn:'Add',
+    no_contacts:'No contacts added yet',
+    safety_plan_title:'Safety plan',safety_plan_sub:'Only you can see this',
+    safe_place_lbl:'Safe place',safe_place_placeholder:"E.g. my sister's place",
+    code_word_lbl:'Secret code word',code_word_placeholder:'A word to signal you need help',
+    safety_notes_lbl:'Additional notes',save_plan_btn:'Save',plan_saved_toast:'Plan saved ✓',
+    safety_disclaimer:"This plan is not a substitute for professional help. If you're in danger right now, reach out to a trusted person or professional immediately.",
+    contact_added_toast:'Contact added ✓',contact_deleted_toast:'Contact deleted',
     invite_code_lbl:'Invite code (optional)',invite_code_placeholder:'E.g. K7M3A9',
     invite_code_hint:'If your partner already created a family, ask them for the code',
     birth_date_required:'Birth date is required',birth_date_hint:'For under 16, the section is automatically restricted',
@@ -2359,6 +2395,110 @@ function ConflictModeModal({onClose}){
   );
 }
 
+function SafetyCenterModal({onClose}){
+  const {showToast}=useApp();
+  const [contacts,setContacts]=useState(null);
+  const [newName,setNewName]=useState('');
+  const [newPhone,setNewPhone]=useState('');
+  const [adding,setAdding]=useState(false);
+  const [plan,setPlan]=useState(null);
+  const [safePlace,setSafePlace]=useState('');
+  const [codeWord,setCodeWord]=useState('');
+  const [notes,setNotes]=useState('');
+  const [savingPlan,setSavingPlan]=useState(false);
+
+  useEffect(()=>{
+    api('/safety/contacts').then(r=>{if(r.ok)setContacts(r.data)});
+    api('/safety/plan').then(r=>{if(r.ok){setPlan(r.data);setSafePlace(r.data.safe_place);setCodeWord(r.data.code_word);setNotes(r.data.notes);}});
+  },[]);
+
+  function quickExit(){
+    window.location.replace('https://www.google.com');
+  }
+
+  async function addContact(){
+    if(!newName.trim()||!newPhone.trim())return;
+    setAdding(true);
+    const r=await api('/safety/contacts',{method:'POST',body:{name:newName.trim(),phone:newPhone.trim()}});
+    setAdding(false);
+    if(!r.ok)return showToast(r.error,'error');
+    setContacts(c=>[...(c||[]),r.data]);
+    setNewName('');setNewPhone('');
+    showToast(t('contact_added_toast'),'success');
+  }
+
+  async function deleteContact(id){
+    setContacts(c=>c.filter(x=>x.id!==id));
+    await api(`/safety/contacts/${id}`,{method:'DELETE'});
+    showToast(t('contact_deleted_toast'),'');
+  }
+
+  async function savePlan(){
+    setSavingPlan(true);
+    const r=await api('/safety/plan',{method:'PUT',body:{safe_place:safePlace,code_word:codeWord,notes}});
+    setSavingPlan(false);
+    if(!r.ok)return showToast(r.error,'error');
+    showToast(t('plan_saved_toast'),'success');
+  }
+
+  return React.createElement(Modal,{title:t('safety_center_title'),onClose},
+    React.createElement('div',{style:{background:'var(--bg2)',borderRadius:'var(--r2)',padding:14,marginBottom:14,fontSize:12,color:'var(--text2)',lineHeight:1.6,display:'flex',gap:10}},
+      React.createElement('i',{className:'ti ti-lock',style:{color:'var(--rose)',fontSize:20,flexShrink:0}}),
+      React.createElement('div',null,t('safety_center_intro'))
+    ),
+    React.createElement('button',{className:'btn btn-full',style:{background:'var(--text)',color:'#fff',marginBottom:6,display:'flex',alignItems:'center',justifyContent:'center',gap:8},onClick:quickExit},
+      React.createElement('i',{className:'ti ti-logout',style:{fontSize:18}}),t('quick_exit_btn')
+    ),
+    React.createElement('div',{style:{fontSize:11,color:'var(--text3)',textAlign:'center',marginBottom:20}},t('quick_exit_hint')),
+
+    React.createElement('div',{className:'section-label',style:{padding:'0 0 8px'}},t('trusted_contacts_title')),
+    React.createElement('div',{style:{fontSize:12,color:'var(--text2)',marginBottom:10}},t('trusted_contacts_sub')),
+    React.createElement('div',{className:'menu-card',style:{margin:'0 0 10px'}},
+      !contacts&&React.createElement('div',{style:{textAlign:'center',padding:20}},React.createElement('span',{className:'spinner'})),
+      contacts&&contacts.length===0&&React.createElement('div',{className:'menu-row',style:{cursor:'default'}},
+        React.createElement('div',{style:{fontSize:12,color:'var(--text3)'}},t('no_contacts'))),
+      contacts&&contacts.map(c=>React.createElement('div',{key:c.id,className:'menu-row',style:{cursor:'default'}},
+        React.createElement('div',{style:{flex:1}},
+          React.createElement('div',{className:'menu-text'},c.name),
+          React.createElement('div',{style:{fontSize:11,color:'var(--text3)'}},c.phone)
+        ),
+        React.createElement('button',{onClick:()=>deleteContact(c.id),style:{background:'none',border:'none',color:'var(--text3)',cursor:'pointer',padding:4}},
+          React.createElement('i',{className:'ti ti-trash',style:{fontSize:16}}))
+      ))
+    ),
+    (!contacts||contacts.length<5)&&React.createElement('div',{style:{display:'flex',gap:8,marginBottom:20}},
+      React.createElement('input',{className:'input-field',placeholder:t('contact_name_placeholder'),value:newName,onChange:e=>setNewName(e.target.value),style:{flex:1}}),
+      React.createElement('input',{className:'input-field',placeholder:t('contact_phone_placeholder'),value:newPhone,onChange:e=>setNewPhone(e.target.value),style:{flex:1}}),
+      React.createElement('button',{className:'btn',style:{background:'var(--rose)',color:'#fff',padding:'0 14px'},onClick:addContact,disabled:adding||!newName.trim()||!newPhone.trim()},
+        adding?React.createElement('span',{className:'spinner'}):React.createElement('i',{className:'ti ti-plus',style:{fontSize:16}}))
+    ),
+
+    React.createElement('div',{className:'section-label',style:{padding:'0 0 8px'}},t('safety_plan_title')),
+    React.createElement('div',{style:{fontSize:12,color:'var(--text2)',marginBottom:10}},t('safety_plan_sub')),
+    !plan?React.createElement('div',{style:{textAlign:'center',padding:20}},React.createElement('span',{className:'spinner'})):React.createElement(React.Fragment,null,
+      React.createElement('div',{className:'input-group'},
+        React.createElement('label',null,t('safe_place_lbl')),
+        React.createElement('input',{className:'input-field',placeholder:t('safe_place_placeholder'),value:safePlace,onChange:e=>setSafePlace(e.target.value)})
+      ),
+      React.createElement('div',{className:'input-group'},
+        React.createElement('label',null,t('code_word_lbl')),
+        React.createElement('input',{className:'input-field',placeholder:t('code_word_placeholder'),value:codeWord,onChange:e=>setCodeWord(e.target.value)})
+      ),
+      React.createElement('div',{className:'input-group'},
+        React.createElement('label',null,t('safety_notes_lbl')),
+        React.createElement('textarea',{className:'input-field',rows:3,style:{resize:'none',width:'100%',boxSizing:'border-box'},value:notes,onChange:e=>setNotes(e.target.value)})
+      ),
+      React.createElement('button',{className:'btn btn-full',style:{background:'var(--rose)',color:'#fff',marginBottom:16},onClick:savePlan,disabled:savingPlan},
+        savingPlan?React.createElement('span',{className:'spinner'}):t('save_plan_btn'))
+    ),
+
+    React.createElement('div',{style:{background:'var(--bg2)',borderRadius:'var(--r2)',padding:'12px 14px',fontSize:11,color:'var(--text3)',textAlign:'center',lineHeight:1.6,marginBottom:14}},
+      t('safety_disclaimer')
+    ),
+    React.createElement('button',{className:'btn btn-full',style:{background:'var(--bg2)',color:'var(--text2)'},onClick:onClose},t('done'))
+  );
+}
+
 /* PROFILE */
 function ProfileScreen(){
   const {logout,showToast,showModal,lang,changeLang}=useApp();
@@ -2392,6 +2532,7 @@ function ProfileScreen(){
     !isMinor&&{ic:'ti-users',bg:'var(--green-l)',c:'var(--green)',label:t('family_tree'),action:()=>showModal('familyTree')},
     !isMinor&&{ic:'ti-id-badge',bg:'var(--amber-l)',c:'var(--amber)',label:t('documents_archive'),action:()=>showModal('documents')},
     !isMinor&&{ic:'ti-music',bg:'var(--purple-l)',c:'var(--purple)',label:t('lullaby_tales'),action:()=>showModal('lullaby')},
+    {ic:'ti-shield-heart',bg:'var(--rose-l)',c:'var(--rose)',label:t('safety_center_menu_label'),action:()=>showModal('safety')},
   ].filter(Boolean);
 
   return React.createElement('div',{className:'screen'},
@@ -3779,6 +3920,7 @@ function App(){
       member:famCache?.members?.find(m=>m.id===modalArg),
       onUpdated:()=>{api('/family').then(r=>{if(r.ok)setFamCache(r.data)});onDone();}
     }),
+    safety:()=>React.createElement(SafetyCenterModal,{onClose:closeModal}),
   };
 
   return React.createElement(Ctx.Provider,{value:ctx},

@@ -399,6 +399,22 @@ def init_db():
         updated_at  TEXT DEFAULT (datetime('now')),
         UNIQUE(family_id, user_id, topic_key)
     );
+
+    CREATE TABLE IF NOT EXISTS safety_contacts (
+        id          TEXT PRIMARY KEY,
+        user_id     TEXT NOT NULL,
+        name        TEXT NOT NULL,
+        phone       TEXT NOT NULL,
+        created_at  TEXT DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS safety_plans (
+        user_id     TEXT PRIMARY KEY,
+        safe_place  TEXT,
+        code_word   TEXT,
+        notes       TEXT,
+        updated_at  TEXT DEFAULT (datetime('now'))
+    );
     """)
     db.commit()
 
@@ -1987,6 +2003,83 @@ def set_conflict_topic(topic_key):
     return ok({'topic_key': topic_key, 'status': status})
 
 # --- CONFLICT MODE END ---
+
+# --- SAFETY CENTER ---
+# Privacy-critical: everything here is scoped by user_id ONLY (never family_id).
+# No endpoint in this section may join against family-shared tables or be reachable
+# by anyone other than the account owner -- not even a spouse/parent in the same
+# family. Available to every account (no @require_adult gate): personal safety
+# should never be restricted by age.
+
+@app.route('/api/safety/contacts', methods=['GET'])
+@require_auth
+def get_safety_contacts():
+    db = get_db()
+    rows = db.execute(
+        "SELECT id, name, phone FROM safety_contacts WHERE user_id=? ORDER BY created_at",
+        (g.user_id,)).fetchall()
+    return ok(rows_to_list(rows))
+
+@app.route('/api/safety/contacts', methods=['POST'])
+@require_auth
+def add_safety_contact():
+    body = request.json or {}
+    name = (body.get('name') or '').strip()
+    phone = (body.get('phone') or '').strip()
+    if not name or not phone:
+        return err('Ism va telefon majburiy')
+    db = get_db()
+    count = db.execute(
+        "SELECT COUNT(*) as cnt FROM safety_contacts WHERE user_id=?", (g.user_id,)).fetchone()['cnt']
+    if count >= 5:
+        return err("Ko'pi bilan 5 ta kontakt qo'shish mumkin")
+    cid = str(uuid.uuid4())
+    db.execute("INSERT INTO safety_contacts(id,user_id,name,phone) VALUES(?,?,?,?)",
+               (cid, g.user_id, name, phone))
+    db.commit()
+    return ok({'id': cid, 'name': name, 'phone': phone}), 201
+
+@app.route('/api/safety/contacts/<cid>', methods=['DELETE'])
+@require_auth
+def delete_safety_contact(cid):
+    db = get_db()
+    db.execute("DELETE FROM safety_contacts WHERE id=? AND user_id=?", (cid, g.user_id))
+    db.commit()
+    return ok({'message': "O'chirildi"})
+
+@app.route('/api/safety/plan', methods=['GET'])
+@require_auth
+def get_safety_plan():
+    db = get_db()
+    row = db.execute("SELECT * FROM safety_plans WHERE user_id=?", (g.user_id,)).fetchone()
+    if not row:
+        return ok({'safe_place': '', 'code_word': '', 'notes': ''})
+    return ok({
+        'safe_place': decrypt_field(row['safe_place']) or '',
+        'code_word': decrypt_field(row['code_word']) or '',
+        'notes': decrypt_field(row['notes']) or '',
+    })
+
+@app.route('/api/safety/plan', methods=['PUT'])
+@require_auth
+def save_safety_plan():
+    body = request.json or {}
+    safe_place = encrypt_field((body.get('safe_place') or '').strip())
+    code_word = encrypt_field((body.get('code_word') or '').strip())
+    notes = encrypt_field((body.get('notes') or '').strip())
+
+    db = get_db()
+    existing = db.execute("SELECT user_id FROM safety_plans WHERE user_id=?", (g.user_id,)).fetchone()
+    if existing:
+        db.execute("UPDATE safety_plans SET safe_place=?, code_word=?, notes=?, updated_at=datetime('now') WHERE user_id=?",
+                   (safe_place, code_word, notes, g.user_id))
+    else:
+        db.execute("INSERT INTO safety_plans(user_id,safe_place,code_word,notes) VALUES(?,?,?,?)",
+                   (g.user_id, safe_place, code_word, notes))
+    db.commit()
+    return ok({'message': 'Saqlandi'})
+
+# --- SAFETY CENTER END ---
 
 # ─── MESSAGES (FAMILY, COUPLE, DIRECT) ───────────────────────────────────────
 
