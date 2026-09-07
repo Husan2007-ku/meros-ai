@@ -276,6 +276,9 @@ const I18N={
     // Relationship screen
     avg_7days:"O'rtacha (7 kun)",streak_days:'Ketma-ket kun',recent_days:"So'nggi kunlar",important_dates:'Muhim sanalar',
     anniversary:'Nikoh yubileyi',days_left:'kun qoldi',together:'yil birga',gratitude_today:'Bugungi minnatdorchilik',send_msg:'Sherigingizga xabar yuboring',
+    gratitude_modal_title:'Minnatdorchilik',gratitude_intro:"Har kuni sherigingizga bitta minnatdorchilik yuboring. Baxtli juftliklar bir-biriga tez-tez ijobiy so'z aytadi.",
+    gratitude_placeholder:'Nima uchun minnatdorman...',gratitude_send_btn:'Yuborish',gratitude_sent_today_title:'Bugun allaqachon yubordingiz ✓',gratitude_sent_today_sub:'Ertaga yana eslataman',
+    gratitude_archive_label:'Minnatdorchiliklar arxivi',gratitude_empty:"Hali minnatdorchilik yo'q. Birinchi bo'lib yuboring!",gratitude_sent_toast:'Yuborildi ✓',gratitude_too_long:"Matn juda uzun (max 500 belgi)",gratitude_empty_error:"Matn bo'sh bo'lmasligi kerak",you_label:'Siz',
     todays_score:'Bugungi ball',q_happy:'Bugun qanchalik baxtli edingiz?',q_supported:"Sherigingiz qo'llab-quvvatladimi?",save:'Saqlash',answer_both_questions:'Ikki savolga ham javob bering',
     edit_profile:'Profilni tahrirlash',name_required:"Ism bo'sh bo'lmasligi kerak",profile_updated:'Profil yangilandi ✓',cancel:'Bekor qilish',
     change_password:'Parolni o\'zgartirish',current_password:'Joriy parol',new_password:'Yangi parol',
@@ -461,6 +464,9 @@ const I18N={
     height:'Рост',weight:'Вес',normal:'В норме',
     avg_7days:'Среднее (7 дней)',streak_days:'Дней подряд',recent_days:'Последние дни',important_dates:'Важные даты',
     anniversary:'Годовщина свадьбы',days_left:'дней осталось',together:'лет вместе',gratitude_today:'Благодарность на сегодня',send_msg:'Отправьте сообщение партнёру',
+    gratitude_modal_title:'Благодарность',gratitude_intro:'Каждый день отправляйте партнёру одну благодарность. Счастливые пары часто говорят друг другу приятные слова.',
+    gratitude_placeholder:'За что я благодарен(на)...',gratitude_send_btn:'Отправить',gratitude_sent_today_title:'Вы уже отправили сегодня ✓',gratitude_sent_today_sub:'Напомню снова завтра',
+    gratitude_archive_label:'Архив благодарностей',gratitude_empty:'Пока нет благодарностей. Отправьте первую!',gratitude_sent_toast:'Отправлено ✓',gratitude_too_long:'Текст слишком длинный (макс. 500 символов)',gratitude_empty_error:'Текст не может быть пустым',you_label:'Вы',
     todays_score:'Оценка на сегодня',q_happy:'Насколько вы были счастливы сегодня?',q_supported:'Поддержал ли вас партнёр?',save:'Сохранить',answer_both_questions:'Ответьте на оба вопроса',
     edit_profile:'Редактировать профиль',name_required:'Имя не может быть пустым',profile_updated:'Профиль обновлён ✓',cancel:'Отмена',
     change_password:'Изменить пароль',current_password:'Текущий пароль',new_password:'Новый пароль',
@@ -644,6 +650,9 @@ const I18N={
     height:'Height',weight:'Weight',normal:'Normal',
     avg_7days:'Average (7 days)',streak_days:'Day streak',recent_days:'Recent days',important_dates:'Important dates',
     anniversary:'Wedding anniversary',days_left:'days left',together:'years together',gratitude_today:"Today's gratitude",send_msg:'Send a message to your partner',
+    gratitude_modal_title:'Gratitude',gratitude_intro:'Send your partner one thing you appreciate every day. Happy couples exchange positive words often.',
+    gratitude_placeholder:"What I'm grateful for...",gratitude_send_btn:'Send',gratitude_sent_today_title:'Already sent today ✓',gratitude_sent_today_sub:"I'll remind you again tomorrow",
+    gratitude_archive_label:'Gratitude archive',gratitude_empty:'No gratitude messages yet. Send the first one!',gratitude_sent_toast:'Sent ✓',gratitude_too_long:'Text is too long (max 500 characters)',gratitude_empty_error:'Text cannot be empty',you_label:'You',
     todays_score:"Today's score",q_happy:'How happy were you today?',q_supported:'Did your partner support you?',save:'Save',answer_both_questions:'Please answer both questions',
     edit_profile:'Edit profile',name_required:'Name cannot be empty',profile_updated:'Profile updated ✓',cancel:'Cancel',
     change_password:'Change password',current_password:'Current password',new_password:'New password',
@@ -1514,6 +1523,7 @@ function RelationshipScreen(){
   const [showAssessment,setShowAssessment]=useState(false);
   const [showDaily10,setShowDaily10]=useState(false);
   const [showConflict,setShowConflict]=useState(false);
+  const [showGratitude,setShowGratitude]=useState(false);
   const [showFamilyChat,setShowFamilyChat]=useState(false);
   const [showCoupleChat,setShowCoupleChat]=useState(false);
   const [unreadFamily,setUnreadFamily]=useState(0);
@@ -1715,7 +1725,7 @@ function RelationshipScreen(){
             React.createElement('button',{className:'btn btn-outline',style:{flex:1},onClick:()=>setShowAddDate(false)},t('cancel'))
           )
         ),
-        React.createElement('div',{className:'card',onClick:()=>setShowCoupleChat(true)},
+        React.createElement('div',{className:'card',onClick:()=>setShowGratitude(true)},
           React.createElement('div',{className:'card-row'},
             React.createElement('div',{className:'icon-box',style:{background:'var(--rose-l)'}},React.createElement('i',{className:'ti ti-message-heart',style:{color:'var(--rose)',fontSize:22}})),
             React.createElement('div',{className:'card-info'},React.createElement('div',{className:'card-title'},t('gratitude_today')),React.createElement('div',{className:'card-sub'},t('send_msg'))),
@@ -1746,6 +1756,7 @@ function RelationshipScreen(){
     showAssessment&&React.createElement(AssessmentModal,{onClose:()=>setShowAssessment(false)}),
     showDaily10&&React.createElement(Daily10Modal,{onClose:()=>setShowDaily10(false)}),
     showConflict&&React.createElement(ConflictModeModal,{onClose:()=>setShowConflict(false)}),
+    showGratitude&&React.createElement(GratitudeModal,{onClose:()=>setShowGratitude(false)}),
     showCoupleChat&&React.createElement(ChatModal,{onClose:()=>setShowCoupleChat(false),channel:'couple'}),
     showFamilyChat&&React.createElement(ChatModal,{onClose:()=>setShowFamilyChat(false),channel:'family'})
   );
@@ -2304,6 +2315,77 @@ function Daily10Modal({onClose}){
         toggling?React.createElement('span',{className:'spinner'}):(data.task_done_today?t('daily10_task_done'):t('daily10_task_undone')))
     ),
     React.createElement('button',{className:'btn btn-full',style:{background:'var(--bg2)',color:'var(--text2)'},onClick:onClose},t('done'))
+  );
+}
+
+function GratitudeModal({onClose}){
+  const {showToast}=useApp();
+  const [data,setData]=useState(null);
+  const [text,setText]=useState('');
+  const [sending,setSending]=useState(false);
+  const myId=localStorage.getItem('meros_user_id');
+
+  function load(){
+    api('/gratitude').then(r=>{if(r.ok)setData(r.data);});
+  }
+  useEffect(()=>{load();},[]);
+
+  async function send(){
+    const body=text.trim();
+    if(!body)return showToast(t('gratitude_empty_error'),'error');
+    if(body.length>500)return showToast(t('gratitude_too_long'),'error');
+    setSending(true);
+    const r=await api('/gratitude',{method:'POST',body:{text:body}});
+    setSending(false);
+    if(!r.ok)return showToast(r.error,'error');
+    setText('');
+    showToast(t('gratitude_sent_toast'),'success');
+    load();
+  }
+
+  function formatDate(iso){
+    try{
+      const d=new Date(iso+(iso.includes('Z')?'':'Z'));
+      const monthsByLang={
+        uz:['Yan','Fev','Mar','Apr','May','Iyun','Iyul','Avg','Sen','Okt','Noy','Dek'],
+        ru:['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'],
+        en:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+      };
+      const months=monthsByLang[getLang()]||monthsByLang.uz;
+      return `${d.getDate()} ${months[d.getMonth()]}`;
+    }catch(e){return '';}
+  }
+
+  if(!data){
+    return React.createElement(Modal,{title:t('gratitude_modal_title'),onClose},
+      React.createElement('div',{style:{textAlign:'center',padding:30}},React.createElement('span',{className:'spinner'})));
+  }
+
+  return React.createElement(Modal,{title:t('gratitude_modal_title'),onClose},
+    React.createElement('div',{style:{fontSize:13,color:'var(--text2)',lineHeight:1.5,marginBottom:14}},t('gratitude_intro')),
+    data.sent_today
+      ?React.createElement('div',{style:{background:'var(--green-l)',border:'1.5px solid var(--green)',borderRadius:'var(--r2)',padding:14,marginBottom:16,textAlign:'center'}},
+          React.createElement('div',{style:{fontWeight:800,color:'var(--green)'}},t('gratitude_sent_today_title')),
+          React.createElement('div',{style:{fontSize:12,color:'var(--text2)',marginTop:4}},t('gratitude_sent_today_sub'))
+        )
+      :React.createElement('div',{style:{marginBottom:16}},
+          React.createElement('textarea',{className:'input-field',rows:3,style:{resize:'none',width:'100%',boxSizing:'border-box'},
+            placeholder:t('gratitude_placeholder'),value:text,onChange:e=>setText(e.target.value),maxLength:500}),
+          React.createElement('button',{className:'btn btn-full',style:{background:'var(--rose)',color:'#fff',marginTop:10},onClick:send,disabled:sending||!text.trim()},
+            sending?React.createElement('span',{className:'spinner'}):React.createElement(React.Fragment,null,React.createElement('i',{className:'ti ti-send',style:{fontSize:16}}),' ',t('gratitude_send_btn')))
+        ),
+    React.createElement('div',{style:{fontSize:11,fontWeight:800,color:'var(--text3)',textTransform:'uppercase',marginBottom:8}},t('gratitude_archive_label')),
+    data.entries.length===0
+      ?React.createElement('div',{style:{textAlign:'center',padding:'20px 0',color:'var(--text3)',fontSize:13}},t('gratitude_empty'))
+      :React.createElement('div',{style:{display:'flex',flexDirection:'column',gap:8}},
+          data.entries.map(e=>React.createElement('div',{key:e.id,style:{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:'var(--r2)',padding:12}},
+            React.createElement('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}},
+              React.createElement('div',{style:{fontSize:11,fontWeight:700,color:'var(--rose)'}},e.sender_id===myId?t('you_label'):e.sender_name),
+              React.createElement('div',{style:{fontSize:10,color:'var(--text3)'}},formatDate(e.created_at))
+            ),
+            React.createElement('div',{style:{fontSize:13,color:'var(--text)',lineHeight:1.4}},e.body)
+          ))
+        )
   );
 }
 

@@ -2104,6 +2104,45 @@ def validate_channel(channel, user_id, family_id, is_minor, db):
         return f"direct:{sorted_ids[0]}:{sorted_ids[1]}", None
     return 'family', None
 
+@app.route('/api/gratitude', methods=['GET'])
+@require_auth
+@require_adult
+def get_gratitude():
+    db = get_db()
+    rows = db.execute(
+        "SELECT m.id, m.body, m.sender_id, u.full_name as sender_name, m.created_at FROM messages m "
+        "JOIN users u ON m.sender_id = u.id "
+        "WHERE m.family_id=? AND m.channel='couple' AND m.kind='gratitude' "
+        "ORDER BY m.created_at DESC LIMIT 100",
+        (g.family_id,)).fetchall()
+    today = datetime.date.today().isoformat()
+    sent_today = db.execute(
+        "SELECT COUNT(*) as cnt FROM messages WHERE family_id=? AND channel='couple' AND kind='gratitude' "
+        "AND sender_id=? AND date(created_at)=?",
+        (g.family_id, g.user_id, today)).fetchone()['cnt']
+    return ok({'entries': rows_to_list(rows), 'sent_today': sent_today > 0})
+
+@app.route('/api/gratitude', methods=['POST'])
+@require_auth
+@require_adult
+def send_gratitude():
+    body = request.json or {}
+    text = (body.get('text') or '').strip()
+    if not text:
+        return err("Matn bo'sh bo'lmasligi kerak")
+    if len(text) > 500:
+        return err('Matn juda uzun (max 500 belgi)')
+
+    db = get_db()
+    mid = str(uuid.uuid4())
+    db.execute("INSERT INTO messages(id,family_id,sender_id,channel,body,kind) VALUES(?,?,?,?,?,?)",
+               (mid, g.family_id, g.user_id, 'couple', text, 'gratitude'))
+    db.commit()
+    row = db.execute(
+        "SELECT m.*, u.full_name as sender_name FROM messages m JOIN users u ON m.sender_id=u.id WHERE m.id=?",
+        (mid,)).fetchone()
+    return ok(row_to_dict(row)), 201
+
 @app.route('/api/messages', methods=['GET'])
 @require_auth
 def get_messages():
