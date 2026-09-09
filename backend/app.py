@@ -2018,7 +2018,11 @@ def get_safety_contacts():
     rows = db.execute(
         "SELECT id, name, phone FROM safety_contacts WHERE user_id=? ORDER BY created_at",
         (g.user_id,)).fetchall()
-    return ok(rows_to_list(rows))
+    contacts = rows_to_list(rows)
+    for c in contacts:
+        c['name'] = decrypt_field(c['name'])
+        c['phone'] = decrypt_field(c['phone'])
+    return ok(contacts)
 
 @app.route('/api/safety/contacts', methods=['POST'])
 @require_auth
@@ -2035,7 +2039,7 @@ def add_safety_contact():
         return err("Ko'pi bilan 5 ta kontakt qo'shish mumkin")
     cid = str(uuid.uuid4())
     db.execute("INSERT INTO safety_contacts(id,user_id,name,phone) VALUES(?,?,?,?)",
-               (cid, g.user_id, name, phone))
+               (cid, g.user_id, encrypt_field(name), encrypt_field(phone)))
     db.commit()
     return ok({'id': cid, 'name': name, 'phone': phone}), 201
 
